@@ -1,6 +1,9 @@
 
 import { Product } from '../contexts/CartContext';
 
+// Re-export the Product type so it can be imported directly from this file
+export type { Product };
+
 const products: Product[] = [
   {
     id: "1",

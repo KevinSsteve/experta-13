@@ -64,7 +64,7 @@ import { toast } from "sonner";
 
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('all');
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
   const [outOfStockProducts, setOutOfStockProducts] = useState<Product[]>([]);
@@ -81,7 +81,10 @@ const Inventory = () => {
 
   // Load inventory data
   const loadInventoryData = () => {
-    setAllProducts(getProducts(searchQuery, category));
+    // Convert 'all' category to empty string for the getProducts function
+    const categoryFilter = category === 'all' ? '' : category;
+    
+    setAllProducts(getProducts(searchQuery, categoryFilter));
     setLowStockProducts(getLowStockProducts());
     setOutOfStockProducts(getOutOfStockProducts());
   };
@@ -216,7 +219,7 @@ const Inventory = () => {
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as categorias</SelectItem>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
                     {categories.map(cat => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                     ))}

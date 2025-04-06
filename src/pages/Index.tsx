@@ -26,7 +26,7 @@ import { Search, ShoppingCart, ArrowUpCircle } from 'lucide-react';
 const Index = () => {
   const { addItem } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('all');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,9 +74,12 @@ const Index = () => {
 
   // Update filtered products based on filters
   const updateFilteredProducts = () => {
+    // Convert 'all' category to empty string for the getProducts function
+    const categoryFilter = category === 'all' ? '' : category;
+    
     const products = getProducts(
       searchQuery,
-      category,
+      categoryFilter,
       priceRange[0],
       priceRange[1],
       inStock
@@ -150,7 +153,7 @@ const Index = () => {
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as categorias</SelectItem>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
                     {categories.map(cat => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                     ))}

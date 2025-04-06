@@ -41,7 +41,7 @@ import { Search, ShoppingCart, Filter } from 'lucide-react';
 const Products = () => {
   const { addItem } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('all');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,9 +76,12 @@ const Products = () => {
 
   // Update filtered products based on filters
   const updateFilteredProducts = () => {
+    // Convert 'all' category to empty string for the getProducts function
+    const categoryFilter = category === 'all' ? '' : category;
+    
     const products = getProducts(
       searchQuery,
-      category,
+      categoryFilter,
       0,
       Infinity, // No max price limit in table view
       inStock
@@ -155,7 +158,7 @@ const Products = () => {
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as categorias</SelectItem>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
                     {categories.map(cat => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                     ))}

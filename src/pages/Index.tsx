@@ -18,10 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Slider
-} from '@/components/ui/slider';
-import { Search, ShoppingCart, ArrowUpCircle } from 'lucide-react';
+import { Search, ShoppingCart } from 'lucide-react';
 
 const Index = () => {
   const { addItem } = useCart();
@@ -30,41 +27,13 @@ const Index = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [priceRange, setPriceRange] = useState([0, 100]);
-  const [maxPrice, setMaxPrice] = useState(100);
   const [inStock, setInStock] = useState(false);
-  const [displayCount, setDisplayCount] = useState(12);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-
-  // Handle scroll events for back to top button
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 300);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  // Scroll back to top
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
   
   // Load data on component mount
   useEffect(() => {
     setCategories(getCategories());
     updateFilteredProducts();
     setIsLoading(false);
-    
-    // Determine max price for range slider
-    const allProducts = getProducts();
-    const highestPrice = Math.max(...allProducts.map(p => p.price));
-    setMaxPrice(Math.ceil(highestPrice / 10) * 10); // Round up to nearest 10
-    setPriceRange([0, Math.ceil(highestPrice / 10) * 10]);
   }, []);
 
   // Debounced filter function
@@ -80,8 +49,8 @@ const Index = () => {
     const products = getProducts(
       searchQuery,
       categoryFilter,
-      priceRange[0],
-      priceRange[1],
+      0,
+      Infinity,
       inStock
     );
     setFilteredProducts(products);
@@ -99,26 +68,12 @@ const Index = () => {
     updateFilteredProducts();
   };
 
-  // Handle price range
-  const handlePriceChange = (value: number[]) => {
-    setPriceRange(value);
-    debouncedUpdateProducts();
-  };
-
   // Toggle in-stock filter
   const toggleStockFilter = () => {
     setInStock(!inStock);
     updateFilteredProducts();
   };
   
-  // Load more products
-  const loadMore = () => {
-    setDisplayCount(prevCount => prevCount + 12);
-  };
-  
-  // Visible products based on current display count
-  const visibleProducts = filteredProducts.slice(0, displayCount);
-
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
@@ -133,7 +88,7 @@ const Index = () => {
           
           {/* Search and filter section */}
           <section className="bg-card rounded-lg p-4 shadow-sm border">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -160,36 +115,6 @@ const Index = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div>
-                <Button 
-                  variant={inStock ? "default" : "outline"} 
-                  className="w-full"
-                  onClick={toggleStockFilter}
-                >
-                  {inStock ? "Mostrando em estoque" : "Mostrar todos"}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="mt-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Faixa de preço</span>
-                  <span className="text-sm font-medium">
-                    {formatCurrency(priceRange[0])} - {formatCurrency(priceRange[1])}
-                  </span>
-                </div>
-                
-                <Slider
-                  defaultValue={[0, maxPrice]}
-                  min={0}
-                  max={maxPrice}
-                  step={1}
-                  value={priceRange}
-                  onValueChange={handlePriceChange}
-                />
-              </div>
             </div>
           </section>
           
@@ -213,7 +138,7 @@ const Index = () => {
                     <h2 className="text-lg font-medium mb-4">{filteredProducts.length} produtos encontrados</h2>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {visibleProducts.map(product => (
+                      {filteredProducts.map(product => (
                         <Card key={product.id} className="overflow-hidden group">
                           <div className="h-48 bg-muted relative overflow-hidden">
                             <img
@@ -258,14 +183,6 @@ const Index = () => {
                         </Card>
                       ))}
                     </div>
-                    
-                    {displayCount < filteredProducts.length && (
-                      <div className="mt-8 text-center">
-                        <Button variant="outline" onClick={loadMore}>
-                          Carregar mais produtos
-                        </Button>
-                      </div>
-                    )}
                   </>
                 )}
               </>
@@ -273,16 +190,6 @@ const Index = () => {
           </section>
         </div>
       </div>
-      
-      {/* Back to top button */}
-      {showBackToTop && (
-        <Button
-          className="fixed bottom-20 right-4 md:bottom-4 md:right-4 rounded-full h-10 w-10 p-0 shadow-lg"
-          onClick={scrollToTop}
-        >
-          <ArrowUpCircle className="h-6 w-6" />
-        </Button>
-      )}
     </MainLayout>
   );
 };

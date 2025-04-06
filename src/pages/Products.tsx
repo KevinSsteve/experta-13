@@ -36,7 +36,17 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, ShoppingCart, Filter } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ProductForm } from '@/components/product/ProductForm';
+import { Search, ShoppingCart, Filter, Edit, Trash2, Plus } from 'lucide-react';
+import { toast } from "sonner";
 
 const Products = () => {
   const { addItem } = useCart();
@@ -48,6 +58,10 @@ const Products = () => {
   const [inStock, setInStock] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
   const productsPerPage = 10;
   
@@ -115,6 +129,41 @@ const Products = () => {
     setShowFilters(!showFilters);
   };
 
+  // Open edit dialog
+  const openEditDialog = (product: Product) => {
+    setSelectedProduct(product);
+    setIsEditDialogOpen(true);
+  };
+
+  // Open delete dialog
+  const openDeleteDialog = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Handle product add success
+  const handleAddSuccess = () => {
+    setIsAddDialogOpen(false);
+    updateFilteredProducts();
+    toast.success("Produto adicionado com sucesso!");
+  };
+
+  // Handle product edit success
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false);
+    updateFilteredProducts();
+    toast.success("Produto atualizado com sucesso!");
+  };
+
+  // Handle product delete
+  const handleDelete = () => {
+    // Em uma aplicação real, aqui faria a exclusão no banco de dados
+    // Por enquanto, apenas simulamos o sucesso
+    setIsDeleteDialogOpen(false);
+    updateFilteredProducts();
+    toast.success("Produto excluído com sucesso!");
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
@@ -129,8 +178,9 @@ const Products = () => {
                 <Filter className="h-4 w-4 mr-2" />
                 Filtros
               </Button>
-              <Button>
-                + Novo Produto
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Produto
               </Button>
             </div>
           </div>
@@ -177,8 +227,8 @@ const Products = () => {
           </Card>
           
           {/* Products table */}
-          <Card>
-            <div className="rounded-md border">
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -262,8 +312,17 @@ const Products = () => {
                             <Button 
                               size="sm" 
                               variant="ghost"
+                              onClick={() => openEditDialog(product)}
                             >
-                              Editar
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                              onClick={() => openDeleteDialog(product)}
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -344,6 +403,79 @@ const Products = () => {
           </Card>
         </div>
       </div>
+
+      {/* Add product dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Adicionar Novo Produto</DialogTitle>
+            <DialogDescription>
+              Preencha os detalhes do novo produto abaixo.
+            </DialogDescription>
+          </DialogHeader>
+          <ProductForm
+            onSuccess={handleAddSuccess}
+            onCancel={() => setIsAddDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit product dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Produto</DialogTitle>
+            <DialogDescription>
+              Atualize os detalhes do produto abaixo.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedProduct && (
+            <ProductForm
+              product={selectedProduct}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setIsEditDialogOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Produto</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedProduct && (
+            <div className="pt-4">
+              <p className="mb-2">
+                <span className="font-medium">{selectedProduct.name}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Código: {selectedProduct.code} • {selectedProduct.category}
+              </p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

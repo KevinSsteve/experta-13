@@ -1,6 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Home, ShoppingBasket, Package, ShoppingCart, 
   BarChart3, Settings, LogOut 
@@ -14,13 +15,9 @@ const navigation = [
   { name: "Checkout", href: "/checkout", icon: ShoppingCart },
 ];
 
-const bottomNavigation = [
-  { name: "Configurações", href: "/settings", icon: Settings },
-  { name: "Sair", href: "#", icon: LogOut },
-];
-
 export function SidebarNav() {
   const location = useLocation();
+  const { signOut } = useAuth();
   
   return (
     <div className="flex flex-col h-full pb-4 pt-5">
@@ -57,16 +54,21 @@ export function SidebarNav() {
       </div>
       
       <div className="mt-auto px-2 pt-2 border-t border-sidebar-border">
-        {bottomNavigation.map((item) => (
-          <Link
-            key={item.name}
-            to={item.href}
-            className="flex items-center px-3 py-2 mt-1 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-          >
-            <item.icon className="h-5 w-5 shrink-0 mr-3" />
-            {item.name}
-          </Link>
-        ))}
+        <Link
+          to="/settings"
+          className="flex items-center px-3 py-2 mt-1 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+        >
+          <Settings className="h-5 w-5 shrink-0 mr-3" />
+          Configurações
+        </Link>
+        
+        <button
+          onClick={() => signOut()}
+          className="flex w-full items-center px-3 py-2 mt-1 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+        >
+          <LogOut className="h-5 w-5 shrink-0 mr-3" />
+          Sair
+        </button>
       </div>
     </div>
   );

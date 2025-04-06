@@ -1,0 +1,68 @@
+
+import { useState, ReactNode } from "react";
+import { SidebarNav } from "./SidebarNav";
+import { TopBar } from "./TopBar";
+import { MobileNav } from "./MobileNav";
+import { ShoppingCart } from "@/components/shop/ShoppingCart";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/contexts/ThemeContext"; 
+import { Menu, X } from "lucide-react";
+
+interface MainLayoutProps {
+  children: ReactNode;
+}
+
+export function MainLayout({ children }: MainLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const { theme } = useTheme();
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+  
+  return (
+    <div className={`${theme} flex min-h-screen w-full`}>
+      {/* Sidebar para desktop */}
+      <aside 
+        className={`fixed top-0 left-0 z-30 h-full w-64 transform bg-sidebar border-r border-sidebar-border transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="relative h-full">
+          {isMobile && (
+            <button 
+              onClick={toggleSidebar} 
+              className="absolute top-4 right-4 p-1 text-sidebar-foreground hover:bg-sidebar-accent rounded-md"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          )}
+          <SidebarNav />
+        </div>
+      </aside>
+      
+      {/* Overlay para fechar o sidebar em dispositivos móveis */}
+      {sidebarOpen && isMobile && (
+        <div 
+          className="fixed inset-0 z-20 bg-black/50" 
+          onClick={toggleSidebar}
+        ></div>
+      )}
+      
+      {/* Conteúdo principal */}
+      <div className="flex flex-col flex-1">
+        <TopBar toggleSidebar={toggleSidebar} />
+        
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+          {children}
+        </main>
+        
+        {isMobile && <MobileNav />}
+      </div>
+      
+      {/* Carrinho de compras */}
+      <ShoppingCart />
+    </div>
+  );
+}

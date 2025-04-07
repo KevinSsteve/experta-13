@@ -59,3 +59,52 @@ export function debounce<T extends (...args: any[]) => any>(
 export function generateId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
+
+export function getProductsFromStorage(): any[] {
+  const savedProducts = localStorage.getItem("products");
+  return savedProducts ? JSON.parse(savedProducts) : [];
+}
+
+export function saveProductsToStorage(products: any[]): void {
+  localStorage.setItem("products", JSON.stringify(products));
+}
+
+export function getCategoriesFromProducts(products: any[]): string[] {
+  const categories = products.map(product => product.category);
+  return [...new Set(categories)].filter(Boolean);
+}
+
+export function filterProducts(
+  products: any[], 
+  searchQuery = '', 
+  category = 'all', 
+  minPrice = 0, 
+  maxPrice = Number.MAX_SAFE_INTEGER, 
+  inStockOnly = false
+): any[] {
+  return products.filter(product => {
+    // Filtro por pesquisa de texto (nome ou código)
+    const matchesSearch = searchQuery === '' || 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.code && product.code.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Filtro por categoria
+    const matchesCategory = category === 'all' || product.category === category;
+    
+    // Filtro por preço
+    const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
+    
+    // Filtro por estoque
+    const matchesStock = !inStockOnly || product.stock > 0;
+    
+    return matchesSearch && matchesCategory && matchesPrice && matchesStock;
+  });
+}
+
+export function getLowStockProducts(products: any[], threshold = 10): any[] {
+  return products.filter(product => product.stock > 0 && product.stock < threshold);
+}
+
+export function getOutOfStockProducts(products: any[]): any[] {
+  return products.filter(product => product.stock === 0);
+}

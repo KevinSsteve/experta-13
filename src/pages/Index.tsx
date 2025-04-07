@@ -1,8 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
-import { Product, getProducts, getCategories } from '@/lib/products-data';
-import { formatCurrency, debounce } from '@/lib/utils';
+import { 
+  formatCurrency, 
+  debounce, 
+  getProductsFromStorage, 
+  filterProducts, 
+  getCategoriesFromProducts 
+} from '@/lib/utils';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,6 +27,7 @@ import {
   Slider
 } from '@/components/ui/slider';
 import { Search, ShoppingCart, ArrowUpCircle } from 'lucide-react';
+import { Product } from '@/contexts/CartContext';
 
 const Index = () => {
   const { addItem } = useCart();
@@ -56,13 +62,16 @@ const Index = () => {
   
   // Load data on component mount
   useEffect(() => {
-    setCategories(getCategories());
+    const products = getProductsFromStorage();
+    setCategories(getCategoriesFromProducts(products));
     updateFilteredProducts();
     setIsLoading(false);
     
     // Determine max price for range slider
-    const allProducts = getProducts();
-    const highestPrice = Math.max(...allProducts.map(p => p.price));
+    const highestPrice = products.length > 0 
+      ? Math.max(...products.map(p => p.price)) 
+      : 100;
+    
     setMaxPrice(Math.ceil(highestPrice / 10) * 10); // Round up to nearest 10
     setPriceRange([0, Math.ceil(highestPrice / 10) * 10]);
   }, []);
@@ -74,17 +83,18 @@ const Index = () => {
 
   // Update filtered products based on filters
   const updateFilteredProducts = () => {
-    // Convert 'all' category to empty string for the getProducts function
-    const categoryFilter = category === 'all' ? '' : category;
+    const products = getProductsFromStorage();
     
-    const products = getProducts(
+    const filtered = filterProducts(
+      products,
       searchQuery,
-      categoryFilter,
+      category,
       priceRange[0],
       priceRange[1],
       inStock
     );
-    setFilteredProducts(products);
+    
+    setFilteredProducts(filtered);
   };
   
   // Handle search input
@@ -206,7 +216,12 @@ const Index = () => {
                 {filteredProducts.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-2xl font-medium mb-2">Nenhum produto encontrado</p>
-                    <p className="text-muted-foreground">Tente ajustar seus filtros para encontrar produtos.</p>
+                    <p className="text-muted-foreground">
+                      {getProductsFromStorage().length === 0 
+                        ? "Nenhum produto cadastrado. Adicione produtos na página de Produtos."
+                        : "Tente ajustar seus filtros para encontrar produtos."
+                      }
+                    </p>
                   </div>
                 ) : (
                   <>

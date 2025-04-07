@@ -49,19 +49,33 @@ import {
   Edit,
   Trash2,
   Plus,
-  AlertTriangle,
-  CheckCircle 
+  AlertTriangle
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
-  Product, 
-  getProducts, 
-  getCategories,
+  formatCurrency, 
+  debounce, 
+  getProductsFromStorage, 
+  saveProductsToStorage,
+  getCategoriesFromProducts, 
+  filterProducts,
   getLowStockProducts,
-  getOutOfStockProducts 
-} from '@/lib/products-data';
-import { formatCurrency, debounce } from '@/lib/utils';
+  getOutOfStockProducts
+} from '@/lib/utils';
+import { ProductForm, ProductFormValues } from '@/components/products/ProductForm';
 import { toast } from "sonner";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Product } from '@/contexts/CartContext';
 
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,24 +85,31 @@ const Inventory = () => {
   const [outOfStockProducts, setOutOfStockProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('all');
-  const [isEditing, setIsEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const isMobile = useIsMobile();
   
   // Load data on component mount
   useEffect(() => {
     loadInventoryData();
-    setCategories(getCategories());
   }, []);
 
   // Load inventory data
   const loadInventoryData = () => {
-    // Convert 'all' category to empty string for the getProducts function
-    const categoryFilter = category === 'all' ? '' : category;
+    const products = getProductsFromStorage();
     
-    setAllProducts(getProducts(searchQuery, categoryFilter));
-    setLowStockProducts(getLowStockProducts());
-    setOutOfStockProducts(getOutOfStockProducts());
+    // Filtered products based on search and category
+    const filteredProducts = filterProducts(
+      products, 
+      searchQuery, 
+      category
+    );
+    
+    setAllProducts(filteredProducts);
+    setLowStockProducts(getLowStockProducts(products));
+    setOutOfStockProducts(getOutOfStockProducts(products));
+    setCategories(getCategoriesFromProducts(products));
   };
 
   // Debounced search function
@@ -108,29 +129,60 @@ const Inventory = () => {
     loadInventoryData();
   };
 
-  // Edit product
-  const editProduct = (product: Product) => {
-    setCurrentProduct({ ...product });
-    setIsEditing(true);
-  };
-
-  // Save product changes
-  const saveProductChanges = () => {
-    if (!currentProduct) return;
+  // Add product
+  const handleAddProduct = (data: ProductFormValues) => {
+    // Ensure all required fields have values to satisfy the Product type
+    const newProduct: Product = {
+      id: Math.random().toString(36).substring(2) + Date.now().toString(36),
+      name: data.name,
+      price: data.price,
+      category: data.category,
+      stock: data.stock,
+      image: data.image || "/placeholder.svg",
+      code: data.code,
+      description: data.description,
+    };
     
-    // In a real app, we would update the product in the database
-    // For now, we'll just show a success message
-    toast.success(`Produto ${currentProduct.name} atualizado com sucesso!`);
-    setIsEditing(false);
-    setCurrentProduct(null);
+    const products = getProductsFromStorage();
+    const updatedProducts = [...products, newProduct];
+    saveProductsToStorage(updatedProducts);
+    
+    setIsAddDialogOpen(false);
+    toast.success("Produto adicionado com sucesso!");
     loadInventoryData();
   };
 
+  // Edit product
+  const handleEditProduct = (data: ProductFormValues) => {
+    if (!currentProduct) return;
+    
+    const products = getProductsFromStorage();
+    const updatedProducts = products.map((product: Product) =>
+      product.id === currentProduct.id
+        ? { ...product, ...data }
+        : product
+    );
+    
+    saveProductsToStorage(updatedProducts);
+    setIsEditDialogOpen(false);
+    setCurrentProduct(null);
+    toast.success("Produto atualizado com sucesso!");
+    loadInventoryData();
+  };
+
+  // Open edit dialog
+  const openEditDialog = (product: Product) => {
+    setCurrentProduct(product);
+    setIsEditDialogOpen(true);
+  };
+
   // Delete product
-  const deleteProduct = (product: Product) => {
-    // In a real app, we would delete the product from the database
-    // For now, we'll just show a success message
-    toast.success(`Produto ${product.name} removido com sucesso!`);
+  const handleDeleteProduct = (id: string) => {
+    const products = getProductsFromStorage();
+    const updatedProducts = products.filter((product: Product) => product.id !== id);
+    saveProductsToStorage(updatedProducts);
+    
+    toast.success("Produto excluído com sucesso!");
     loadInventoryData();
   };
 
@@ -163,7 +215,7 @@ const Inventory = () => {
             <div>
               <h3 className="font-medium">{product.name}</h3>
               <p className="text-xs text-muted-foreground">
-                {product.code} • {product.category}
+                {product.code || "Sem código"} • {product.category}
               </p>
             </div>
           </div>
@@ -190,90 +242,16 @@ const Inventory = () => {
           </div>
           
           <div className="flex space-x-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => editProduct(product)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Editar Produto</DialogTitle>
-                  <DialogDescription>
-                    Atualize as informações do produto aqui.
-                  </DialogDescription>
-                </DialogHeader>
-                
-                {currentProduct && (
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">
-                        Nome
-                      </Label>
-                      <Input
-                        id="name"
-                        value={currentProduct.name}
-                        onChange={(e) => 
-                          setCurrentProduct({
-                            ...currentProduct,
-                            name: e.target.value
-                          })
-                        }
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="price" className="text-right">
-                        Preço
-                      </Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        step="0.01"
-                        value={currentProduct.price}
-                        onChange={(e) => 
-                          setCurrentProduct({
-                            ...currentProduct,
-                            price: parseFloat(e.target.value) || 0
-                          })
-                        }
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="stock" className="text-right">
-                        Estoque
-                      </Label>
-                      <Input
-                        id="stock"
-                        type="number"
-                        value={currentProduct.stock}
-                        onChange={(e) => 
-                          setCurrentProduct({
-                            ...currentProduct,
-                            stock: parseInt(e.target.value) || 0
-                          })
-                        }
-                        className="col-span-3"
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                <DialogFooter>
-                  <Button type="submit" onClick={saveProductChanges}>
-                    Salvar alterações
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => openEditDialog(product)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
             
-            <Dialog>
-              <DialogTrigger asChild>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -281,40 +259,34 @@ const Inventory = () => {
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Excluir Produto</DialogTitle>
-                  <DialogDescription>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
+                  <AlertDialogDescription>
                     Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
-                  </DialogDescription>
-                </DialogHeader>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
                 
                 <div className="pt-4">
                   <p className="mb-2">
                     <span className="font-medium">{product.name}</span>
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Código: {product.code} • {product.category}
+                    Código: {product.code || "Sem código"} • {product.category}
                   </p>
                 </div>
                 
-                <DialogFooter>
-                  <Button 
-                    variant="outline"
-                    onClick={() => {}}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => deleteProduct(product)}
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDeleteProduct(product.id)}
                   >
                     Excluir
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </CardContent>
@@ -330,10 +302,23 @@ const Inventory = () => {
               <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
               <p className="text-muted-foreground">Controle e atualize o estoque de produtos.</p>
             </div>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              {!isMobile && "Adicionar Produto"}
-            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {!isMobile && "Adicionar Produto"}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Adicionar Novo Produto</DialogTitle>
+                  <DialogDescription>
+                    Preencha as informações do produto e clique em salvar.
+                  </DialogDescription>
+                </DialogHeader>
+                <ProductForm onSubmit={handleAddProduct} />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Inventory stats */}
@@ -346,7 +331,7 @@ const Inventory = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">{allProducts.length}</p>
+                <p className="text-3xl font-bold">{getProductsFromStorage().length}</p>
               </CardContent>
             </Card>
             
@@ -459,7 +444,7 @@ const Inventory = () => {
                       ) : (
                         getCurrentProducts().map((product) => (
                           <TableRow key={product.id}>
-                            <TableCell>{product.code}</TableCell>
+                            <TableCell>{product.code || "-"}</TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-3">
                                 <div className="h-10 w-10 bg-muted rounded overflow-hidden">
@@ -498,90 +483,16 @@ const Inventory = () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end space-x-1">
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      onClick={() => editProduct(product)}
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent>
-                                    <DialogHeader>
-                                      <DialogTitle>Editar Produto</DialogTitle>
-                                      <DialogDescription>
-                                        Atualize as informações do produto aqui.
-                                      </DialogDescription>
-                                    </DialogHeader>
-                                    
-                                    {currentProduct && (
-                                      <div className="grid gap-4 py-4">
-                                        <div className="grid grid-cols-4 items-center gap-4">
-                                          <Label htmlFor="name" className="text-right">
-                                            Nome
-                                          </Label>
-                                          <Input
-                                            id="name"
-                                            value={currentProduct.name}
-                                            onChange={(e) => 
-                                              setCurrentProduct({
-                                                ...currentProduct,
-                                                name: e.target.value
-                                              })
-                                            }
-                                            className="col-span-3"
-                                          />
-                                        </div>
-                                        <div className="grid grid-cols-4 items-center gap-4">
-                                          <Label htmlFor="price" className="text-right">
-                                            Preço
-                                          </Label>
-                                          <Input
-                                            id="price"
-                                            type="number"
-                                            step="0.01"
-                                            value={currentProduct.price}
-                                            onChange={(e) => 
-                                              setCurrentProduct({
-                                                ...currentProduct,
-                                                price: parseFloat(e.target.value) || 0
-                                              })
-                                            }
-                                            className="col-span-3"
-                                          />
-                                        </div>
-                                        <div className="grid grid-cols-4 items-center gap-4">
-                                          <Label htmlFor="stock" className="text-right">
-                                            Estoque
-                                          </Label>
-                                          <Input
-                                            id="stock"
-                                            type="number"
-                                            value={currentProduct.stock}
-                                            onChange={(e) => 
-                                              setCurrentProduct({
-                                                ...currentProduct,
-                                                stock: parseInt(e.target.value) || 0
-                                              })
-                                            }
-                                            className="col-span-3"
-                                          />
-                                        </div>
-                                      </div>
-                                    )}
-                                    
-                                    <DialogFooter>
-                                      <Button type="submit" onClick={saveProductChanges}>
-                                        Salvar alterações
-                                      </Button>
-                                    </DialogFooter>
-                                  </DialogContent>
-                                </Dialog>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => openEditDialog(product)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
                                 
-                                <Dialog>
-                                  <DialogTrigger asChild>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
                                     <Button 
                                       variant="outline" 
                                       size="sm"
@@ -589,40 +500,34 @@ const Inventory = () => {
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
-                                  </DialogTrigger>
-                                  <DialogContent>
-                                    <DialogHeader>
-                                      <DialogTitle>Excluir Produto</DialogTitle>
-                                      <DialogDescription>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
+                                      <AlertDialogDescription>
                                         Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
-                                      </DialogDescription>
-                                    </DialogHeader>
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
                                     
                                     <div className="pt-4">
                                       <p className="mb-2">
                                         <span className="font-medium">{product.name}</span>
                                       </p>
                                       <p className="text-sm text-muted-foreground">
-                                        Código: {product.code} • {product.category}
+                                        Código: {product.code || "Sem código"} • {product.category}
                                       </p>
                                     </div>
                                     
-                                    <DialogFooter>
-                                      <Button 
-                                        variant="outline"
-                                        onClick={() => {}}
-                                      >
-                                        Cancelar
-                                      </Button>
-                                      <Button 
-                                        variant="destructive" 
-                                        onClick={() => deleteProduct(product)}
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteProduct(product.id)}
                                       >
                                         Excluir
-                                      </Button>
-                                    </DialogFooter>
-                                  </DialogContent>
-                                </Dialog>
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -636,6 +541,24 @@ const Inventory = () => {
           </Card>
         </div>
       </div>
+
+      {/* Dialog para edição de produtos */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Produto</DialogTitle>
+            <DialogDescription>
+              Atualize as informações do produto e clique em salvar.
+            </DialogDescription>
+          </DialogHeader>
+          {currentProduct && (
+            <ProductForm
+              onSubmit={handleEditProduct}
+              defaultValues={currentProduct}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

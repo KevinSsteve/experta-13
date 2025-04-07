@@ -57,9 +57,16 @@ const Products = () => {
   );
 
   const handleAddProduct = (data: ProductFormValues) => {
+    // Ensure all required fields have values to satisfy the Product type
     const newProduct: Product = {
       id: generateId(),
-      ...data,
+      name: data.name, // Required field
+      price: data.price, // Required field
+      category: data.category, // Required field
+      stock: data.stock, // Required field
+      image: data.image || "/placeholder.svg", // Required field with default
+      code: data.code,
+      description: data.description,
     };
     
     const updatedProducts = [...products, newProduct];

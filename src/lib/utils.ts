@@ -95,3 +95,37 @@ export function getLowStockProducts(products: any[], threshold = 10): any[] {
 export function getOutOfStockProducts(products: any[]): any[] {
   return products.filter(product => product.stock === 0);
 }
+
+export function calculateChange(totalAmount: number, amountPaid: number): number {
+  return Math.max(0, amountPaid - totalAmount);
+}
+
+export function saveSaleToStorage(sale: any): void {
+  const savedSales = getSalesFromStorage();
+  savedSales.push({
+    ...sale,
+    id: generateId(),
+    date: new Date().toISOString(),
+  });
+  localStorage.setItem("sales", JSON.stringify(savedSales));
+}
+
+export function getSalesFromStorage(): any[] {
+  const savedSales = localStorage.getItem("sales");
+  return savedSales ? JSON.parse(savedSales) : [];
+}
+
+export function updateProductStockAfterSale(items: any[]): void {
+  const products = getProductsFromStorage();
+  
+  // Update stock for each sold item
+  items.forEach(item => {
+    const productIndex = products.findIndex(p => p.id === item.product.id);
+    if (productIndex !== -1) {
+      products[productIndex].stock = Math.max(0, products[productIndex].stock - item.quantity);
+    }
+  });
+  
+  // Save updated products back to storage
+  saveProductsToStorage(products);
+}

@@ -2,7 +2,12 @@
 import { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
-import { formatCurrency } from '@/lib/utils';
+import { 
+  formatCurrency, 
+  calculateChange, 
+  saveSaleToStorage, 
+  updateProductStockAfterSale 
+} from '@/lib/utils';
 import { 
   Card, 
   CardContent,
@@ -19,26 +24,28 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Check, Trash2 } from 'lucide-react';
+import { Check, Trash2, Calculator } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CheckoutFormValues {
   customerName: string;
   customerPhone?: string;
   customerEmail?: string;
-  paymentMethod: 'credit' | 'debit' | 'cash' | 'pix';
   notes?: string;
+  amountPaid: number;
 }
 
 const Checkout = () => {
   const { state, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [change, setChange] = useState(0);
+  const navigate = useNavigate();
   
   // Form definition
   const form = useForm<CheckoutFormValues>({
@@ -46,10 +53,18 @@ const Checkout = () => {
       customerName: '',
       customerPhone: '',
       customerEmail: '',
-      paymentMethod: 'credit',
       notes: '',
+      amountPaid: 0,
     },
   });
+  
+  // Calculate change when amount paid changes
+  const handleAmountPaidChange = (value: string) => {
+    const amountPaid = parseFloat(value) || 0;
+    const total = getTotalPrice();
+    setChange(calculateChange(total, amountPaid));
+    form.setValue('amountPaid', amountPaid);
+  };
   
   // Submit handler
   const onSubmit = (data: CheckoutFormValues) => {
@@ -58,21 +73,35 @@ const Checkout = () => {
       return;
     }
     
+    if (data.amountPaid < getTotalPrice()) {
+      toast.error('O valor pago é insuficiente para cobrir o total da compra.');
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    // Simulating an API call
-    setTimeout(() => {
-      console.log('Checkout data:', {
-        customer: {
-          name: data.customerName,
-          phone: data.customerPhone,
-          email: data.customerEmail,
-        },
-        paymentMethod: data.paymentMethod,
-        notes: data.notes,
-        items: state.items,
-        total: getTotalPrice(),
-      });
+    // Create sale record
+    const saleData = {
+      customer: {
+        name: data.customerName,
+        phone: data.customerPhone,
+        email: data.customerEmail,
+      },
+      total: getTotalPrice(),
+      amountPaid: data.amountPaid,
+      change: change,
+      notes: data.notes,
+      items: state.items.length,
+      products: state.items,
+      paymentMethod: 'Dinheiro',
+    };
+    
+    // Save sale to localStorage
+    try {
+      saveSaleToStorage(saleData);
+      
+      // Update product stock
+      updateProductStockAfterSale(state.items);
       
       // Show success message
       toast.success('Venda finalizada com sucesso!');
@@ -81,8 +110,16 @@ const Checkout = () => {
       clearCart();
       form.reset();
       
+      // Redirect to dashboard after short delay
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    } catch (error) {
+      toast.error('Erro ao finalizar a venda. Por favor, tente novamente.');
+      console.error('Error saving sale:', error);
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
   
   return (
@@ -241,57 +278,48 @@ const Checkout = () => {
                       />
                     </div>
                     
-                    <FormField
-                      control={form.control}
-                      name="paymentMethod"
-                      rules={{ required: 'Forma de pagamento é obrigatória' }}
-                      render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormLabel>Forma de Pagamento</FormLabel>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              className="flex flex-col space-y-1"
-                            >
-                              <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value="credit" />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  Cartão de Crédito
-                                </FormLabel>
-                              </FormItem>
-                              <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value="debit" />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  Cartão de Débito
-                                </FormLabel>
-                              </FormItem>
-                              <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value="pix" />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  PIX
-                                </FormLabel>
-                              </FormItem>
-                              <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value="cash" />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  Dinheiro
-                                </FormLabel>
-                              </FormItem>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Pagamento e troco */}
+                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                      <h3 className="font-medium flex items-center">
+                        <Calculator className="mr-2 h-4 w-4" />
+                        Pagamento
+                      </h3>
+                      
+                      <FormField
+                        control={form.control}
+                        name="amountPaid"
+                        rules={{ 
+                          required: 'Valor pago é obrigatório',
+                          min: {
+                            value: getTotalPrice(),
+                            message: 'O valor pago deve ser maior ou igual ao total',
+                          }
+                        }}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Valor Pago</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min={getTotalPrice()} 
+                                step="0.01"
+                                placeholder="0.00"
+                                onChange={(e) => handleAmountPaidChange(e.target.value)}
+                                onBlur={field.onBlur}
+                                name={field.name}
+                                ref={field.ref}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="flex justify-between items-center p-2 bg-muted rounded">
+                        <span>Troco:</span>
+                        <span className="font-medium text-lg">{formatCurrency(change)}</span>
+                      </div>
+                    </div>
                     
                     <FormField
                       control={form.control}

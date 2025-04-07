@@ -1,13 +1,18 @@
 
+import { getSalesFromStorage } from './utils';
+
 // Dados de vendas simulados para o dashboard
 
 export interface Sale {
   id: string;
   date: string;
   total: number;
+  amountPaid?: number;
+  change?: number;
   items: number;
   paymentMethod: string;
   customer?: string;
+  products?: any[];
 }
 
 export interface DailySales {
@@ -20,6 +25,19 @@ export interface SalesByCategory {
   category: string;
   sales: number;
   percentage: number;
+}
+
+// Função para obter as vendas
+function getSalesData(): Sale[] {
+  const storedSales = getSalesFromStorage();
+  
+  // Se houver vendas armazenadas, use-as
+  if (storedSales && storedSales.length > 0) {
+    return storedSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+  
+  // Caso contrário, gere dados simulados
+  return generateSalesData();
 }
 
 // Função para gerar dados aleatórios de vendas dos últimos 30 dias
@@ -38,11 +56,14 @@ function generateSalesData(): Sale[] {
     
     const items = Math.floor(Math.random() * 10) + 1;
     const total = parseFloat((Math.random() * 500 + 10).toFixed(2));
+    const amountPaid = parseFloat((total + Math.random() * 50).toFixed(2));
     
     sales.push({
       id: `sale-${i + 1}`,
       date: date.toISOString(),
       total,
+      amountPaid,
+      change: amountPaid - total,
       items,
       paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
       customer: Math.random() > 0.3 ? `Cliente ${Math.floor(Math.random() * 100) + 1}` : undefined,
@@ -53,7 +74,7 @@ function generateSalesData(): Sale[] {
   return sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-const salesData = generateSalesData();
+const salesData = getSalesData();
 
 // Função para obter as vendas dos últimos X dias
 export function getRecentSales(days: number = 7): Sale[] {
@@ -99,27 +120,49 @@ export function getDailySales(days: number = 7): DailySales[] {
 
 // Função para calcular vendas por categoria
 export function getSalesByCategory(): SalesByCategory[] {
-  const categories = [
-    'Alimentos Básicos',
-    'Laticínios',
-    'Hortifruti',
-    'Carnes',
-    'Padaria',
-    'Bebidas',
-    'Limpeza',
-    'Higiene'
-  ];
+  const categories: { [key: string]: number } = {};
+  let totalSales = 0;
   
-  const totalSales = salesData.reduce((sum, sale) => sum + sale.total, 0);
+  // Calcular vendas por categoria usando dados reais
+  salesData.forEach(sale => {
+    if (sale.products) {
+      sale.products.forEach(item => {
+        const category = item.product.category;
+        if (!categories[category]) {
+          categories[category] = 0;
+        }
+        categories[category] += item.product.price * item.quantity;
+        totalSales += item.product.price * item.quantity;
+      });
+    }
+  });
   
-  return categories.map(category => {
-    const sales = parseFloat((Math.random() * totalSales * 0.3).toFixed(2));
-    return {
-      category,
-      sales,
-      percentage: parseFloat(((sales / totalSales) * 100).toFixed(1)),
-    };
-  }).sort((a, b) => b.sales - a.sales);
+  // Se não houver dados de vendas por categoria, use categorias simuladas
+  if (Object.keys(categories).length === 0) {
+    const defaultCategories = [
+      'Alimentos Básicos',
+      'Laticínios',
+      'Hortifruti',
+      'Carnes',
+      'Padaria',
+      'Bebidas',
+      'Limpeza',
+      'Higiene'
+    ];
+    
+    totalSales = salesData.reduce((sum, sale) => sum + sale.total, 0);
+    
+    defaultCategories.forEach(category => {
+      categories[category] = parseFloat((Math.random() * totalSales * 0.3).toFixed(2));
+    });
+  }
+  
+  // Converter para o formato esperado
+  return Object.entries(categories).map(([category, sales]) => ({
+    category,
+    sales,
+    percentage: parseFloat(((sales / totalSales) * 100).toFixed(1)),
+  })).sort((a, b) => b.sales - a.sales);
 }
 
 // Função para calcular KPIs

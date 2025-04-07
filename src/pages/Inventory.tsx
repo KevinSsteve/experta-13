@@ -99,12 +99,13 @@ const Inventory = () => {
   const loadInventoryData = () => {
     const products = getProductsFromStorage();
     
-    // Filtered products based on search and category
-    const filteredProducts = filterProducts(
-      products, 
-      searchQuery, 
-      category
-    );
+    // We need to apply filters manually for category since filterProducts doesn't accept category param
+    let filteredProducts = filterProducts(products, searchQuery);
+    
+    // Apply category filter separately if needed
+    if (category !== 'all') {
+      filteredProducts = filteredProducts.filter(product => product.category === category);
+    }
     
     setAllProducts(filteredProducts);
     setLowStockProducts(getLowStockProducts(products));

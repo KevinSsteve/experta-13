@@ -1,349 +1,257 @@
 
-import { useState, useEffect } from 'react';
-import { useCart } from '@/contexts/CartContext';
-import { Product, getProducts, getCategories } from '@/lib/products-data';
-import { formatCurrency, debounce } from '@/lib/utils';
-import { MainLayout } from '@/components/layouts/MainLayout';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useState } from "react";
+import { MainLayout } from "@/components/layouts/MainLayout";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
+  CardTitle,
+} from "@/components/ui/card";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Search, ShoppingCart, Filter } from 'lucide-react';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Product } from "@/contexts/CartContext";
+import { generateId, formatCurrency } from "@/lib/utils";
+import { ProductForm, ProductFormValues } from "@/components/products/ProductForm";
+import { toast } from "sonner";
+import { Search, Plus, Pencil, Trash } from "lucide-react";
 
 const Products = () => {
-  const { addItem } = useCart();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState('all');
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [inStock, setInStock] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
+  const [products, setProducts] = useState<Product[]>(() => {
+    // Carregar produtos do localStorage se existirem
+    const savedProducts = localStorage.getItem("products");
+    return savedProducts ? JSON.parse(savedProducts) : [];
+  });
   
-  const productsPerPage = 10;
-  
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-  
-  // Get current products
-  const getCurrentProducts = () => {
-    const indexOfLastProduct = currentPage * productsPerPage;
-    const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-    return filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-  };
-  
-  // Load data on component mount
-  useEffect(() => {
-    setCategories(getCategories());
-    updateFilteredProducts();
-    setIsLoading(false);
-  }, []);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Debounced filter function
-  const debouncedUpdateProducts = debounce(() => {
-    updateFilteredProducts();
-    setCurrentPage(1); // Reset to first page on filter change
-  }, 300);
+  // Filtrar produtos baseado na busca
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // Update filtered products based on filters
-  const updateFilteredProducts = () => {
-    // Convert 'all' category to empty string for the getProducts function
-    const categoryFilter = category === 'all' ? '' : category;
+  const handleAddProduct = (data: ProductFormValues) => {
+    const newProduct: Product = {
+      id: generateId(),
+      ...data,
+    };
     
-    const products = getProducts(
-      searchQuery,
-      categoryFilter,
-      0,
-      Infinity, // No max price limit in table view
-      inStock
+    const updatedProducts = [...products, newProduct];
+    setProducts(updatedProducts);
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
+    
+    setIsAddDialogOpen(false);
+    toast.success("Produto adicionado com sucesso!");
+  };
+
+  const handleEditProduct = (data: ProductFormValues) => {
+    if (!editingProduct) return;
+    
+    const updatedProducts = products.map((product) =>
+      product.id === editingProduct.id
+        ? { ...product, ...data }
+        : product
     );
-    setFilteredProducts(products);
-  };
-  
-  // Handle search input
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    debouncedUpdateProducts();
-  };
-
-  // Handle category selection
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    updateFilteredProducts();
+    
+    setProducts(updatedProducts);
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
+    
+    setIsEditDialogOpen(false);
+    setEditingProduct(null);
+    toast.success("Produto atualizado com sucesso!");
   };
 
-  // Toggle in-stock filter
-  const toggleStockFilter = () => {
-    setInStock(!inStock);
-    updateFilteredProducts();
+  const handleDeleteProduct = (id: string) => {
+    const updatedProducts = products.filter((product) => product.id !== id);
+    setProducts(updatedProducts);
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
+    
+    toast.success("Produto excluído com sucesso!");
   };
-  
-  // Handle pagination
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-  
-  // Toggle filters visibility on mobile
-  const toggleFilters = () => {
-    setShowFilters(!showFilters);
+
+  const openEditDialog = (product: Product) => {
+    setEditingProduct(product);
+    setIsEditDialogOpen(true);
   };
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 pb-20">
-        <div className="flex flex-col space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Produtos</h1>
-              <p className="text-muted-foreground">Gerencie seu catálogo de produtos.</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={toggleFilters} className="md:hidden">
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-              </Button>
-              <Button>
-                + Novo Produto
-              </Button>
-            </div>
+      <div className="container mx-auto p-4">
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Gerenciamento de Produtos</h1>
+            
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar Produto
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Adicionar Novo Produto</DialogTitle>
+                  <DialogDescription>
+                    Preencha as informações do produto e clique em salvar.
+                  </DialogDescription>
+                </DialogHeader>
+                <ProductForm onSubmit={handleAddProduct} />
+              </DialogContent>
+            </Dialog>
           </div>
-          
-          {/* Search and filters */}
-          <Card className={`${showFilters ? 'block' : 'hidden'} md:block`}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Filtros</CardTitle>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Produtos</CardTitle>
+              <CardDescription>
+                Gerencie os produtos disponíveis no sistema.
+              </CardDescription>
+              <div className="relative mt-2">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome, código ou categoria..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Pesquisar produtos..."
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={handleSearch}
-                  />
+              <ScrollArea className="h-[60vh] w-full">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="px-4 py-2 text-left">Nome</th>
+                        <th className="px-4 py-2 text-left">Código</th>
+                        <th className="px-4 py-2 text-left">Categoria</th>
+                        <th className="px-4 py-2 text-left">Preço</th>
+                        <th className="px-4 py-2 text-left">Estoque</th>
+                        <th className="px-4 py-2 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProducts.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                            {products.length === 0
+                              ? "Nenhum produto cadastrado. Clique em 'Adicionar Produto' para começar."
+                              : "Nenhum produto encontrado com os critérios de busca."}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredProducts.map((product) => (
+                          <tr key={product.id} className="border-b hover:bg-muted/50">
+                            <td className="px-4 py-2">{product.name}</td>
+                            <td className="px-4 py-2">{product.code || "-"}</td>
+                            <td className="px-4 py-2">{product.category}</td>
+                            <td className="px-4 py-2">{formatCurrency(product.price)}</td>
+                            <td className="px-4 py-2">
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  product.stock === 0
+                                    ? "bg-red-100 text-red-700"
+                                    : product.stock < 10
+                                    ? "bg-amber-100 text-amber-700"
+                                    : "bg-green-100 text-green-700"
+                                }`}
+                              >
+                                {product.stock} un
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEditDialog(product)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="destructive">
+                                      <Trash className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Confirmar exclusão
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Tem certeza que deseja excluir o produto "{product.name}"?
+                                        Esta ação não pode ser desfeita.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteProduct(product.id)}
+                                      >
+                                        Excluir
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-                
-                <Select value={category} onValueChange={handleCategoryChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button 
-                  variant={inStock ? "default" : "outline"} 
-                  className="w-full"
-                  onClick={toggleStockFilter}
-                >
-                  {inStock ? "Mostrando em estoque" : "Mostrar todos"}
-                </Button>
-              </div>
+              </ScrollArea>
             </CardContent>
-          </Card>
-          
-          {/* Products table */}
-          <Card>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead className="w-[250px]">Nome</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead className="text-right">Preço</TableHead>
-                    <TableHead className="text-center">Estoque</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                
-                <TableBody>
-                  {isLoading ? (
-                    Array(5).fill(0).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell colSpan={6} className="h-16">
-                          <div className="w-full h-4 bg-muted animate-pulse rounded"></div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : getCurrentProducts().length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        Nenhum produto encontrado
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    getCurrentProducts().map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell className="font-medium">{product.code}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className="h-10 w-10 bg-muted rounded overflow-hidden">
-                              <img 
-                                src={product.image} 
-                                alt={product.name}
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                            <div>
-                              <div className="font-medium">{product.name}</div>
-                              {product.description && (
-                                <div className="text-xs text-muted-foreground line-clamp-1">
-                                  {product.description}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{product.category}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(product.price)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span 
-                            className={`inline-block px-2 py-1 rounded-full text-xs ${
-                              product.stock === 0
-                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                              : product.stock < 10
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            }`}
-                          >
-                            {product.stock === 0 
-                              ? 'Esgotado' 
-                              : `${product.stock} unid.`
-                            }
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              disabled={product.stock === 0}
-                              onClick={() => addItem(product)}
-                            >
-                              <ShoppingCart className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                            >
-                              Editar
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="py-4 px-2">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        href="#" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage > 1) paginate(currentPage - 1);
-                        }} 
-                      />
-                    </PaginationItem>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => {
-                      // Show first page, last page, and pages around current page
-                      const pageNum = i + 1;
-                      if (
-                        pageNum === 1 || 
-                        pageNum === totalPages || 
-                        (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                      ) {
-                        return (
-                          <PaginationItem key={pageNum}>
-                            <PaginationLink 
-                              href="#" 
-                              isActive={currentPage === pageNum}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                paginate(pageNum);
-                              }}
-                            >
-                              {pageNum}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      }
-                      
-                      // Add ellipsis if needed
-                      if (
-                        (pageNum === 2 && currentPage > 3) || 
-                        (pageNum === totalPages - 1 && currentPage < totalPages - 2)
-                      ) {
-                        return (
-                          <PaginationItem key={`ellipsis-${pageNum}`}>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        );
-                      }
-                      
-                      return null;
-                    })}
-                    
-                    <PaginationItem>
-                      <PaginationNext 
-                        href="#" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage < totalPages) paginate(currentPage + 1);
-                        }} 
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
           </Card>
         </div>
       </div>
+
+      {/* Dialog para edição de produtos */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Produto</DialogTitle>
+            <DialogDescription>
+              Atualize as informações do produto e clique em salvar.
+            </DialogDescription>
+          </DialogHeader>
+          {editingProduct && (
+            <ProductForm
+              onSubmit={handleEditProduct}
+              defaultValues={editingProduct}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

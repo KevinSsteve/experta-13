@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -76,11 +75,7 @@ export function getCategoriesFromProducts(products: any[]): string[] {
 
 export function filterProducts(
   products: any[], 
-  searchQuery = '', 
-  category = 'all', 
-  minPrice = 0, 
-  maxPrice = Number.MAX_SAFE_INTEGER, 
-  inStockOnly = false
+  searchQuery = ''
 ): any[] {
   return products.filter(product => {
     // Filtro por pesquisa de texto (nome ou código)
@@ -88,16 +83,7 @@ export function filterProducts(
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (product.code && product.code.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    // Filtro por categoria
-    const matchesCategory = category === 'all' || product.category === category;
-    
-    // Filtro por preço
-    const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
-    
-    // Filtro por estoque
-    const matchesStock = !inStockOnly || product.stock > 0;
-    
-    return matchesSearch && matchesCategory && matchesPrice && matchesStock;
+    return matchesSearch;
   });
 }
 

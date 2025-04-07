@@ -5,8 +5,7 @@ import {
   formatCurrency, 
   debounce, 
   getProductsFromStorage, 
-  filterProducts, 
-  getCategoriesFromProducts 
+  filterProducts
 } from '@/lib/utils';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Input } from '@/components/ui/input';
@@ -16,36 +15,26 @@ import {
   CardContent, 
   CardFooter 
 } from '@/components/ui/card';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Slider
-} from '@/components/ui/slider';
 import { Search, ShoppingCart, ArrowUpCircle } from 'lucide-react';
 import { Product } from '@/contexts/CartContext';
 
 const Index = () => {
   const { addItem } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState('all');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [priceRange, setPriceRange] = useState([0, 100]);
-  const [maxPrice, setMaxPrice] = useState(100);
-  const [inStock, setInStock] = useState(false);
-  const [displayCount, setDisplayCount] = useState(12);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [displayCount, setDisplayCount] = useState(20); // Começar com mais produtos visíveis
 
-  // Handle scroll events for back to top button
+  // Handle scroll events for back to top button and infinite loading
   useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 300);
+      
+      // Verificar se o usuário está próximo ao final da página para carregar mais produtos
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+        setDisplayCount(prevCount => prevCount + 8);
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -63,17 +52,8 @@ const Index = () => {
   // Load data on component mount
   useEffect(() => {
     const products = getProductsFromStorage();
-    setCategories(getCategoriesFromProducts(products));
     updateFilteredProducts();
     setIsLoading(false);
-    
-    // Determine max price for range slider
-    const highestPrice = products.length > 0 
-      ? Math.max(...products.map(p => p.price)) 
-      : 100;
-    
-    setMaxPrice(Math.ceil(highestPrice / 10) * 10); // Round up to nearest 10
-    setPriceRange([0, Math.ceil(highestPrice / 10) * 10]);
   }, []);
 
   // Debounced filter function
@@ -81,19 +61,10 @@ const Index = () => {
     updateFilteredProducts();
   }, 300);
 
-  // Update filtered products based on filters
+  // Update filtered products based on search query
   const updateFilteredProducts = () => {
     const products = getProductsFromStorage();
-    
-    const filtered = filterProducts(
-      products,
-      searchQuery,
-      category,
-      priceRange[0],
-      priceRange[1],
-      inStock
-    );
-    
+    const filtered = filterProducts(products, searchQuery);
     setFilteredProducts(filtered);
   };
   
@@ -101,29 +72,6 @@ const Index = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     debouncedUpdateProducts();
-  };
-
-  // Handle category selection
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    updateFilteredProducts();
-  };
-
-  // Handle price range
-  const handlePriceChange = (value: number[]) => {
-    setPriceRange(value);
-    debouncedUpdateProducts();
-  };
-
-  // Toggle in-stock filter
-  const toggleStockFilter = () => {
-    setInStock(!inStock);
-    updateFilteredProducts();
-  };
-  
-  // Load more products
-  const loadMore = () => {
-    setDisplayCount(prevCount => prevCount + 12);
   };
   
   // Visible products based on current display count
@@ -133,73 +81,17 @@ const Index = () => {
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
         <div className="flex flex-col space-y-6">
-          {/* Hero section */}
-          <section className="py-8 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold mb-3">Bem-vindo à Moloja</h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Gerencie suas vendas e estoque com eficiência. Pesquise produtos, adicione ao carrinho e finalize vendas rapidamente.
-            </p>
-          </section>
-          
-          {/* Search and filter section */}
-          <section className="bg-card rounded-lg p-4 shadow-sm border">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Pesquisar produtos por nome ou código..."
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={handleSearch}
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Select value={category} onValueChange={handleCategoryChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Button 
-                  variant={inStock ? "default" : "outline"} 
-                  className="w-full"
-                  onClick={toggleStockFilter}
-                >
-                  {inStock ? "Mostrando em estoque" : "Mostrar todos"}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="mt-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Faixa de preço</span>
-                  <span className="text-sm font-medium">
-                    {formatCurrency(priceRange[0])} - {formatCurrency(priceRange[1])}
-                  </span>
-                </div>
-                
-                <Slider
-                  defaultValue={[0, maxPrice]}
-                  min={0}
-                  max={maxPrice}
-                  step={1}
-                  value={priceRange}
-                  onValueChange={handlePriceChange}
-                />
-              </div>
+          {/* Search section */}
+          <section className="mt-4 mb-6">
+            <div className="relative max-w-xl mx-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Pesquisar produtos por nome ou código..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={handleSearch}
+              />
             </div>
           </section>
           
@@ -219,17 +111,15 @@ const Index = () => {
                     <p className="text-muted-foreground">
                       {getProductsFromStorage().length === 0 
                         ? "Nenhum produto cadastrado. Adicione produtos na página de Produtos."
-                        : "Tente ajustar seus filtros para encontrar produtos."
+                        : "Tente ajustar sua pesquisa para encontrar produtos."
                       }
                     </p>
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-lg font-medium mb-4">{filteredProducts.length} produtos encontrados</h2>
-                    
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {visibleProducts.map(product => (
-                        <Card key={product.id} className="overflow-hidden group">
+                        <Card key={product.id} className="overflow-hidden group h-full flex flex-col">
                           <div className="h-48 bg-muted relative overflow-hidden">
                             <img
                               src={product.image}
@@ -245,7 +135,7 @@ const Index = () => {
                             )}
                           </div>
                           
-                          <CardContent className="p-4">
+                          <CardContent className="p-4 flex-grow">
                             <div className="flex justify-between items-start">
                               <div>
                                 <h3 className="font-medium line-clamp-1">{product.name}</h3>
@@ -260,7 +150,7 @@ const Index = () => {
                             )}
                           </CardContent>
                           
-                          <CardFooter className="p-4 pt-0">
+                          <CardFooter className="p-4 pt-0 mt-auto">
                             <Button 
                               className="w-full"
                               disabled={product.stock === 0}
@@ -273,14 +163,6 @@ const Index = () => {
                         </Card>
                       ))}
                     </div>
-                    
-                    {displayCount < filteredProducts.length && (
-                      <div className="mt-8 text-center">
-                        <Button variant="outline" onClick={loadMore}>
-                          Carregar mais produtos
-                        </Button>
-                      </div>
-                    )}
                   </>
                 )}
               </>

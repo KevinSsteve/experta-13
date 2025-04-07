@@ -61,6 +61,7 @@ import {
 } from '@/lib/products-data';
 import { formatCurrency, debounce } from '@/lib/utils';
 import { toast } from "sonner";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +73,7 @@ const Inventory = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [isEditing, setIsEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+  const isMobile = useIsMobile();
   
   // Load data on component mount
   useEffect(() => {
@@ -145,6 +147,180 @@ const Inventory = () => {
     }
   };
 
+  // Renderiza um card de produto para visualização em dispositivos móveis
+  const renderProductCard = (product: Product) => (
+    <Card key={product.id} className="mb-4">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="h-12 w-12 bg-muted rounded overflow-hidden">
+              <img 
+                src={product.image} 
+                alt={product.name}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div>
+              <h3 className="font-medium">{product.name}</h3>
+              <p className="text-xs text-muted-foreground">
+                {product.code} • {product.category}
+              </p>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <div className="font-medium">{formatCurrency(product.price)}</div>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between mt-3 pt-3 border-t">
+          <div className="inline-flex items-center gap-1">
+            <span 
+              className={`h-2 w-2 rounded-full ${
+                product.stock === 0
+                  ? 'bg-red-500'
+                  : product.stock < 10
+                    ? 'bg-amber-500'
+                    : 'bg-green-500'
+              }`}
+            />
+            <span className="text-sm">
+              {product.stock} unidades
+            </span>
+          </div>
+          
+          <div className="flex space-x-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => editProduct(product)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Editar Produto</DialogTitle>
+                  <DialogDescription>
+                    Atualize as informações do produto aqui.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                {currentProduct && (
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">
+                        Nome
+                      </Label>
+                      <Input
+                        id="name"
+                        value={currentProduct.name}
+                        onChange={(e) => 
+                          setCurrentProduct({
+                            ...currentProduct,
+                            name: e.target.value
+                          })
+                        }
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="price" className="text-right">
+                        Preço
+                      </Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        value={currentProduct.price}
+                        onChange={(e) => 
+                          setCurrentProduct({
+                            ...currentProduct,
+                            price: parseFloat(e.target.value) || 0
+                          })
+                        }
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="stock" className="text-right">
+                        Estoque
+                      </Label>
+                      <Input
+                        id="stock"
+                        type="number"
+                        value={currentProduct.stock}
+                        onChange={(e) => 
+                          setCurrentProduct({
+                            ...currentProduct,
+                            stock: parseInt(e.target.value) || 0
+                          })
+                        }
+                        className="col-span-3"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <DialogFooter>
+                  <Button type="submit" onClick={saveProductChanges}>
+                    Salvar alterações
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Excluir Produto</DialogTitle>
+                  <DialogDescription>
+                    Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="pt-4">
+                  <p className="mb-2">
+                    <span className="font-medium">{product.name}</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Código: {product.code} • {product.category}
+                  </p>
+                </div>
+                
+                <DialogFooter>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {}}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => deleteProduct(product)}
+                  >
+                    Excluir
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
@@ -156,7 +332,7 @@ const Inventory = () => {
             </div>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Adicionar Produto
+              {!isMobile && "Adicionar Produto"}
             </Button>
           </div>
 
@@ -247,201 +423,215 @@ const Inventory = () => {
               </Tabs>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">Código</TableHead>
-                      <TableHead>Produto</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead className="text-right">Preço</TableHead>
-                      <TableHead className="text-center">Estoque</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  
-                  <TableBody>
-                    {getCurrentProducts().length === 0 ? (
+              {isMobile ? (
+                // Mobile view - using cards
+                <div className="space-y-4">
+                  {getCurrentProducts().length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nenhum produto encontrado nesta categoria
+                    </div>
+                  ) : (
+                    getCurrentProducts().map((product) => renderProductCard(product))
+                  )}
+                </div>
+              ) : (
+                // Desktop view - using table
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          Nenhum produto encontrado nesta categoria
-                        </TableCell>
+                        <TableHead className="w-[100px]">Código</TableHead>
+                        <TableHead>Produto</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead className="text-right">Preço</TableHead>
+                        <TableHead className="text-center">Estoque</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    ) : (
-                      getCurrentProducts().map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell>{product.code}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-3">
-                              <div className="h-10 w-10 bg-muted rounded overflow-hidden">
-                                <img 
-                                  src={product.image} 
-                                  alt={product.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                              <div>
-                                <div className="font-medium">{product.name}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{product.category}</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(product.price)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex justify-center">
-                              <div className="inline-flex items-center gap-1">
-                                <span 
-                                  className={`h-2 w-2 rounded-full ${
-                                    product.stock === 0
-                                      ? 'bg-red-500'
-                                      : product.stock < 10
-                                        ? 'bg-amber-500'
-                                        : 'bg-green-500'
-                                  }`}
-                                />
-                                <span className="text-sm">
-                                  {product.stock} unidades
-                                </span>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end space-x-1">
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => editProduct(product)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Editar Produto</DialogTitle>
-                                    <DialogDescription>
-                                      Atualize as informações do produto aqui.
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  
-                                  {currentProduct && (
-                                    <div className="grid gap-4 py-4">
-                                      <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="name" className="text-right">
-                                          Nome
-                                        </Label>
-                                        <Input
-                                          id="name"
-                                          value={currentProduct.name}
-                                          onChange={(e) => 
-                                            setCurrentProduct({
-                                              ...currentProduct,
-                                              name: e.target.value
-                                            })
-                                          }
-                                          className="col-span-3"
-                                        />
-                                      </div>
-                                      <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="price" className="text-right">
-                                          Preço
-                                        </Label>
-                                        <Input
-                                          id="price"
-                                          type="number"
-                                          step="0.01"
-                                          value={currentProduct.price}
-                                          onChange={(e) => 
-                                            setCurrentProduct({
-                                              ...currentProduct,
-                                              price: parseFloat(e.target.value) || 0
-                                            })
-                                          }
-                                          className="col-span-3"
-                                        />
-                                      </div>
-                                      <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="stock" className="text-right">
-                                          Estoque
-                                        </Label>
-                                        <Input
-                                          id="stock"
-                                          type="number"
-                                          value={currentProduct.stock}
-                                          onChange={(e) => 
-                                            setCurrentProduct({
-                                              ...currentProduct,
-                                              stock: parseInt(e.target.value) || 0
-                                            })
-                                          }
-                                          className="col-span-3"
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  <DialogFooter>
-                                    <Button type="submit" onClick={saveProductChanges}>
-                                      Salvar alterações
-                                    </Button>
-                                  </DialogFooter>
-                                </DialogContent>
-                              </Dialog>
-                              
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Excluir Produto</DialogTitle>
-                                    <DialogDescription>
-                                      Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  
-                                  <div className="pt-4">
-                                    <p className="mb-2">
-                                      <span className="font-medium">{product.name}</span>
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                      Código: {product.code} • {product.category}
-                                    </p>
-                                  </div>
-                                  
-                                  <DialogFooter>
-                                    <Button 
-                                      variant="outline"
-                                      onClick={() => {}}
-                                    >
-                                      Cancelar
-                                    </Button>
-                                    <Button 
-                                      variant="destructive" 
-                                      onClick={() => deleteProduct(product)}
-                                    >
-                                      Excluir
-                                    </Button>
-                                  </DialogFooter>
-                                </DialogContent>
-                              </Dialog>
-                            </div>
+                    </TableHeader>
+                    
+                    <TableBody>
+                      {getCurrentProducts().length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="h-24 text-center">
+                            Nenhum produto encontrado nesta categoria
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                      ) : (
+                        getCurrentProducts().map((product) => (
+                          <TableRow key={product.id}>
+                            <TableCell>{product.code}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-3">
+                                <div className="h-10 w-10 bg-muted rounded overflow-hidden">
+                                  <img 
+                                    src={product.image} 
+                                    alt={product.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                                <div>
+                                  <div className="font-medium">{product.name}</div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{product.category}</TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(product.price)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex justify-center">
+                                <div className="inline-flex items-center gap-1">
+                                  <span 
+                                    className={`h-2 w-2 rounded-full ${
+                                      product.stock === 0
+                                        ? 'bg-red-500'
+                                        : product.stock < 10
+                                          ? 'bg-amber-500'
+                                          : 'bg-green-500'
+                                    }`}
+                                  />
+                                  <span className="text-sm">
+                                    {product.stock} unidades
+                                  </span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end space-x-1">
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => editProduct(product)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Editar Produto</DialogTitle>
+                                      <DialogDescription>
+                                        Atualize as informações do produto aqui.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    
+                                    {currentProduct && (
+                                      <div className="grid gap-4 py-4">
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                          <Label htmlFor="name" className="text-right">
+                                            Nome
+                                          </Label>
+                                          <Input
+                                            id="name"
+                                            value={currentProduct.name}
+                                            onChange={(e) => 
+                                              setCurrentProduct({
+                                                ...currentProduct,
+                                                name: e.target.value
+                                              })
+                                            }
+                                            className="col-span-3"
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                          <Label htmlFor="price" className="text-right">
+                                            Preço
+                                          </Label>
+                                          <Input
+                                            id="price"
+                                            type="number"
+                                            step="0.01"
+                                            value={currentProduct.price}
+                                            onChange={(e) => 
+                                              setCurrentProduct({
+                                                ...currentProduct,
+                                                price: parseFloat(e.target.value) || 0
+                                              })
+                                            }
+                                            className="col-span-3"
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                          <Label htmlFor="stock" className="text-right">
+                                            Estoque
+                                          </Label>
+                                          <Input
+                                            id="stock"
+                                            type="number"
+                                            value={currentProduct.stock}
+                                            onChange={(e) => 
+                                              setCurrentProduct({
+                                                ...currentProduct,
+                                                stock: parseInt(e.target.value) || 0
+                                              })
+                                            }
+                                            className="col-span-3"
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    <DialogFooter>
+                                      <Button type="submit" onClick={saveProductChanges}>
+                                        Salvar alterações
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                                
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Excluir Produto</DialogTitle>
+                                      <DialogDescription>
+                                        Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    
+                                    <div className="pt-4">
+                                      <p className="mb-2">
+                                        <span className="font-medium">{product.name}</span>
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">
+                                        Código: {product.code} • {product.category}
+                                      </p>
+                                    </div>
+                                    
+                                    <DialogFooter>
+                                      <Button 
+                                        variant="outline"
+                                        onClick={() => {}}
+                                      >
+                                        Cancelar
+                                      </Button>
+                                      <Button 
+                                        variant="destructive" 
+                                        onClick={() => deleteProduct(product)}
+                                      >
+                                        Excluir
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

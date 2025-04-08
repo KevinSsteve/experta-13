@@ -36,7 +36,7 @@ import { toast } from "sonner";
 import { Search, Plus, Pencil, Trash } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, logCurrentUser } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 const Products = () => {
@@ -53,14 +53,30 @@ const Products = () => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
+      console.log("Fetching products...");
+      // Log the current user for debugging
+      await logCurrentUser();
+      
+      if (!user) {
+        console.error("No user found when trying to fetch products");
+        throw new Error("You must be logged in to view products");
+      }
+      
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('user_id', user.id)
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching products:", error);
+        throw error;
+      }
+      
+      console.log("Products fetched:", data);
       return data as Product[];
     },
+    enabled: !!user, // Only run the query when user is available
   });
 
   useEffect(() => {
@@ -86,6 +102,18 @@ const Products = () => {
     setIsSubmitting(true);
 
     try {
+      console.log("Adding product with user_id:", user.id);
+      console.log("Product data:", {
+        name: data.name,
+        price: data.price,
+        category: data.category,
+        stock: data.stock,
+        description: data.description || null,
+        code: data.code || null,
+        image: data.image || "/placeholder.svg",
+        user_id: user.id
+      });
+
       const { data: insertedProduct, error } = await supabase
         .from('products')
         .insert([{
@@ -98,17 +126,20 @@ const Products = () => {
           image: data.image || "/placeholder.svg",
           user_id: user.id
         }])
-        .select()
-        .single();
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error details:", error);
+        throw error;
+      }
 
+      console.log("Product added successfully:", insertedProduct);
       toast.success("Produto adicionado com sucesso!");
       refetch();
       setIsAddDialogOpen(false);
     } catch (error: any) {
+      console.error("Detailed error adding product:", error);
       toast.error(`Erro ao adicionar produto: ${error.message}`);
-      console.error("Erro ao adicionar produto:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -186,7 +217,7 @@ const Products = () => {
       <MainLayout>
         <div className="container mx-auto p-4">
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            <p>Erro ao carregar produtos. Por favor, tente novamente mais tarde.</p>
+            <p>Erro ao carregar produtos: {(error as Error).message}</p>
             <Button onClick={() => refetch()} className="mt-2">Tentar novamente</Button>
           </div>
         </div>

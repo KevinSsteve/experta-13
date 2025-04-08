@@ -16,3 +16,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage
   }
 });
+
+// Helper for debugging - logs the current user
+export const logCurrentUser = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  console.log("Current user:", user);
+  return user;
+};

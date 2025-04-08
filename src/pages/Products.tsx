@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,24 +31,89 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Product } from "@/contexts/CartContext";
-import { generateId, formatCurrency } from "@/lib/utils";
+import { 
+  generateId, 
+  formatCurrency, 
+  getProductsFromStorage, 
+  saveProductsToStorage,
+  getProductsFromSupabase,
+  saveProductToSupabase,
+  updateProductInSupabase,
+  deleteProductFromSupabase,
+  getPublicProductSuggestions,
+  toggleProductPublicStatus,
+  syncProductsToSupabase,
+  isUserLoggedIn
+} from "@/lib/utils";
 import { ProductForm, ProductFormValues } from "@/components/products/ProductForm";
 import { toast } from "sonner";
-import { Search, Plus, Pencil, Trash } from "lucide-react";
+import { Search, Plus, Pencil, Trash, Globe, Globe2, Lock, CloudSync } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Products = () => {
-  const [products, setProducts] = useState<Product[]>(() => {
-    // Carregar produtos do localStorage se existirem
-    const savedProducts = localStorage.getItem("products");
-    return savedProducts ? JSON.parse(savedProducts) : [];
-  });
-  
+  const [products, setProducts] = useState<Product[]>([]);
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSyncingProducts, setSyncingProducts] = useState(false);
+  const [activeTab, setActiveTab] = useState("products");
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+
+  // Carregar produtos e sugestões quando o componente é montado
+  useEffect(() => {
+    loadProducts();
+    if (user) {
+      loadSuggestions();
+    }
+  }, [user]);
+
+  const loadProducts = async () => {
+    try {
+      // Tenta carregar do Supabase se o usuário estiver logado
+      if (await isUserLoggedIn()) {
+        const supabaseProducts = await getProductsFromSupabase();
+        setProducts(supabaseProducts);
+        // Atualiza também o localStorage para manter os dados consistentes
+        saveProductsToStorage(supabaseProducts);
+      } else {
+        // Se não estiver logado, carrega do localStorage
+        const localProducts = getProductsFromStorage();
+        setProducts(localProducts);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar produtos:", error);
+      // Fallback para localStorage
+      const localProducts = getProductsFromStorage();
+      setProducts(localProducts);
+    }
+  };
+
+  const loadSuggestions = async () => {
+    const publicProducts = await getPublicProductSuggestions();
+    setSuggestions(publicProducts);
+  };
+
+  // Sincronizar produtos do localStorage para o Supabase
+  const handleSyncProducts = async () => {
+    setSyncingProducts(true);
+    try {
+      await syncProductsToSupabase();
+      await loadProducts(); // Recarregar produtos após sincronização
+      toast.success("Produtos sincronizados com sucesso!");
+    } catch (error) {
+      console.error("Erro ao sincronizar produtos:", error);
+      toast.error("Erro ao sincronizar produtos");
+    } finally {
+      setSyncingProducts(false);
+    }
+  };
 
   // Filtrar produtos baseado na busca
   const filteredProducts = products.filter(
@@ -58,7 +123,14 @@ const Products = () => {
       product.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddProduct = (data: ProductFormValues) => {
+  const filteredSuggestions = suggestions.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleAddProduct = async (data: ProductFormValues) => {
     // Ensure all required fields have values to satisfy the Product type
     const newProduct: Product = {
       id: generateId(),
@@ -73,13 +145,18 @@ const Products = () => {
     
     const updatedProducts = [...products, newProduct];
     setProducts(updatedProducts);
-    localStorage.setItem("products", JSON.stringify(updatedProducts));
+    saveProductsToStorage(updatedProducts);
+    
+    // Se o usuário estiver logado, também salva no Supabase
+    if (await isUserLoggedIn()) {
+      await saveProductToSupabase(newProduct);
+    }
     
     setIsAddDialogOpen(false);
     toast.success("Produto adicionado com sucesso!");
   };
 
-  const handleEditProduct = (data: ProductFormValues) => {
+  const handleEditProduct = async (data: ProductFormValues) => {
     if (!editingProduct) return;
     
     const updatedProducts = products.map((product) =>
@@ -89,24 +166,280 @@ const Products = () => {
     );
     
     setProducts(updatedProducts);
-    localStorage.setItem("products", JSON.stringify(updatedProducts));
+    saveProductsToStorage(updatedProducts);
+    
+    // Se o usuário estiver logado, também atualiza no Supabase
+    if (await isUserLoggedIn()) {
+      await updateProductInSupabase({ id: editingProduct.id, ...data });
+    }
     
     setIsEditDialogOpen(false);
     setEditingProduct(null);
     toast.success("Produto atualizado com sucesso!");
   };
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     const updatedProducts = products.filter((product) => product.id !== id);
     setProducts(updatedProducts);
-    localStorage.setItem("products", JSON.stringify(updatedProducts));
+    saveProductsToStorage(updatedProducts);
+    
+    // Se o usuário estiver logado, também exclui do Supabase
+    if (await isUserLoggedIn()) {
+      await deleteProductFromSupabase(id);
+    }
     
     toast.success("Produto excluído com sucesso!");
+  };
+
+  const handleTogglePublic = async (product: Product, isPublic: boolean) => {
+    // Atualiza localmente
+    const updatedProducts = products.map(p => 
+      p.id === product.id ? { ...p, isPublic } : p
+    );
+    setProducts(updatedProducts);
+    
+    // Atualiza no Supabase
+    if (await isUserLoggedIn()) {
+      const success = await toggleProductPublicStatus(product.id, isPublic);
+      if (success) {
+        toast.success(
+          isPublic 
+            ? "Produto disponibilizado como sugestão para outros usuários" 
+            : "Produto removido das sugestões"
+        );
+      } else {
+        toast.error("Erro ao atualizar status do produto");
+        // Reverte a alteração local em caso de erro
+        setProducts(products);
+      }
+    }
+  };
+
+  const handleAddSuggestion = async (product: Product) => {
+    // Cria uma cópia do produto sugerido
+    const newProduct: Product = {
+      ...product,
+      id: generateId(), // Novo ID para não conflitar
+    };
+    
+    const updatedProducts = [...products, newProduct];
+    setProducts(updatedProducts);
+    saveProductsToStorage(updatedProducts);
+    
+    // Se o usuário estiver logado, também salva no Supabase
+    if (await isUserLoggedIn()) {
+      await saveProductToSupabase(newProduct);
+    }
+    
+    toast.success("Sugestão de produto adicionada ao seu catálogo!");
   };
 
   const openEditDialog = (product: Product) => {
     setEditingProduct(product);
     setIsEditDialogOpen(true);
+  };
+
+  const renderProductItem = (product: Product, isSuggestion = false) => {
+    if (isMobile) {
+      return (
+        <Card key={product.id}>
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-medium">{product.name}</h3>
+                <div className="text-sm text-muted-foreground mb-2">
+                  {product.code || "Sem código"} • {product.category}
+                </div>
+                <div className="flex space-x-2 items-center">
+                  <div className="font-medium">{formatCurrency(product.price)}</div>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      product.stock === 0
+                        ? "bg-red-100 text-red-700"
+                        : product.stock < 10
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    {product.stock} un
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {!isSuggestion && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEditDialog(product)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="destructive">
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Confirmar exclusão
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja excluir o produto "{product.name}"?
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    {user && (
+                      <Switch 
+                        checked={product.isPublic} 
+                        onCheckedChange={(checked) => handleTogglePublic(product, checked)}
+                        className="ml-2"
+                        aria-label={
+                          product.isPublic 
+                            ? "Remover das sugestões públicas" 
+                            : "Tornar uma sugestão pública"
+                        }
+                      />
+                    )}
+                  </>
+                )}
+
+                {isSuggestion && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAddSuggestion(product)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                  </Button>
+                )}
+              </div>
+            </div>
+            {!isSuggestion && user && (
+              <div className="mt-2 text-xs flex items-center">
+                {product.isPublic ? (
+                  <div className="flex items-center text-blue-600">
+                    <Globe2 className="h-3 w-3 mr-1" /> 
+                    <span>Disponível como sugestão para outros usuários</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center text-muted-foreground">
+                    <Lock className="h-3 w-3 mr-1" /> 
+                    <span>Produto privado</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      );
+    } else {
+      // Versão para desktop (tabela)
+      return (
+        <tr key={product.id} className="border-b hover:bg-muted/50">
+          <td className="px-4 py-2">{product.name}</td>
+          <td className="px-4 py-2">{product.code || "-"}</td>
+          <td className="px-4 py-2">{product.category}</td>
+          <td className="px-4 py-2">{formatCurrency(product.price)}</td>
+          <td className="px-4 py-2">
+            <span
+              className={`px-2 py-1 rounded-full text-xs ${
+                product.stock === 0
+                  ? "bg-red-100 text-red-700"
+                  : product.stock < 10
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-green-100 text-green-700"
+              }`}
+            >
+              {product.stock} un
+            </span>
+          </td>
+          <td className="px-4 py-2 text-right">
+            <div className="flex justify-end gap-2 items-center">
+              {!isSuggestion && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openEditDialog(product)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="destructive">
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Confirmar exclusão
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir o produto "{product.name}"?
+                          Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  {user && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {product.isPublic ? (
+                          <Globe className="h-4 w-4 text-blue-500" title="Produto público" />
+                        ) : (
+                          <Lock className="h-4 w-4" title="Produto privado" />
+                        )}
+                      </span>
+                      <Switch 
+                        checked={product.isPublic} 
+                        onCheckedChange={(checked) => handleTogglePublic(product, checked)}
+                        aria-label={product.isPublic ? "Remover das sugestões" : "Adicionar às sugestões"}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+
+              {isSuggestion && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleAddSuggestion(product)}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar
+                </Button>
+              )}
+            </div>
+          </td>
+        </tr>
+      );
+    }
   };
 
   return (
@@ -116,23 +449,36 @@ const Products = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Gerenciamento de Produtos</h1>
             
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {!isMobile && "Adicionar Produto"}
+            <div className="flex gap-2">
+              {user && (
+                <Button
+                  variant="outline"
+                  onClick={handleSyncProducts}
+                  disabled={isSyncingProducts}
+                >
+                  <CloudSync className={`mr-2 h-4 w-4 ${isSyncingProducts ? 'animate-spin' : ''}`} />
+                  {isSyncingProducts ? 'Sincronizando...' : 'Sincronizar'}
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>Adicionar Novo Produto</DialogTitle>
-                  <DialogDescription>
-                    Preencha as informações do produto e clique em salvar.
-                  </DialogDescription>
-                </DialogHeader>
-                <ProductForm onSubmit={handleAddProduct} />
-              </DialogContent>
-            </Dialog>
+              )}
+              
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {!isMobile && "Adicionar Produto"}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Adicionar Novo Produto</DialogTitle>
+                    <DialogDescription>
+                      Preencha as informações do produto e clique em salvar.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ProductForm onSubmit={handleAddProduct} />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           <Card>
@@ -141,6 +487,16 @@ const Products = () => {
               <CardDescription>
                 Gerencie os produtos disponíveis no sistema.
               </CardDescription>
+              
+              {user && (
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+                  <TabsList>
+                    <TabsTrigger value="products">Meus Produtos</TabsTrigger>
+                    <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
+              
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -155,167 +511,88 @@ const Products = () => {
               <ScrollArea className="h-[60vh] w-full">
                 <div className="overflow-auto">
                   <div className="min-w-full inline-block align-middle">
-                    {isMobile ? (
-                      // Versão mobile: Cards em vez de tabela
-                      <div className="grid gap-4">
-                        {filteredProducts.length === 0 ? (
-                          <div className="px-4 py-8 text-center text-muted-foreground">
-                            {products.length === 0
-                              ? "Nenhum produto cadastrado. Clique em 'Adicionar Produto' para começar."
-                              : "Nenhum produto encontrado com os critérios de busca."}
-                          </div>
-                        ) : (
-                          filteredProducts.map((product) => (
-                            <Card key={product.id}>
-                              <CardContent className="p-4">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h3 className="font-medium">{product.name}</h3>
-                                    <div className="text-sm text-muted-foreground mb-2">
-                                      {product.code || "Sem código"} • {product.category}
-                                    </div>
-                                    <div className="flex space-x-2 items-center">
-                                      <div className="font-medium">{formatCurrency(product.price)}</div>
-                                      <span
-                                        className={`px-2 py-1 rounded-full text-xs ${
-                                          product.stock === 0
-                                            ? "bg-red-100 text-red-700"
-                                            : product.stock < 10
-                                            ? "bg-amber-100 text-amber-700"
-                                            : "bg-green-100 text-green-700"
-                                        }`}
-                                      >
-                                        {product.stock} un
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => openEditDialog(product)}
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="destructive">
-                                          <Trash className="h-4 w-4" />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>
-                                            Confirmar exclusão
-                                          </AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Tem certeza que deseja excluir o produto "{product.name}"?
-                                            Esta ação não pode ser desfeita.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => handleDeleteProduct(product.id)}
-                                          >
-                                            Excluir
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))
-                        )}
-                      </div>
-                    ) : (
-                      // Versão desktop: Tabela
-                      <table className="min-w-full divide-y divide-border">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="px-4 py-2 text-left">Nome</th>
-                            <th className="px-4 py-2 text-left">Código</th>
-                            <th className="px-4 py-2 text-left">Categoria</th>
-                            <th className="px-4 py-2 text-left">Preço</th>
-                            <th className="px-4 py-2 text-left">Estoque</th>
-                            <th className="px-4 py-2 text-right">Ações</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                    {activeTab === "products" ? (
+                      // Meus Produtos
+                      isMobile ? (
+                        // Versão mobile: Cards em vez de tabela
+                        <div className="grid gap-4">
                           {filteredProducts.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                                {products.length === 0
-                                  ? "Nenhum produto cadastrado. Clique em 'Adicionar Produto' para começar."
-                                  : "Nenhum produto encontrado com os critérios de busca."}
-                              </td>
-                            </tr>
+                            <div className="px-4 py-8 text-center text-muted-foreground">
+                              {products.length === 0
+                                ? "Nenhum produto cadastrado. Clique em 'Adicionar Produto' para começar."
+                                : "Nenhum produto encontrado com os critérios de busca."}
+                            </div>
                           ) : (
-                            filteredProducts.map((product) => (
-                              <tr key={product.id} className="border-b hover:bg-muted/50">
-                                <td className="px-4 py-2">{product.name}</td>
-                                <td className="px-4 py-2">{product.code || "-"}</td>
-                                <td className="px-4 py-2">{product.category}</td>
-                                <td className="px-4 py-2">{formatCurrency(product.price)}</td>
-                                <td className="px-4 py-2">
-                                  <span
-                                    className={`px-2 py-1 rounded-full text-xs ${
-                                      product.stock === 0
-                                        ? "bg-red-100 text-red-700"
-                                        : product.stock < 10
-                                        ? "bg-amber-100 text-amber-700"
-                                        : "bg-green-100 text-green-700"
-                                    }`}
-                                  >
-                                    {product.stock} un
-                                  </span>
-                                </td>
-                                <td className="px-4 py-2 text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => openEditDialog(product)}
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="destructive">
-                                          <Trash className="h-4 w-4" />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>
-                                            Confirmar exclusão
-                                          </AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Tem certeza que deseja excluir o produto "{product.name}"?
-                                            Esta ação não pode ser desfeita.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => handleDeleteProduct(product.id)}
-                                          >
-                                            Excluir
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
+                            filteredProducts.map((product) => renderProductItem(product))
+                          )}
+                        </div>
+                      ) : (
+                        // Versão desktop: Tabela
+                        <table className="min-w-full divide-y divide-border">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="px-4 py-2 text-left">Nome</th>
+                              <th className="px-4 py-2 text-left">Código</th>
+                              <th className="px-4 py-2 text-left">Categoria</th>
+                              <th className="px-4 py-2 text-left">Preço</th>
+                              <th className="px-4 py-2 text-left">Estoque</th>
+                              <th className="px-4 py-2 text-right">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredProducts.length === 0 ? (
+                              <tr>
+                                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                                  {products.length === 0
+                                    ? "Nenhum produto cadastrado. Clique em 'Adicionar Produto' para começar."
+                                    : "Nenhum produto encontrado com os critérios de busca."}
                                 </td>
                               </tr>
-                            ))
+                            ) : (
+                              filteredProducts.map((product) => renderProductItem(product))
+                            )}
+                          </tbody>
+                        </table>
+                      )
+                    ) : (
+                      // Sugestões (activeTab === "suggestions")
+                      isMobile ? (
+                        // Versão mobile: Cards em vez de tabela
+                        <div className="grid gap-4">
+                          {filteredSuggestions.length === 0 ? (
+                            <div className="px-4 py-8 text-center text-muted-foreground">
+                              Nenhuma sugestão de produto disponível no momento.
+                            </div>
+                          ) : (
+                            filteredSuggestions.map((product) => renderProductItem(product, true))
                           )}
-                        </tbody>
-                      </table>
+                        </div>
+                      ) : (
+                        // Versão desktop: Tabela
+                        <table className="min-w-full divide-y divide-border">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="px-4 py-2 text-left">Nome</th>
+                              <th className="px-4 py-2 text-left">Código</th>
+                              <th className="px-4 py-2 text-left">Categoria</th>
+                              <th className="px-4 py-2 text-left">Preço</th>
+                              <th className="px-4 py-2 text-left">Estoque</th>
+                              <th className="px-4 py-2 text-right">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredSuggestions.length === 0 ? (
+                              <tr>
+                                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                                  Nenhuma sugestão de produto disponível no momento.
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredSuggestions.map((product) => renderProductItem(product, true))
+                            )}
+                          </tbody>
+                        </table>
+                      )
                     )}
                   </div>
                 </div>

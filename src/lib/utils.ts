@@ -1,6 +1,8 @@
 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -60,9 +62,104 @@ export function generateId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
+// Funções para trabalhar com produtos
+
+export async function getProductsFromSupabase() {
+  try {
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      console.error('Erro ao buscar produtos do Supabase:', error);
+      return getProductsFromStorage(); // Fallback para localStorage
+    }
+    
+    return products || [];
+  } catch (error) {
+    console.error('Erro ao buscar produtos do Supabase:', error);
+    return getProductsFromStorage(); // Fallback para localStorage
+  }
+}
+
 export function getProductsFromStorage(): any[] {
   const savedProducts = localStorage.getItem("products");
   return savedProducts ? JSON.parse(savedProducts) : [];
+}
+
+export async function saveProductToSupabase(product: any): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .insert([{
+        id: product.id || undefined, // Supabase irá gerar um UUID se não fornecido
+        name: product.name,
+        price: product.price,
+        category: product.category,
+        stock: product.stock,
+        image: product.image || '/placeholder.svg',
+        code: product.code || null,
+        description: product.description || null,
+        is_public: false // Inicialmente, os produtos não são públicos
+      }]);
+    
+    if (error) {
+      console.error('Erro ao salvar produto no Supabase:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar produto no Supabase:', error);
+    return false;
+  }
+}
+
+export async function updateProductInSupabase(product: any): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .update({
+        name: product.name,
+        price: product.price,
+        category: product.category,
+        stock: product.stock,
+        image: product.image || '/placeholder.svg',
+        code: product.code || null,
+        description: product.description || null
+      })
+      .eq('id', product.id);
+    
+    if (error) {
+      console.error('Erro ao atualizar produto no Supabase:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao atualizar produto no Supabase:', error);
+    return false;
+  }
+}
+
+export async function deleteProductFromSupabase(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Erro ao excluir produto do Supabase:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao excluir produto do Supabase:', error);
+    return false;
+  }
 }
 
 export function saveProductsToStorage(products: any[]): void {
@@ -100,7 +197,32 @@ export function calculateChange(totalAmount: number, amountPaid: number): number
   return Math.max(0, amountPaid - totalAmount);
 }
 
-export function saveSaleToStorage(sale: any): void {
+// Funções para trabalhar com vendas
+
+export async function saveSaleToSupabase(sale: any): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('sales')
+      .insert([{
+        total: sale.total,
+        amount_paid: sale.amountPaid,
+        change: sale.change,
+        items: sale.products
+      }]);
+    
+    if (error) {
+      console.error('Erro ao salvar venda no Supabase:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar venda no Supabase:', error);
+    return false;
+  }
+}
+
+export async function saveSaleToStorage(sale: any): Promise<void> {
   const savedSales = getSalesFromStorage();
   savedSales.push({
     ...sale,
@@ -108,6 +230,15 @@ export function saveSaleToStorage(sale: any): void {
     date: new Date().toISOString(),
   });
   localStorage.setItem("sales", JSON.stringify(savedSales));
+  
+  // Tentar salvar no Supabase se o usuário estiver logado
+  const { data } = await supabase.auth.getSession();
+  if (data.session) {
+    const saved = await saveSaleToSupabase(sale);
+    if (saved) {
+      console.log('Venda salva com sucesso no Supabase!');
+    }
+  }
   
   // Importamos dinamicamente para evitar dependências circulares
   import('./sales-data').then(module => {
@@ -118,12 +249,31 @@ export function saveSaleToStorage(sale: any): void {
   });
 }
 
+export async function getSalesFromSupabase() {
+  try {
+    const { data: sales, error } = await supabase
+      .from('sales')
+      .select('*')
+      .order('date', { ascending: false });
+    
+    if (error) {
+      console.error('Erro ao buscar vendas do Supabase:', error);
+      return getSalesFromStorage(); // Fallback para localStorage
+    }
+    
+    return sales || [];
+  } catch (error) {
+    console.error('Erro ao buscar vendas do Supabase:', error);
+    return getSalesFromStorage(); // Fallback para localStorage
+  }
+}
+
 export function getSalesFromStorage(): any[] {
   const savedSales = localStorage.getItem("sales");
   return savedSales ? JSON.parse(savedSales) : [];
 }
 
-export function updateProductStockAfterSale(items: any[]): void {
+export async function updateProductStockAfterSale(items: any[]): Promise<void> {
   const products = getProductsFromStorage();
   
   // Update stock for each sold item
@@ -136,4 +286,128 @@ export function updateProductStockAfterSale(items: any[]): void {
   
   // Save updated products back to storage
   saveProductsToStorage(products);
+  
+  // Se o usuário estiver logado, atualizar também no Supabase
+  const { data } = await supabase.auth.getSession();
+  if (data.session) {
+    for (const item of items) {
+      try {
+        // Obter o produto atual do Supabase para ter o estoque atualizado
+        const { data: productData, error: selectError } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', item.product.id)
+          .single();
+        
+        if (selectError || !productData) {
+          console.error('Erro ao obter estoque atual do produto:', selectError);
+          continue;
+        }
+        
+        // Calcular novo estoque e atualizar no Supabase
+        const newStock = Math.max(0, productData.stock - item.quantity);
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({ stock: newStock })
+          .eq('id', item.product.id);
+        
+        if (updateError) {
+          console.error('Erro ao atualizar estoque do produto no Supabase:', updateError);
+        }
+      } catch (error) {
+        console.error('Erro ao atualizar estoque do produto:', error);
+      }
+    }
+  }
+}
+
+// Função auxiliar para verificar se o usuário está logado
+export async function isUserLoggedIn(): Promise<boolean> {
+  const { data } = await supabase.auth.getSession();
+  return !!data.session;
+}
+
+// Função para sincronizar produtos do localStorage para o Supabase
+export async function syncProductsToSupabase(): Promise<void> {
+  const localProducts = getProductsFromStorage();
+  const { data } = await supabase.auth.getSession();
+  
+  if (!data.session || localProducts.length === 0) {
+    return;
+  }
+  
+  try {
+    // Primeiro, buscamos os produtos já existentes no Supabase para o usuário
+    const { data: existingProducts, error: fetchError } = await supabase
+      .from('products')
+      .select('id');
+    
+    if (fetchError) {
+      console.error('Erro ao buscar produtos existentes:', fetchError);
+      return;
+    }
+    
+    const existingIds = new Set(existingProducts?.map(p => p.id) || []);
+    
+    // Para cada produto local, verificamos se já existe no Supabase
+    for (const product of localProducts) {
+      if (existingIds.has(product.id)) {
+        // Se já existe, atualiza
+        await updateProductInSupabase(product);
+      } else {
+        // Se não existe, insere
+        await saveProductToSupabase(product);
+      }
+    }
+    
+    toast.success('Produtos sincronizados com sucesso!');
+  } catch (error) {
+    console.error('Erro ao sincronizar produtos:', error);
+    toast.error('Erro ao sincronizar produtos com o Supabase');
+  }
+}
+
+// Função para buscar produtos públicos (sugestões) de outros usuários
+export async function getPublicProductSuggestions(): Promise<any[]> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) return [];
+    
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_public', true)
+      .neq('user_id', data.session.user.id) // Apenas produtos de outros usuários
+      .limit(20);
+    
+    if (error) {
+      console.error('Erro ao buscar sugestões de produtos:', error);
+      return [];
+    }
+    
+    return products || [];
+  } catch (error) {
+    console.error('Erro ao buscar sugestões de produtos:', error);
+    return [];
+  }
+}
+
+// Função para tornar um produto público ou privado
+export async function toggleProductPublicStatus(id: string, isPublic: boolean): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .update({ is_public: isPublic })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Erro ao alterar status público do produto:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao alterar status público do produto:', error);
+    return false;
+  }
 }

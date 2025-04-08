@@ -1,5 +1,6 @@
 
-import { getSalesFromStorage, getProductsFromStorage } from './utils';
+import { getSalesFromStorage, getProductsFromStorage, getSalesFromSupabase } from './utils';
+import { supabase } from "@/integrations/supabase/client";
 
 // Dados de vendas simulados para o dashboard
 
@@ -28,15 +29,38 @@ export interface SalesByCategory {
 }
 
 // Função para obter as vendas
-function getSalesData(): Sale[] {
-  const storedSales = getSalesFromStorage();
-  
-  // Se houver vendas armazenadas, use-as
-  if (storedSales && storedSales.length > 0) {
-    return storedSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+async function getSalesData(): Promise<Sale[]> {
+  try {
+    // Verificar se o usuário está logado
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      // Se houver sessão, buscar vendas do Supabase
+      const supabaseSales = await getSalesFromSupabase();
+      if (supabaseSales && supabaseSales.length > 0) {
+        return supabaseSales.map(sale => ({
+          id: sale.id,
+          date: sale.date,
+          total: Number(sale.total),
+          amountPaid: Number(sale.amount_paid),
+          change: Number(sale.change),
+          items: Array.isArray(sale.items) ? sale.items.length : 0,
+          paymentMethod: 'Dinheiro', // Valor padrão até implementarmos métodos de pagamento
+          customer: sale.items && sale.items.customer ? sale.items.customer.name : undefined,
+          products: sale.items
+        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      }
+    }
+    
+    // Se não houver sessão ou vendas no Supabase, usar localStorage
+    const storedSales = getSalesFromStorage();
+    if (storedSales && storedSales.length > 0) {
+      return storedSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+  } catch (error) {
+    console.error("Erro ao buscar dados de vendas:", error);
   }
   
-  // Caso contrário, gere dados simulados
+  // Se tudo falhar, usar dados simulados
   return generateSalesData();
 }
 
@@ -74,7 +98,13 @@ function generateSalesData(): Sale[] {
   return sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-const salesData = getSalesData();
+// Variável que armazena os dados de vendas em cache
+let salesData: Sale[] = [];
+
+// Inicializar os dados de vendas
+getSalesData().then(data => {
+  salesData = data;
+});
 
 // Função para obter as vendas dos últimos X dias
 export function getRecentSales(days: number = 7): Sale[] {
@@ -205,20 +235,15 @@ export function getSalesKPIs(days: number = 7) {
 }
 
 // Função para atualizar os dados de vendas
-export function refreshSalesData(): void {
-  const freshSales = getSalesFromStorage();
-  if (freshSales && freshSales.length > 0) {
-    // Atualize a referência a salesData
-    while (salesData.length) {
-      salesData.pop();
+export async function refreshSalesData(): Promise<void> {
+  try {
+    const freshSales = await getSalesData();
+    if (freshSales && freshSales.length > 0) {
+      // Atualizar a referência a salesData
+      salesData = freshSales;
     }
-    
-    // Adicione os novos dados
-    freshSales
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .forEach(sale => {
-        salesData.push(sale);
-      });
+  } catch (error) {
+    console.error("Erro ao atualizar dados de vendas:", error);
   }
 }
 

@@ -1,5 +1,5 @@
 
-import { getSalesFromStorage } from './utils';
+import { getSalesFromStorage, getProductsFromStorage } from './utils';
 
 // Dados de vendas simulados para o dashboard
 
@@ -137,23 +137,26 @@ export function getSalesByCategory(): SalesByCategory[] {
     }
   });
   
-  // Se não houver dados de vendas por categoria, use categorias simuladas
+  // Se não houver dados de vendas por categoria, use produtos do estoque para categorias
   if (Object.keys(categories).length === 0) {
-    const defaultCategories = [
-      'Alimentos Básicos',
-      'Laticínios',
-      'Hortifruti',
-      'Carnes',
-      'Padaria',
-      'Bebidas',
-      'Limpeza',
-      'Higiene'
-    ];
+    const products = getProductsFromStorage();
+    const productsByCategory: { [key: string]: number } = {};
     
-    totalSales = salesData.reduce((sum, sale) => sum + sale.total, 0);
+    // Agrupar produtos por categoria
+    products.forEach(product => {
+      if (!productsByCategory[product.category]) {
+        productsByCategory[product.category] = 0;
+      }
+      productsByCategory[product.category]++;
+    });
     
-    defaultCategories.forEach(category => {
-      categories[category] = parseFloat((Math.random() * totalSales * 0.3).toFixed(2));
+    // Calcular "vendas" simuladas por categoria baseado no número de produtos
+    totalSales = 0;
+    Object.keys(productsByCategory).forEach(category => {
+      // Valor fictício baseado na quantidade de produtos na categoria
+      const fakeSales = productsByCategory[category] * 100;
+      categories[category] = fakeSales;
+      totalSales += fakeSales;
     });
   }
   
@@ -199,6 +202,24 @@ export function getSalesKPIs(days: number = 7) {
     salesChange: parseFloat(salesChange.toFixed(1)),
     ticketChange: parseFloat(ticketChange.toFixed(1)),
   };
+}
+
+// Função para atualizar os dados de vendas
+export function refreshSalesData(): void {
+  const freshSales = getSalesFromStorage();
+  if (freshSales && freshSales.length > 0) {
+    // Atualize a referência a salesData
+    while (salesData.length) {
+      salesData.pop();
+    }
+    
+    // Adicione os novos dados
+    freshSales
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .forEach(sale => {
+        salesData.push(sale);
+      });
+  }
 }
 
 export default salesData;

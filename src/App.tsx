@@ -1,46 +1,54 @@
 
-import { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@/contexts/ThemeContext';
-import { CartProvider } from '@/contexts/CartContext';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { Toaster } from '@/components/ui/toaster';
-import { Toaster as SonnerToaster } from '@/components/ui/sonner';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import Index from '@/pages/Index';
-import Dashboard from '@/pages/Dashboard';
-import Products from '@/pages/Products';
-import Inventory from '@/pages/Inventory';
-import Settings from '@/pages/Settings';
-import Checkout from '@/pages/Checkout';
-import NotFound from '@/pages/NotFound';
-import Auth from '@/pages/Auth';
-import { useSupabaseSync } from '@/hooks/use-supabase-sync';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { CartProvider } from "@/contexts/CartContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import Products from "./pages/Products";
+import Inventory from "./pages/Inventory";
+import Checkout from "./pages/Checkout";
+import NotFound from "./pages/NotFound";
 
-function App() {
-  // Usar o hook de sincronização
-  const { isSyncing } = useSupabaseSync();
-  
-  return (
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
         <CartProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-          <SonnerToaster position="bottom-right" />
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Rota pública */}
+                <Route path="/auth" element={<Auth />} />
+                
+                {/* Rotas protegidas */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                </Route>
+                
+                {/* Rota para página não encontrada */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>
-  );
-}
+  </QueryClientProvider>
+);
 
 export default App;

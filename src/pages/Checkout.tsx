@@ -6,9 +6,7 @@ import {
   formatCurrency, 
   calculateChange, 
   saveSaleToStorage, 
-  updateProductStockAfterSale,
-  saveSaleToSupabase,
-  isUserLoggedIn
+  updateProductStockAfterSale 
 } from '@/lib/utils';
 import { 
   Card, 
@@ -69,7 +67,7 @@ const Checkout = () => {
   };
   
   // Submit handler
-  const onSubmit = async (data: CheckoutFormValues) => {
+  const onSubmit = (data: CheckoutFormValues) => {
     if (state.items.length === 0) {
       toast.error('O carrinho está vazio. Adicione produtos para finalizar a compra.');
       return;
@@ -98,21 +96,12 @@ const Checkout = () => {
       paymentMethod: 'Dinheiro',
     };
     
+    // Save sale to localStorage
     try {
-      // Salvar venda no localStorage
       saveSaleToStorage(saleData);
       
-      // Salvar venda no Supabase se o usuário estiver logado
-      const userLoggedIn = await isUserLoggedIn();
-      if (userLoggedIn) {
-        const savedToSupabase = await saveSaleToSupabase(saleData);
-        if (savedToSupabase) {
-          console.log('Venda salva com sucesso no Supabase!');
-        }
-      }
-      
       // Update product stock
-      await updateProductStockAfterSale(state.items);
+      updateProductStockAfterSale(state.items);
       
       // Show success message
       toast.success('Venda finalizada com sucesso!');
@@ -247,6 +236,7 @@ const Checkout = () => {
                     <FormField
                       control={form.control}
                       name="customerName"
+                      rules={{ required: 'Nome do cliente é obrigatório' }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Nome do Cliente</FormLabel>

@@ -21,11 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { getCategories } from "@/lib/products-data";
 import { Product } from "@/contexts/CartContext";
-import { useAuth } from "@/contexts/AuthContext";
 
 // Esquema de validação para o formulário de produto
 const productSchema = z.object({
@@ -36,7 +34,6 @@ const productSchema = z.object({
   description: z.string().optional(),
   code: z.string().optional(),
   image: z.string().default("/placeholder.svg"),
-  isPublic: z.boolean().optional(),
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;
@@ -49,7 +46,6 @@ interface ProductFormProps {
 
 export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: ProductFormProps) {
   const [categories] = useState(getCategories);
-  const { user } = useAuth();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -61,7 +57,6 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
       description: defaultValues?.description || "",
       code: defaultValues?.code || "",
       image: defaultValues?.image || "/placeholder.svg",
-      isPublic: defaultValues?.isPublic || false,
     },
   });
 
@@ -156,29 +151,6 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
               </FormItem>
             )}
           />
-          
-          {user && (
-            <FormField
-              control={form.control}
-              name="isPublic"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Disponibilizar como sugestão</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      Outros usuários poderão adicionar este produto ao catálogo deles
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          )}
         </div>
 
         <FormField

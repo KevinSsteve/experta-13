@@ -9,51 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      products: {
-        Row: {
-          category: string
-          code: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          image: string | null
-          is_public: boolean | null
-          name: string
-          price: number
-          stock: number
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          category: string
-          code?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          image?: string | null
-          is_public?: boolean | null
-          name: string
-          price: number
-          stock?: number
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          category?: string
-          code?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          image?: string | null
-          is_public?: boolean | null
-          name?: string
-          price?: number
-          stock?: number
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -81,36 +36,6 @@ export type Database = {
           name?: string | null
           role?: string
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      sales: {
-        Row: {
-          amount_paid: number
-          change: number
-          date: string | null
-          id: string
-          items: Json
-          total: number
-          user_id: string
-        }
-        Insert: {
-          amount_paid: number
-          change: number
-          date?: string | null
-          id?: string
-          items: Json
-          total: number
-          user_id: string
-        }
-        Update: {
-          amount_paid?: number
-          change?: number
-          date?: string | null
-          id?: string
-          items?: Json
-          total?: number
-          user_id?: string
         }
         Relationships: []
       }

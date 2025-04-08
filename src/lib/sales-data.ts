@@ -1,6 +1,7 @@
 import { getSalesFromStorage } from './utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
+import { CartItem } from '@/contexts/CartContext';
 
 // Tipos de dados
 export interface Sale {
@@ -27,29 +28,35 @@ export interface SalesByCategory {
   percentage: number;
 }
 
-// Adaptar dados do Supabase para o formato Sale
+// Improved adapter function to handle Supabase sales data
 function adaptSupabaseSale(supabaseSale: any): Sale {
-  // Extrai informações de pagamento dos dados JSON se disponíveis
+  // Default values
   let paymentMethod = "Não especificado";
   let customer = undefined;
   let items = 0;
+  let products = [];
   
-  if (supabaseSale.items && typeof supabaseSale.items === 'object') {
-    // Supondo que items contém um array de produtos
-    if (Array.isArray(supabaseSale.items)) {
-      items = supabaseSale.items.length;
-    } else if (supabaseSale.items.products && Array.isArray(supabaseSale.items.products)) {
-      items = supabaseSale.items.products.length;
-    }
-    
-    // Tenta extrair o método de pagamento
+  // Extract data from the items JSON field
+  if (supabaseSale.items) {
+    // Handle payment method
     if (supabaseSale.items.paymentMethod) {
       paymentMethod = supabaseSale.items.paymentMethod;
     }
     
-    // Tenta extrair o cliente
-    if (supabaseSale.items.customer) {
-      customer = supabaseSale.items.customer;
+    // Handle customer
+    if (supabaseSale.items.customer && supabaseSale.items.customer.name) {
+      customer = supabaseSale.items.customer.name;
+    }
+    
+    // Handle products
+    if (supabaseSale.items.products && Array.isArray(supabaseSale.items.products)) {
+      products = supabaseSale.items.products;
+      items = products.length;
+    }
+    // Fallback - try to count items if they exist as an array
+    else if (Array.isArray(supabaseSale.items)) {
+      items = supabaseSale.items.length;
+      products = supabaseSale.items;
     }
   }
   
@@ -62,7 +69,7 @@ function adaptSupabaseSale(supabaseSale: any): Sale {
     items: items,
     paymentMethod: paymentMethod,
     customer: customer,
-    products: Array.isArray(supabaseSale.items) ? supabaseSale.items : []
+    products: products
   };
 }
 
@@ -192,14 +199,20 @@ export async function getSalesByCategory(): Promise<SalesByCategory[]> {
   
   // Calcular vendas por categoria usando dados reais
   salesData.forEach(sale => {
-    if (sale.products) {
+    if (sale.products && Array.isArray(sale.products)) {
       sale.products.forEach(item => {
-        const category = item.product.category;
-        if (!categories[category]) {
-          categories[category] = 0;
+        // Handle both simplified format and original cart item format
+        const category = item.category || (item.product && item.product.category);
+        const price = item.price || (item.product && item.product.price) || 0;
+        const quantity = item.quantity || 1;
+        
+        if (category) {
+          if (!categories[category]) {
+            categories[category] = 0;
+          }
+          categories[category] += price * quantity;
+          totalSales += price * quantity;
         }
-        categories[category] += item.product.price * item.quantity;
-        totalSales += item.product.price * item.quantity;
       });
     }
   });

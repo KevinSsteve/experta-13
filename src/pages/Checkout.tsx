@@ -95,15 +95,30 @@ const Checkout = () => {
       saveSaleToStorage(saleData);
       
       if (state.user) {
+        const simplifiedItems = state.items.map(item => ({
+          productId: item.product.id,
+          productName: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity,
+          category: item.product.category
+        }));
+        
+        const supabaseSaleData = {
+          user_id: state.user.id,
+          total: saleData.total,
+          amount_paid: saleData.amountPaid,
+          change: saleData.change,
+          items: {
+            customer: saleData.customer,
+            paymentMethod: saleData.paymentMethod,
+            notes: saleData.notes,
+            products: simplifiedItems
+          }
+        };
+        
         const { error } = await supabase
           .from('sales')
-          .insert([{
-            user_id: state.user.id,
-            total: saleData.total,
-            amount_paid: saleData.amountPaid,
-            change: saleData.change,
-            items: saleData,
-          }]);
+          .insert(supabaseSaleData);
           
         if (error) {
           console.error('Error saving sale to Supabase:', error);

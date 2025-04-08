@@ -90,9 +90,15 @@ export function getProductsFromStorage(): any[] {
 
 export async function saveProductToSupabase(product: any): Promise<boolean> {
   try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      console.error('Usuário não está autenticado');
+      return false;
+    }
+
     const { error } = await supabase
       .from('products')
-      .insert([{
+      .insert({
         id: product.id || undefined, // Supabase irá gerar um UUID se não fornecido
         name: product.name,
         price: product.price,
@@ -101,8 +107,9 @@ export async function saveProductToSupabase(product: any): Promise<boolean> {
         image: product.image || '/placeholder.svg',
         code: product.code || null,
         description: product.description || null,
-        is_public: false // Inicialmente, os produtos não são públicos
-      }]);
+        is_public: product.isPublic || false,
+        user_id: userData.user.id
+      });
     
     if (error) {
       console.error('Erro ao salvar produto no Supabase:', error);
@@ -202,14 +209,21 @@ export function calculateChange(totalAmount: number, amountPaid: number): number
 
 export async function saveSaleToSupabase(sale: any): Promise<boolean> {
   try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      console.error('Usuário não está autenticado');
+      return false;
+    }
+
     const { error } = await supabase
       .from('sales')
-      .insert([{
+      .insert({
         total: sale.total,
         amount_paid: sale.amountPaid,
         change: sale.change,
-        items: sale.products
-      }]);
+        items: sale.products,
+        user_id: userData.user.id
+      });
     
     if (error) {
       console.error('Erro ao salvar venda no Supabase:', error);
@@ -336,8 +350,14 @@ export async function syncProductsToSupabase(): Promise<void> {
   if (!data.session || localProducts.length === 0) {
     return;
   }
-  
+
   try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      console.error('Usuário não está autenticado');
+      return;
+    }
+    
     // Primeiro, buscamos os produtos já existentes no Supabase para o usuário
     const { data: existingProducts, error: fetchError } = await supabase
       .from('products')
@@ -357,7 +377,12 @@ export async function syncProductsToSupabase(): Promise<void> {
         await updateProductInSupabase(product);
       } else {
         // Se não existe, insere
-        await saveProductToSupabase(product);
+        // Adiciona o user_id ao produto antes de salvar
+        const productWithUserId = {
+          ...product,
+          user_id: userData.user.id
+        };
+        await saveProductToSupabase(productWithUserId);
       }
     }
     
@@ -374,11 +399,14 @@ export async function getPublicProductSuggestions(): Promise<any[]> {
     const { data } = await supabase.auth.getSession();
     if (!data.session) return [];
     
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return [];
+    
     const { data: products, error } = await supabase
       .from('products')
       .select('*')
       .eq('is_public', true)
-      .neq('user_id', data.session.user.id) // Apenas produtos de outros usuários
+      .neq('user_id', userData.user.id) // Apenas produtos de outros usuários
       .limit(20);
     
     if (error) {

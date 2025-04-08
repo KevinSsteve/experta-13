@@ -36,7 +36,7 @@ const productSchema = z.object({
   description: z.string().optional(),
   code: z.string().optional(),
   image: z.string().default("/placeholder.svg"),
-  isPublic: z.boolean().optional(),
+  isPublic: z.boolean().default(false),
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;

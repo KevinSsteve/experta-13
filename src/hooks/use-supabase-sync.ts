@@ -14,32 +14,26 @@ export function useSupabaseSync() {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   useEffect(() => {
-    try {
-      // Monitorar mudanças no estado de autenticação
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          // Quando o usuário faz login, sincronizar os dados locais
-          if (event === 'SIGNED_IN' && session) {
-            await syncDataToSupabase();
-          }
+    // Monitorar mudanças no estado de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        // Quando o usuário faz login, sincronizar os dados locais
+        if (event === 'SIGNED_IN' && session) {
+          await syncDataToSupabase();
         }
-      );
+      }
+    );
 
-      // Verificar se há uma sessão ativa ao montar o componente
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          syncDataToSupabase();
-        }
-      }).catch(error => {
-        console.error("Erro ao verificar sessão:", error);
-      });
+    // Verificar se há uma sessão ativa ao montar o componente
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        syncDataToSupabase();
+      }
+    });
 
-      return () => {
-        subscription?.unsubscribe();
-      };
-    } catch (error) {
-      console.error("Erro ao configurar monitoramento de autenticação:", error);
-    }
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const syncDataToSupabase = async () => {
@@ -51,11 +45,7 @@ export function useSupabaseSync() {
       await syncProductsToSupabase();
       
       // Atualizar dados de vendas
-      try {
-        await refreshSalesData();
-      } catch (error) {
-        console.error('Erro ao atualizar dados de vendas:', error);
-      }
+      await refreshSalesData();
       
       setLastSyncTime(new Date());
       toast.success('Dados sincronizados com sucesso!');

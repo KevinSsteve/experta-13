@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ const Products = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
+  // Carregar produtos e sugestões quando o componente é montado
   useEffect(() => {
     loadProducts();
     if (user) {
@@ -74,20 +76,25 @@ const Products = () => {
 
   const loadProducts = async () => {
     try {
+      // Tenta carregar do Supabase se o usuário estiver logado
       if (await isUserLoggedIn()) {
         const supabaseProducts = await getProductsFromSupabase();
+        // Converter is_public para isPublic para manter consistência na aplicação
         const mappedProducts = supabaseProducts.map(product => ({
           ...product,
           isPublic: product.is_public
         }));
         setProducts(mappedProducts);
+        // Atualiza também o localStorage para manter os dados consistentes
         saveProductsToStorage(mappedProducts);
       } else {
+        // Se não estiver logado, carrega do localStorage
         const localProducts = getProductsFromStorage();
         setProducts(localProducts);
       }
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
+      // Fallback para localStorage
       const localProducts = getProductsFromStorage();
       setProducts(localProducts);
     }
@@ -98,11 +105,12 @@ const Products = () => {
     setSuggestions(publicProducts);
   };
 
+  // Sincronizar produtos do localStorage para o Supabase
   const handleSyncProducts = async () => {
     setSyncingProducts(true);
     try {
       await syncProductsToSupabase();
-      await loadProducts();
+      await loadProducts(); // Recarregar produtos após sincronização
       toast.success("Produtos sincronizados com sucesso!");
     } catch (error) {
       console.error("Erro ao sincronizar produtos:", error);
@@ -112,6 +120,7 @@ const Products = () => {
     }
   };
 
+  // Filtrar produtos baseado na busca
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -127,13 +136,14 @@ const Products = () => {
   );
 
   const handleAddProduct = async (data: ProductFormValues) => {
+    // Ensure all required fields have values to satisfy the Product type
     const newProduct: Product = {
       id: generateId(),
-      name: data.name,
-      price: data.price,
-      category: data.category,
-      stock: data.stock,
-      image: data.image || "/placeholder.svg",
+      name: data.name, // Required field
+      price: data.price, // Required field
+      category: data.category, // Required field
+      stock: data.stock, // Required field
+      image: data.image || "/placeholder.svg", // Required field with default
       code: data.code,
       description: data.description,
       isPublic: data.isPublic
@@ -143,6 +153,7 @@ const Products = () => {
     setProducts(updatedProducts);
     saveProductsToStorage(updatedProducts);
     
+    // Se o usuário estiver logado, também salva no Supabase
     if (await isUserLoggedIn()) {
       await saveProductToSupabase({
         ...newProduct,
@@ -171,6 +182,7 @@ const Products = () => {
     setProducts(updatedProducts);
     saveProductsToStorage(updatedProducts);
     
+    // Se o usuário estiver logado, também atualiza no Supabase
     if (await isUserLoggedIn()) {
       await updateProductInSupabase({
         ...updatedProduct,
@@ -188,6 +200,7 @@ const Products = () => {
     setProducts(updatedProducts);
     saveProductsToStorage(updatedProducts);
     
+    // Se o usuário estiver logado, também exclui do Supabase
     if (await isUserLoggedIn()) {
       await deleteProductFromSupabase(id);
     }
@@ -196,11 +209,13 @@ const Products = () => {
   };
 
   const handleTogglePublic = async (product: Product, isPublic: boolean) => {
+    // Atualiza localmente
     const updatedProducts = products.map(p => 
       p.id === product.id ? { ...p, isPublic } : p
     );
     setProducts(updatedProducts);
     
+    // Atualiza no Supabase
     if (await isUserLoggedIn()) {
       const success = await toggleProductPublicStatus(product.id, isPublic);
       if (success) {
@@ -211,21 +226,24 @@ const Products = () => {
         );
       } else {
         toast.error("Erro ao atualizar status do produto");
+        // Reverte a alteração local em caso de erro
         setProducts(products);
       }
     }
   };
 
   const handleAddSuggestion = async (product: Product) => {
+    // Cria uma cópia do produto sugerido
     const newProduct: Product = {
       ...product,
-      id: generateId(),
+      id: generateId(), // Novo ID para não conflitar
     };
     
     const updatedProducts = [...products, newProduct];
     setProducts(updatedProducts);
     saveProductsToStorage(updatedProducts);
     
+    // Se o usuário estiver logado, também salva no Supabase
     if (await isUserLoggedIn()) {
       await saveProductToSupabase({
         ...newProduct,
@@ -350,6 +368,7 @@ const Products = () => {
         </Card>
       );
     } else {
+      // Versão para desktop (tabela)
       return (
         <tr key={product.id} className="border-b hover:bg-muted/50">
           <td className="px-4 py-2">{product.name}</td>
@@ -513,7 +532,9 @@ const Products = () => {
                 <div className="overflow-auto">
                   <div className="min-w-full inline-block align-middle">
                     {activeTab === "products" ? (
+                      // Meus Produtos
                       isMobile ? (
+                        // Versão mobile: Cards em vez de tabela
                         <div className="grid gap-4">
                           {filteredProducts.length === 0 ? (
                             <div className="px-4 py-8 text-center text-muted-foreground">
@@ -526,6 +547,7 @@ const Products = () => {
                           )}
                         </div>
                       ) : (
+                        // Versão desktop: Tabela
                         <table className="min-w-full divide-y divide-border">
                           <thead>
                             <tr className="border-b">
@@ -553,7 +575,9 @@ const Products = () => {
                         </table>
                       )
                     ) : (
+                      // Sugestões (activeTab === "suggestions")
                       isMobile ? (
+                        // Versão mobile: Cards em vez de tabela
                         <div className="grid gap-4">
                           {filteredSuggestions.length === 0 ? (
                             <div className="px-4 py-8 text-center text-muted-foreground">
@@ -564,6 +588,7 @@ const Products = () => {
                           )}
                         </div>
                       ) : (
+                        // Versão desktop: Tabela
                         <table className="min-w-full divide-y divide-border">
                           <thead>
                             <tr className="border-b">
@@ -597,6 +622,7 @@ const Products = () => {
         </div>
       </div>
 
+      {/* Dialog para edição de produtos */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>

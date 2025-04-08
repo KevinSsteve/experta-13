@@ -4,7 +4,6 @@ import { useCart } from '@/contexts/CartContext';
 import { 
   formatCurrency, 
   debounce, 
-  getProductsFromStorage, 
   filterProducts
 } from '@/lib/utils';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -17,16 +16,17 @@ import {
 } from '@/components/ui/card';
 import { Search, ShoppingCart, ArrowUpCircle } from 'lucide-react';
 import { Product } from '@/contexts/CartContext';
-import { supabase, getPublicProducts } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const { addItem } = useCart();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [displayCount, setDisplayCount] = useState(20);
@@ -54,22 +54,6 @@ const Index = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
-  // Carregar produtos públicos para sugestões
-  useEffect(() => {
-    const loadSuggestedProducts = async () => {
-      try {
-        const publicProducts = await getPublicProducts();
-        if (publicProducts && publicProducts.length > 0) {
-          setSuggestedProducts(publicProducts);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar produtos sugeridos:", error);
-      }
-    };
-
-    loadSuggestedProducts();
-  }, []);
-
   // Carregar dados do usuário quando disponíveis
   useEffect(() => {
     const loadUserProducts = async () => {
@@ -86,26 +70,31 @@ const Index = () => {
           if (error) throw error;
           
           if (data && data.length > 0) {
+            setUserProducts(data);
             updateFilteredProducts(data);
           } else {
-            // Se o usuário não tem produtos, mantém as sugestões
-            updateFilteredProducts(suggestedProducts);
+            // Se o usuário não tem produtos, mostra mensagem
+            setUserProducts([]);
+            setFilteredProducts([]);
+            toast.info("Você ainda não tem produtos em seu estoque. Adicione produtos na página Produtos.");
           }
         } else {
-          // Se não há usuário logado, usa produtos sugeridos
-          updateFilteredProducts(suggestedProducts);
+          // Se não há usuário logado, redireciona para login
+          setUserProducts([]);
+          setFilteredProducts([]);
         }
       } catch (error) {
         console.error("Erro ao carregar produtos:", error);
-        toast.error("Erro ao carregar produtos. Usando produtos sugeridos.");
-        updateFilteredProducts(suggestedProducts);
+        toast.error("Erro ao carregar produtos do seu estoque.");
+        setUserProducts([]);
+        setFilteredProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadUserProducts();
-  }, [user, suggestedProducts]);
+  }, [user]);
   
   // Debounced filter function
   const debouncedUpdateProducts = debounce(() => {
@@ -113,7 +102,7 @@ const Index = () => {
   }, 300);
 
   // Update filtered products based on search query
-  const updateFilteredProducts = (products = filteredProducts) => {
+  const updateFilteredProducts = (products = userProducts) => {
     const filtered = filterProducts(products, searchQuery);
     setFilteredProducts(filtered);
   };
@@ -131,6 +120,25 @@ const Index = () => {
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
         <div className="flex flex-col space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Meu Estoque</h1>
+              <p className="text-muted-foreground">Gerencie os produtos do seu estoque.</p>
+            </div>
+            <div className="flex gap-2 mt-4 md:mt-0">
+              <Link to="/products">
+                <Button variant="outline">
+                  Adicionar produtos ao estoque
+                </Button>
+              </Link>
+              <Link to="/dashboard">
+                <Button>
+                  Ver dashboard
+                </Button>
+              </Link>
+            </div>
+          </div>
+          
           {/* Search section */}
           <section className="mt-4 mb-6">
             <div className="relative max-w-xl mx-auto">
@@ -145,23 +153,6 @@ const Index = () => {
             </div>
           </section>
           
-          {/* Suggested products section */}
-          {!user && suggestedProducts.length > 0 && (
-            <section className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-medium">Produtos Sugeridos</h2>
-                <p className="text-sm text-muted-foreground">
-                  Faça login para ver seus próprios produtos
-                </p>
-              </div>
-              <div className="border-t pt-4">
-                <p className="text-sm text-muted-foreground mb-6">
-                  Estes são produtos sugeridos para ajudar você a começar. Faça login para gerenciar seu próprio catálogo.
-                </p>
-              </div>
-            </section>
-          )}
-          
           {/* Products grid */}
           <section>
             {isLoading ? (
@@ -175,12 +166,17 @@ const Index = () => {
                 {filteredProducts.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-2xl font-medium mb-2">Nenhum produto encontrado</p>
-                    <p className="text-muted-foreground">
-                      {getProductsFromStorage().length === 0 
-                        ? "Nenhum produto cadastrado. Adicione produtos na página de Produtos."
+                    <p className="text-muted-foreground mb-6">
+                      {userProducts.length === 0 
+                        ? "Você ainda não tem produtos em seu estoque."
                         : "Tente ajustar sua pesquisa para encontrar produtos."
                       }
                     </p>
+                    <Link to="/products">
+                      <Button>
+                        Adicionar produtos ao estoque
+                      </Button>
+                    </Link>
                   </div>
                 ) : (
                   <>

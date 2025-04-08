@@ -1,5 +1,6 @@
 import { getSalesFromStorage } from './utils';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 // Tipos de dados
 export interface Sale {
@@ -26,6 +27,45 @@ export interface SalesByCategory {
   percentage: number;
 }
 
+// Adaptar dados do Supabase para o formato Sale
+function adaptSupabaseSale(supabaseSale: any): Sale {
+  // Extrai informações de pagamento dos dados JSON se disponíveis
+  let paymentMethod = "Não especificado";
+  let customer = undefined;
+  let items = 0;
+  
+  if (supabaseSale.items && typeof supabaseSale.items === 'object') {
+    // Supondo que items contém um array de produtos
+    if (Array.isArray(supabaseSale.items)) {
+      items = supabaseSale.items.length;
+    } else if (supabaseSale.items.products && Array.isArray(supabaseSale.items.products)) {
+      items = supabaseSale.items.products.length;
+    }
+    
+    // Tenta extrair o método de pagamento
+    if (supabaseSale.items.paymentMethod) {
+      paymentMethod = supabaseSale.items.paymentMethod;
+    }
+    
+    // Tenta extrair o cliente
+    if (supabaseSale.items.customer) {
+      customer = supabaseSale.items.customer;
+    }
+  }
+  
+  return {
+    id: supabaseSale.id,
+    date: supabaseSale.date || new Date().toISOString(),
+    total: supabaseSale.total,
+    amountPaid: supabaseSale.amount_paid,
+    change: supabaseSale.change,
+    items: items,
+    paymentMethod: paymentMethod,
+    customer: customer,
+    products: Array.isArray(supabaseSale.items) ? supabaseSale.items : []
+  };
+}
+
 // Função para obter as vendas do Supabase
 export async function fetchSalesFromSupabase() {
   const { data, error } = await supabase
@@ -38,7 +78,8 @@ export async function fetchSalesFromSupabase() {
     return [];
   }
   
-  return data as Sale[];
+  // Converter os dados do Supabase para o formato Sale
+  return data.map(sale => adaptSupabaseSale(sale));
 }
 
 // Função para obter as vendas

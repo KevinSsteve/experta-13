@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { getCategories } from "@/lib/products-data";
 import { Product } from "@/contexts/CartContext";
 
@@ -45,7 +44,22 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: ProductFormProps) {
-  const [categories] = useState(getCategories);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  // Fetch categories when component mounts
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesList = await getCategories();
+        setCategories(categoriesList);
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+        setCategories(["Alimentos Básicos", "Laticínios", "Hortifruti", "Carnes", "Padaria", "Bebidas", "Limpeza", "Higiene"]);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),

@@ -23,3 +23,21 @@ export const logCurrentUser = async () => {
   console.log("Current user:", user);
   return user;
 };
+
+// Busca produtos públicos para sugestões
+export const getPublicProducts = async (limit = 20) => {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_public', true)
+      .order('name')
+      .limit(limit);
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar produtos públicos:", error);
+    return [];
+  }
+};

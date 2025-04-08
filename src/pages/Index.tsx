@@ -17,14 +17,19 @@ import {
 } from '@/components/ui/card';
 import { Search, ShoppingCart, ArrowUpCircle } from 'lucide-react';
 import { Product } from '@/contexts/CartContext';
+import { supabase, getPublicProducts } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const Index = () => {
   const { addItem } = useCart();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [displayCount, setDisplayCount] = useState(20); // Começar com mais produtos visíveis
+  const [displayCount, setDisplayCount] = useState(20);
 
   // Handle scroll events for back to top button and infinite loading
   useEffect(() => {
@@ -49,21 +54,66 @@ const Index = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
-  // Load data on component mount
+  // Carregar produtos públicos para sugestões
   useEffect(() => {
-    const products = getProductsFromStorage();
-    updateFilteredProducts();
-    setIsLoading(false);
+    const loadSuggestedProducts = async () => {
+      try {
+        const publicProducts = await getPublicProducts();
+        if (publicProducts && publicProducts.length > 0) {
+          setSuggestedProducts(publicProducts);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar produtos sugeridos:", error);
+      }
+    };
+
+    loadSuggestedProducts();
   }, []);
 
+  // Carregar dados do usuário quando disponíveis
+  useEffect(() => {
+    const loadUserProducts = async () => {
+      setIsLoading(true);
+      try {
+        // Se o usuário estiver logado, tenta buscar seus produtos
+        if (user) {
+          const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('name');
+            
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            updateFilteredProducts(data);
+          } else {
+            // Se o usuário não tem produtos, mantém as sugestões
+            updateFilteredProducts(suggestedProducts);
+          }
+        } else {
+          // Se não há usuário logado, usa produtos sugeridos
+          updateFilteredProducts(suggestedProducts);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar produtos:", error);
+        toast.error("Erro ao carregar produtos. Usando produtos sugeridos.");
+        updateFilteredProducts(suggestedProducts);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserProducts();
+  }, [user, suggestedProducts]);
+  
   // Debounced filter function
   const debouncedUpdateProducts = debounce(() => {
     updateFilteredProducts();
   }, 300);
 
   // Update filtered products based on search query
-  const updateFilteredProducts = () => {
-    const products = getProductsFromStorage();
+  const updateFilteredProducts = (products = filteredProducts) => {
     const filtered = filterProducts(products, searchQuery);
     setFilteredProducts(filtered);
   };
@@ -94,6 +144,23 @@ const Index = () => {
               />
             </div>
           </section>
+          
+          {/* Suggested products section */}
+          {!user && suggestedProducts.length > 0 && (
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-medium">Produtos Sugeridos</h2>
+                <p className="text-sm text-muted-foreground">
+                  Faça login para ver seus próprios produtos
+                </p>
+              </div>
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-6">
+                  Estes são produtos sugeridos para ajudar você a começar. Faça login para gerenciar seu próprio catálogo.
+                </p>
+              </div>
+            </section>
+          )}
           
           {/* Products grid */}
           <section>

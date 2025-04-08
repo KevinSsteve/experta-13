@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useMemo } from 'react';
+
+import { createContext, useContext, useReducer, useMemo, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -26,6 +27,7 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   user: User | null;
+  isOpen: boolean;
 }
 
 // Cart actions
@@ -33,7 +35,9 @@ type CartAction =
   | { type: 'ADD_ITEM'; payload: Product }
   | { type: 'REMOVE_ITEM'; payload: string }
   | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
-  | { type: 'CLEAR_CART' };
+  | { type: 'CLEAR_CART' }
+  | { type: 'OPEN_CART' }
+  | { type: 'CLOSE_CART' };
 
 // Cart context interface
 interface CartContextType {
@@ -44,6 +48,8 @@ interface CartContextType {
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
+  openCart: () => void;
+  closeCart: () => void;
 }
 
 // Create context
@@ -86,6 +92,12 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
     case 'CLEAR_CART':
       return { ...state, items: [] };
+      
+    case 'OPEN_CART':
+      return { ...state, isOpen: true };
+      
+    case 'CLOSE_CART':
+      return { ...state, isOpen: false };
 
     default:
       return state;
@@ -99,7 +111,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   
   const [state, dispatch] = useReducer(cartReducer, {
     items: [],
-    user: user
+    user: user,
+    isOpen: false
   });
 
   // Add item to cart
@@ -120,6 +133,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   // Clear cart
   const clearCart = () => {
     dispatch({ type: 'CLEAR_CART' });
+  };
+  
+  // Open cart
+  const openCart = () => {
+    dispatch({ type: 'OPEN_CART' });
+  };
+  
+  // Close cart
+  const closeCart = () => {
+    dispatch({ type: 'CLOSE_CART' });
   };
 
   // Calculate total price
@@ -144,6 +167,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     clearCart,
     getTotalPrice,
     getTotalItems,
+    openCart,
+    closeCart,
   }), [state]);
 
   return (

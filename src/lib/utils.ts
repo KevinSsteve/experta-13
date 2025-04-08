@@ -1,8 +1,10 @@
+
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Sale } from "./sales-data";
 import { Product } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
+import { format, parseISO } from "date-fns";
  
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -49,6 +51,71 @@ export const getSalesFromStorage = (): Sale[] => {
     console.error('Error getting sales from localStorage:', error);
     return [];
   }
+};
+
+// Format date to a more readable format
+export const formatDate = (dateString: string) => {
+  try {
+    return format(parseISO(dateString), 'dd/MM/yyyy HH:mm');
+  } catch (error) {
+    return dateString;
+  }
+};
+
+// Format date to a shorter format for charts
+export const formatShortDate = (dateString: string) => {
+  try {
+    return format(parseISO(dateString), 'dd/MM');
+  } catch (error) {
+    return dateString;
+  }
+};
+
+// Debounce function to limit how often a function is called
+export const debounce = (func: Function, delay: number) => {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return function(...args: any[]) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
+};
+
+// Get products from localStorage
+export const getProductsFromStorage = (): Product[] => {
+  try {
+    const products = localStorage.getItem('products');
+    return products ? JSON.parse(products) : [];
+  } catch (error) {
+    console.error('Error getting products from localStorage:', error);
+    return [];
+  }
+};
+
+// Save products to localStorage
+export const saveProductsToStorage = (products: Product[]) => {
+  try {
+    localStorage.setItem('products', JSON.stringify(products));
+  } catch (error) {
+    console.error('Error saving products to localStorage:', error);
+  }
+};
+
+// Get unique categories from a list of products
+export const getCategoriesFromProducts = (products: Product[]): string[] => {
+  const categoriesSet = new Set(products.map(product => product.category));
+  return Array.from(categoriesSet);
+};
+
+// Get products with low stock (less than specified threshold)
+export const getLowStockProducts = (products: Product[], threshold: number = 5): Product[] => {
+  return products.filter(product => product.stock > 0 && product.stock <= threshold);
+};
+
+// Get products that are out of stock
+export const getOutOfStockProducts = (products: Product[]): Product[] => {
+  return products.filter(product => product.stock === 0);
 };
 
 export const filterProducts = (products: Product[], query: string) => {

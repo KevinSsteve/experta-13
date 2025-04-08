@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -32,6 +31,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Check, Trash2, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
 
 interface CheckoutFormValues {
   customerName: string;
@@ -47,7 +47,6 @@ const Checkout = () => {
   const [change, setChange] = useState(0);
   const navigate = useNavigate();
   
-  // Form definition
   const form = useForm<CheckoutFormValues>({
     defaultValues: {
       customerName: '',
@@ -58,7 +57,6 @@ const Checkout = () => {
     },
   });
   
-  // Calculate change when amount paid changes
   const handleAmountPaidChange = (value: string) => {
     const amountPaid = parseFloat(value) || 0;
     const total = getTotalPrice();
@@ -66,7 +64,6 @@ const Checkout = () => {
     form.setValue('amountPaid', amountPaid);
   };
   
-  // Submit handler
   const onSubmit = async (data: CheckoutFormValues) => {
     if (state.items.length === 0) {
       toast.error('O carrinho está vazio. Adicione produtos para finalizar a compra.');
@@ -80,7 +77,6 @@ const Checkout = () => {
     
     setIsSubmitting(true);
     
-    // Create sale record
     const saleData = {
       customer: {
         name: data.customerName,
@@ -95,12 +91,9 @@ const Checkout = () => {
       paymentMethod: 'Dinheiro',
     };
     
-    // Save sale to localStorage and Supabase
     try {
-      // Save to localStorage for backup
       saveSaleToStorage(saleData);
       
-      // If user is logged in, save to Supabase
       if (state.user) {
         const { error } = await supabase
           .from('sales')
@@ -118,17 +111,13 @@ const Checkout = () => {
         }
       }
       
-      // Update product stock in Supabase and localStorage
       await updateProductStockAfterSale(state.items);
       
-      // Show success message
       toast.success('Venda finalizada com sucesso!');
       
-      // Clear the cart and reset the form
       clearCart();
       form.reset();
       
-      // Redirect to dashboard after short delay
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);
@@ -150,7 +139,6 @@ const Checkout = () => {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Order summary */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Resumo do Pedido</CardTitle>
@@ -239,7 +227,6 @@ const Checkout = () => {
               </CardFooter>
             </Card>
             
-            {/* Checkout form */}
             <Card>
               <CardHeader>
                 <CardTitle>Dados da Venda</CardTitle>
@@ -296,7 +283,6 @@ const Checkout = () => {
                       />
                     </div>
                     
-                    {/* Pagamento e troco */}
                     <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
                       <h3 className="font-medium flex items-center">
                         <Calculator className="mr-2 h-4 w-4" />

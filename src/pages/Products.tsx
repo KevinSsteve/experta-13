@@ -47,7 +47,7 @@ import {
 } from "@/lib/utils";
 import { ProductForm, ProductFormValues } from "@/components/products/ProductForm";
 import { toast } from "sonner";
-import { Search, Plus, Pencil, Trash, Globe, Globe2, Lock, CloudSync } from "lucide-react";
+import { Search, Plus, Pencil, Trash, Globe, Globe2, Lock, CloudCog } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,9 +79,14 @@ const Products = () => {
       // Tenta carregar do Supabase se o usuário estiver logado
       if (await isUserLoggedIn()) {
         const supabaseProducts = await getProductsFromSupabase();
-        setProducts(supabaseProducts);
+        // Converter is_public para isPublic para manter consistência na aplicação
+        const mappedProducts = supabaseProducts.map(product => ({
+          ...product,
+          isPublic: product.is_public
+        }));
+        setProducts(mappedProducts);
         // Atualiza também o localStorage para manter os dados consistentes
-        saveProductsToStorage(supabaseProducts);
+        saveProductsToStorage(mappedProducts);
       } else {
         // Se não estiver logado, carrega do localStorage
         const localProducts = getProductsFromStorage();
@@ -141,6 +146,7 @@ const Products = () => {
       image: data.image || "/placeholder.svg", // Required field with default
       code: data.code,
       description: data.description,
+      isPublic: data.isPublic
     };
     
     const updatedProducts = [...products, newProduct];
@@ -149,7 +155,10 @@ const Products = () => {
     
     // Se o usuário estiver logado, também salva no Supabase
     if (await isUserLoggedIn()) {
-      await saveProductToSupabase(newProduct);
+      await saveProductToSupabase({
+        ...newProduct,
+        is_public: newProduct.isPublic
+      });
     }
     
     setIsAddDialogOpen(false);
@@ -159,9 +168,14 @@ const Products = () => {
   const handleEditProduct = async (data: ProductFormValues) => {
     if (!editingProduct) return;
     
+    const updatedProduct = {
+      ...editingProduct,
+      ...data
+    };
+    
     const updatedProducts = products.map((product) =>
       product.id === editingProduct.id
-        ? { ...product, ...data }
+        ? updatedProduct
         : product
     );
     
@@ -170,7 +184,10 @@ const Products = () => {
     
     // Se o usuário estiver logado, também atualiza no Supabase
     if (await isUserLoggedIn()) {
-      await updateProductInSupabase({ id: editingProduct.id, ...data });
+      await updateProductInSupabase({
+        ...updatedProduct,
+        is_public: updatedProduct.isPublic
+      });
     }
     
     setIsEditDialogOpen(false);
@@ -228,7 +245,10 @@ const Products = () => {
     
     // Se o usuário estiver logado, também salva no Supabase
     if (await isUserLoggedIn()) {
-      await saveProductToSupabase(newProduct);
+      await saveProductToSupabase({
+        ...newProduct,
+        is_public: newProduct.isPublic
+      });
     }
     
     toast.success("Sugestão de produto adicionada ao seu catálogo!");
@@ -305,7 +325,7 @@ const Products = () => {
 
                     {user && (
                       <Switch 
-                        checked={product.isPublic} 
+                        checked={!!product.isPublic} 
                         onCheckedChange={(checked) => handleTogglePublic(product, checked)}
                         className="ml-2"
                         aria-label={
@@ -411,13 +431,13 @@ const Products = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">
                         {product.isPublic ? (
-                          <Globe className="h-4 w-4 text-blue-500" title="Produto público" />
+                          <Globe className="h-4 w-4 text-blue-500" aria-label="Produto público" />
                         ) : (
-                          <Lock className="h-4 w-4" title="Produto privado" />
+                          <Lock className="h-4 w-4" aria-label="Produto privado" />
                         )}
                       </span>
                       <Switch 
-                        checked={product.isPublic} 
+                        checked={!!product.isPublic} 
                         onCheckedChange={(checked) => handleTogglePublic(product, checked)}
                         aria-label={product.isPublic ? "Remover das sugestões" : "Adicionar às sugestões"}
                       />
@@ -456,7 +476,7 @@ const Products = () => {
                   onClick={handleSyncProducts}
                   disabled={isSyncingProducts}
                 >
-                  <CloudSync className={`mr-2 h-4 w-4 ${isSyncingProducts ? 'animate-spin' : ''}`} />
+                  <CloudCog className={`mr-2 h-4 w-4 ${isSyncingProducts ? 'animate-spin' : ''}`} />
                   {isSyncingProducts ? 'Sincronizando...' : 'Sincronizar'}
                 </Button>
               )}

@@ -1,131 +1,97 @@
-
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+import { Sale } from "./sales-data";
+import { Product } from "@/contexts/CartContext";
+import { supabase } from "@/integrations/supabase/client";
+ 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(value: number): string {
+export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('pt-AO', {
     style: 'currency',
     currency: 'AOA',
-  }).format(value);
-}
+  }).format(amount);
+};
 
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(date);
-}
+export const calculateChange = (total: number, amountPaid: number) => {
+  return parseFloat((amountPaid - total).toFixed(2));
+};
 
-export function formatShortDate(dateString: string): string {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-  }).format(date);
-}
-
-export function truncate(str: string, length: number): string {
-  if (str.length <= length) {
-    return str;
+export const saveSaleToStorage = (sale: any) => {
+  try {
+    // Get existing sales from localStorage
+    const existingSales = localStorage.getItem('sales');
+    
+    // Parse existing sales or initialize an empty array
+    const salesArray = existingSales ? JSON.parse(existingSales) : [];
+    
+    // Add the new sale to the array
+    salesArray.push({
+      ...sale,
+      id: `sale-${Date.now()}`, // Generate a unique ID
+      date: new Date().toISOString(), // Add current date
+    });
+    
+    // Save the updated array back to localStorage
+    localStorage.setItem('sales', JSON.stringify(salesArray));
+  } catch (error) {
+    console.error('Error saving sale to localStorage:', error);
   }
-  return str.slice(0, length) + '...';
-}
+};
 
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  
-  return function(...args: Parameters<T>): void {
-    const later = () => {
-      timeout = null;
-      func(...args);
-    };
-    
-    if (timeout !== null) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(later, wait);
-  };
-}
+export const getSalesFromStorage = (): Sale[] => {
+  try {
+    const sales = localStorage.getItem('sales');
+    return sales ? JSON.parse(sales) : [];
+  } catch (error) {
+    console.error('Error getting sales from localStorage:', error);
+    return [];
+  }
+};
 
-export function generateId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
-}
+export const filterProducts = (products: Product[], query: string) => {
+  if (!query) {
+    return products;
+  }
 
-export function getProductsFromStorage(): any[] {
-  const savedProducts = localStorage.getItem("products");
-  return savedProducts ? JSON.parse(savedProducts) : [];
-}
+  const lowerCaseQuery = query.toLowerCase();
 
-export function saveProductsToStorage(products: any[]): void {
-  localStorage.setItem("products", JSON.stringify(products));
-}
-
-export function getCategoriesFromProducts(products: any[]): string[] {
-  const categories = products.map(product => product.category);
-  return [...new Set(categories)].filter(Boolean);
-}
-
-export function filterProducts(
-  products: any[], 
-  searchQuery = ''
-): any[] {
   return products.filter(product => {
-    // Filtro por pesquisa de texto (nome ou código)
-    const matchesSearch = searchQuery === '' || 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.code && product.code.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    return matchesSearch;
+    const nameMatches = product.name.toLowerCase().includes(lowerCaseQuery);
+    const codeMatches = product.code?.toLowerCase().includes(lowerCaseQuery);
+    return nameMatches || codeMatches;
   });
-}
+};
 
-export function getLowStockProducts(products: any[], threshold = 10): any[] {
-  return products.filter(product => product.stock > 0 && product.stock < threshold);
-}
-
-export function getOutOfStockProducts(products: any[]): any[] {
-  return products.filter(product => product.stock === 0);
-}
-
-export function calculateChange(totalAmount: number, amountPaid: number): number {
-  return Math.max(0, amountPaid - totalAmount);
-}
-
-export function saveSaleToStorage(sale: any): void {
-  const savedSales = getSalesFromStorage();
-  savedSales.push({
-    ...sale,
-    id: generateId(),
-    date: new Date().toISOString(),
-  });
-  localStorage.setItem("sales", JSON.stringify(savedSales));
-}
-
-export function getSalesFromStorage(): any[] {
-  const savedSales = localStorage.getItem("sales");
-  return savedSales ? JSON.parse(savedSales) : [];
-}
-
-export function updateProductStockAfterSale(items: any[]): void {
-  const products = getProductsFromStorage();
+// Update product stock after a sale
+export async function updateProductStockAfterSale(items: any[]): Promise<void> {
+  if (!items || items.length === 0) return;
   
-  // Update stock for each sold item
-  items.forEach(item => {
-    const productIndex = products.findIndex(p => p.id === item.product.id);
-    if (productIndex !== -1) {
-      products[productIndex].stock = Math.max(0, products[productIndex].stock - item.quantity);
+  try {
+    // For each item in the cart, update its stock in Supabase
+    for (const item of items) {
+      const { product, quantity } = item;
+      
+      // Skip if product has no id
+      if (!product.id) continue;
+      
+      // Calculate new stock value
+      const newStock = Math.max(0, product.stock - quantity);
+      
+      // Update the product stock in Supabase
+      const { error } = await supabase
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', product.id);
+      
+      if (error) {
+        console.error(`Error updating stock for product ${product.id}:`, error);
+      }
     }
-  });
-  
-  // Save updated products back to storage
-  saveProductsToStorage(products);
+  } catch (error) {
+    console.error('Error updating product stock:', error);
+    throw error;
+  }
 }

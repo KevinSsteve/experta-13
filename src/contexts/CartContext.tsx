@@ -1,96 +1,80 @@
+import { createContext, useContext, useReducer, useMemo } from 'react';
+import { User } from '@supabase/supabase-js';
+import { useAuth } from '@/contexts/AuthContext';
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { toast } from 'sonner';
-
-// Definindo tipos
+// Product interface
 export interface Product {
   id: string;
   name: string;
   price: number;
-  image: string;
+  image?: string;
   category: string;
   stock: number;
   code?: string;
   description?: string;
+  user_id?: string;
+  is_public?: boolean;
 }
 
+// Cart item interface
 export interface CartItem {
   product: Product;
   quantity: number;
 }
 
+// Cart state interface
 interface CartState {
   items: CartItem[];
-  isOpen: boolean;
+  user: User | null;
 }
 
+// Cart actions
 type CartAction =
   | { type: 'ADD_ITEM'; payload: Product }
   | { type: 'REMOVE_ITEM'; payload: string }
   | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
-  | { type: 'CLEAR_CART' }
-  | { type: 'OPEN_CART' }
-  | { type: 'CLOSE_CART' };
+  | { type: 'CLEAR_CART' };
 
+// Cart context interface
 interface CartContextType {
   state: CartState;
   addItem: (product: Product) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
-  openCart: () => void;
-  closeCart: () => void;
-  getTotalItems: () => number;
   getTotalPrice: () => number;
+  getTotalItems: () => number;
 }
 
-// Criando o contexto
+// Create context
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Definindo o estado inicial
-const initialState: CartState = {
-  items: [],
-  isOpen: false,
-};
-
-// Criando o reducer
+// Reducer function
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
-    case 'ADD_ITEM': {
+    case 'ADD_ITEM':
       const existingItemIndex = state.items.findIndex(
         (item) => item.product.id === action.payload.id
       );
 
-      if (existingItemIndex > -1) {
-        // Se o item já existe, atualize a quantidade
+      if (existingItemIndex !== -1) {
         const updatedItems = [...state.items];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + 1,
-        };
+        updatedItems[existingItemIndex].quantity += 1;
         return { ...state, items: updatedItems };
       } else {
-        // Se o item não existe, adicione-o
         return {
           ...state,
           items: [...state.items, { product: action.payload, quantity: 1 }],
         };
       }
-    }
-    case 'REMOVE_ITEM': {
+
+    case 'REMOVE_ITEM':
       return {
         ...state,
         items: state.items.filter((item) => item.product.id !== action.payload),
       };
-    }
-    case 'UPDATE_QUANTITY': {
-      if (action.payload.quantity <= 0) {
-        return {
-          ...state,
-          items: state.items.filter((item) => item.product.id !== action.payload.id),
-        };
-      }
 
+    case 'UPDATE_QUANTITY':
       return {
         ...state,
         items: state.items.map((item) =>
@@ -99,108 +83,81 @@ function cartReducer(state: CartState, action: CartAction): CartState {
             : item
         ),
       };
-    }
-    case 'CLEAR_CART': {
-      return {
-        ...state,
-        items: [],
-      };
-    }
-    case 'OPEN_CART': {
-      return {
-        ...state,
-        isOpen: true,
-      };
-    }
-    case 'CLOSE_CART': {
-      return {
-        ...state,
-        isOpen: false,
-      };
-    }
+
+    case 'CLEAR_CART':
+      return { ...state, items: [] };
+
     default:
       return state;
   }
 }
 
-// Provider Component
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState, () => {
-    // Recuperar o carrinho do localStorage ao inicializar
-    const savedCart = localStorage.getItem('moloja-cart');
-    return savedCart ? { ...initialState, items: JSON.parse(savedCart) } : initialState;
+// Provider component
+export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  // Get user from auth context
+  const { user } = useAuth();
+  
+  const [state, dispatch] = useReducer(cartReducer, {
+    items: [],
+    user: user
   });
 
-  // Salvar o carrinho no localStorage sempre que mudar
-  useEffect(() => {
-    localStorage.setItem('moloja-cart', JSON.stringify(state.items));
-  }, [state.items]);
-
-  // Métodos do carrinho
+  // Add item to cart
   const addItem = (product: Product) => {
-    if (product.stock > 0) {
-      dispatch({ type: 'ADD_ITEM', payload: product });
-      toast.success(`${product.name} adicionado ao carrinho`);
-    } else {
-      toast.error(`${product.name} está fora de estoque`);
-    }
+    dispatch({ type: 'ADD_ITEM', payload: product });
   };
 
+  // Remove item from cart
   const removeItem = (id: string) => {
     dispatch({ type: 'REMOVE_ITEM', payload: id });
-    toast.info('Item removido do carrinho');
   };
 
+  // Update item quantity
   const updateQuantity = (id: string, quantity: number) => {
     dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
   };
 
+  // Clear cart
   const clearCart = () => {
     dispatch({ type: 'CLEAR_CART' });
-    toast.info('Carrinho limpo');
   };
 
-  const openCart = () => {
-    dispatch({ type: 'OPEN_CART' });
-  };
-
-  const closeCart = () => {
-    dispatch({ type: 'CLOSE_CART' });
-  };
-
-  const getTotalItems = (): number => {
-    return state.items.reduce((total, item) => total + item.quantity, 0);
-  };
-
+  // Calculate total price
   const getTotalPrice = (): number => {
-    return state.items.reduce(
-      (total, item) => total + item.product.price * item.quantity,
-      0
-    );
+    return state.items.reduce((total, item) => {
+      return total + item.product.price * item.quantity;
+    }, 0);
   };
 
-  const value: CartContextType = {
+  // Calculate total items
+  const getTotalItems = (): number => {
+    return state.items.reduce((total, item) => {
+      return total + item.quantity;
+    }, 0);
+  };
+
+  const value = useMemo(() => ({
     state,
     addItem,
     removeItem,
     updateQuantity,
     clearCart,
-    openCart,
-    closeCart,
-    getTotalItems,
     getTotalPrice,
-  };
+    getTotalItems,
+  }), [state]);
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-}
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+    </CartContext.Provider>
+  );
+};
 
-// Hook para usar o contexto
-export const useCart = (): CartContextType => {
+// Custom hook for using cart context
+export const useCart = () => {
   const context = useContext(CartContext);
-
   if (context === undefined) {
-    throw new Error('useCart deve ser usado dentro de um CartProvider');
+    throw new Error('useCart must be used within a CartProvider');
   }
-
   return context;
 };

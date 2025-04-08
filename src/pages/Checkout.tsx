@@ -67,7 +67,7 @@ const Checkout = () => {
   };
   
   // Submit handler
-  const onSubmit = (data: CheckoutFormValues) => {
+  const onSubmit = async (data: CheckoutFormValues) => {
     if (state.items.length === 0) {
       toast.error('O carrinho está vazio. Adicione produtos para finalizar a compra.');
       return;
@@ -91,17 +91,35 @@ const Checkout = () => {
       amountPaid: data.amountPaid,
       change: change,
       notes: data.notes,
-      items: state.items.length,
-      products: state.items,
+      items: state.items,
       paymentMethod: 'Dinheiro',
     };
     
-    // Save sale to localStorage
+    // Save sale to localStorage and Supabase
     try {
+      // Save to localStorage for backup
       saveSaleToStorage(saleData);
       
-      // Update product stock
-      updateProductStockAfterSale(state.items);
+      // If user is logged in, save to Supabase
+      if (state.user) {
+        const { error } = await supabase
+          .from('sales')
+          .insert([{
+            user_id: state.user.id,
+            total: saleData.total,
+            amount_paid: saleData.amountPaid,
+            change: saleData.change,
+            items: saleData,
+          }]);
+          
+        if (error) {
+          console.error('Error saving sale to Supabase:', error);
+          throw error;
+        }
+      }
+      
+      // Update product stock in Supabase and localStorage
+      await updateProductStockAfterSale(state.items);
       
       // Show success message
       toast.success('Venda finalizada com sucesso!');

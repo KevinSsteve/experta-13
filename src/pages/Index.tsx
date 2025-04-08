@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { 
@@ -20,16 +19,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 
 const Index = () => {
   const { addItem } = useCart();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [displayCount, setDisplayCount] = useState(20);
+
+  // Use React Query to fetch user products
+  const { data: userProducts, isLoading, error } = useQuery({
+    queryKey: ['userProducts'],
+    queryFn: async () => {
+      if (!user) {
+        return [];
+      }
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+        
+      if (error) throw error;
+      
+      return data as Product[];
+    },
+    enabled: !!user,
+    refetchOnWindowFocus: true, // Refetch when the window gets focus to keep data fresh
+  });
 
   // Handle scroll events for back to top button and infinite loading
   useEffect(() => {
@@ -49,60 +69,27 @@ const Index = () => {
     };
   }, []);
 
+  // Update filtered products when userProducts or searchQuery changes
+  useEffect(() => {
+    if (userProducts) {
+      updateFilteredProducts(userProducts);
+    }
+  }, [userProducts, searchQuery]);
+
   // Scroll back to top
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
-  // Carregar dados do usuário quando disponíveis
-  useEffect(() => {
-    const loadUserProducts = async () => {
-      setIsLoading(true);
-      try {
-        // Se o usuário estiver logado, tenta buscar seus produtos
-        if (user) {
-          const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('name');
-            
-          if (error) throw error;
-          
-          if (data && data.length > 0) {
-            setUserProducts(data);
-            updateFilteredProducts(data);
-          } else {
-            // Se o usuário não tem produtos, mostra mensagem
-            setUserProducts([]);
-            setFilteredProducts([]);
-            toast.info("Você ainda não tem produtos em seu estoque. Adicione produtos na página Produtos.");
-          }
-        } else {
-          // Se não há usuário logado, redireciona para login
-          setUserProducts([]);
-          setFilteredProducts([]);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar produtos:", error);
-        toast.error("Erro ao carregar produtos do seu estoque.");
-        setUserProducts([]);
-        setFilteredProducts([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadUserProducts();
-  }, [user]);
-  
   // Debounced filter function
   const debouncedUpdateProducts = debounce(() => {
-    updateFilteredProducts();
+    if (userProducts) {
+      updateFilteredProducts(userProducts);
+    }
   }, 300);
 
   // Update filtered products based on search query
-  const updateFilteredProducts = (products = userProducts) => {
+  const updateFilteredProducts = (products: Product[] = []) => {
     const filtered = filterProducts(products, searchQuery);
     setFilteredProducts(filtered);
   };

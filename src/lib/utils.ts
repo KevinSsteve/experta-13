@@ -108,14 +108,6 @@ export function saveSaleToStorage(sale: any): void {
     date: new Date().toISOString(),
   });
   localStorage.setItem("sales", JSON.stringify(savedSales));
-  
-  // Importamos dinamicamente para evitar dependências circulares
-  import('./sales-data').then(module => {
-    // Atualize os dados de vendas para refletir no dashboard
-    module.refreshSalesData();
-  }).catch(error => {
-    console.error("Erro ao atualizar dados de vendas:", error);
-  });
 }
 
 export function getSalesFromStorage(): any[] {

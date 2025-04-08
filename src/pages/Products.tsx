@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,83 +30,169 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Product } from "@/contexts/CartContext";
-import { generateId, formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { ProductForm, ProductFormValues } from "@/components/products/ProductForm";
 import { toast } from "sonner";
 import { Search, Plus, Pencil, Trash } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const Products = () => {
-  const [products, setProducts] = useState<Product[]>(() => {
-    // Carregar produtos do localStorage se existirem
-    const savedProducts = localStorage.getItem("products");
-    return savedProducts ? JSON.parse(savedProducts) : [];
-  });
-  
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+
+  // Fetch products from Supabase
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data as Product[];
+    },
+  });
+
+  useEffect(() => {
+    if (data) {
+      setProducts(data);
+    }
+  }, [data]);
 
   // Filtrar produtos baseado na busca
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.code && product.code.toLowerCase().includes(searchQuery.toLowerCase())) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddProduct = (data: ProductFormValues) => {
-    // Ensure all required fields have values to satisfy the Product type
-    const newProduct: Product = {
-      id: generateId(),
-      name: data.name, // Required field
-      price: data.price, // Required field
-      category: data.category, // Required field
-      stock: data.stock, // Required field
-      image: data.image || "/placeholder.svg", // Required field with default
-      code: data.code,
-      description: data.description,
-    };
-    
-    const updatedProducts = [...products, newProduct];
-    setProducts(updatedProducts);
-    localStorage.setItem("products", JSON.stringify(updatedProducts));
-    
-    setIsAddDialogOpen(false);
-    toast.success("Produto adicionado com sucesso!");
+  const handleAddProduct = async (data: ProductFormValues) => {
+    if (!user) {
+      toast.error("Você precisa estar logado para adicionar produtos");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { data: insertedProduct, error } = await supabase
+        .from('products')
+        .insert([{
+          name: data.name,
+          price: data.price,
+          category: data.category,
+          stock: data.stock,
+          description: data.description || null,
+          code: data.code || null,
+          image: data.image || "/placeholder.svg",
+          user_id: user.id
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Produto adicionado com sucesso!");
+      refetch();
+      setIsAddDialogOpen(false);
+    } catch (error: any) {
+      toast.error(`Erro ao adicionar produto: ${error.message}`);
+      console.error("Erro ao adicionar produto:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEditProduct = (data: ProductFormValues) => {
-    if (!editingProduct) return;
+  const handleEditProduct = async (data: ProductFormValues) => {
+    if (!editingProduct || !user) return;
     
-    const updatedProducts = products.map((product) =>
-      product.id === editingProduct.id
-        ? { ...product, ...data }
-        : product
-    );
-    
-    setProducts(updatedProducts);
-    localStorage.setItem("products", JSON.stringify(updatedProducts));
-    
-    setIsEditDialogOpen(false);
-    setEditingProduct(null);
-    toast.success("Produto atualizado com sucesso!");
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: data.name,
+          price: data.price,
+          category: data.category,
+          stock: data.stock,
+          description: data.description || null,
+          code: data.code || null,
+          image: data.image || "/placeholder.svg",
+        })
+        .eq('id', editingProduct.id);
+
+      if (error) throw error;
+
+      toast.success("Produto atualizado com sucesso!");
+      refetch();
+      setIsEditDialogOpen(false);
+      setEditingProduct(null);
+    } catch (error: any) {
+      toast.error(`Erro ao atualizar produto: ${error.message}`);
+      console.error("Erro ao atualizar produto:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDeleteProduct = (id: string) => {
-    const updatedProducts = products.filter((product) => product.id !== id);
-    setProducts(updatedProducts);
-    localStorage.setItem("products", JSON.stringify(updatedProducts));
-    
-    toast.success("Produto excluído com sucesso!");
+  const handleDeleteProduct = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success("Produto excluído com sucesso!");
+      refetch();
+    } catch (error: any) {
+      toast.error(`Erro ao excluir produto: ${error.message}`);
+      console.error("Erro ao excluir produto:", error);
+    }
   };
 
   const openEditDialog = (product: Product) => {
     setEditingProduct(product);
     setIsEditDialogOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto p-4 flex justify-center items-center h-[50vh]">
+          <p className="text-lg">Carregando produtos...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto p-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <p>Erro ao carregar produtos. Por favor, tente novamente mais tarde.</p>
+            <Button onClick={() => refetch()} className="mt-2">Tentar novamente</Button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -130,7 +215,7 @@ const Products = () => {
                     Preencha as informações do produto e clique em salvar.
                   </DialogDescription>
                 </DialogHeader>
-                <ProductForm onSubmit={handleAddProduct} />
+                <ProductForm onSubmit={handleAddProduct} isSubmitting={isSubmitting} />
               </DialogContent>
             </Dialog>
           </div>
@@ -338,6 +423,7 @@ const Products = () => {
             <ProductForm
               onSubmit={handleEditProduct}
               defaultValues={editingProduct}
+              isSubmitting={isSubmitting}
             />
           )}
         </DialogContent>

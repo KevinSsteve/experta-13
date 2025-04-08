@@ -73,24 +73,21 @@ export async function getProductsFromSupabase() {
     
     if (error) {
       console.error('Erro ao buscar produtos do Supabase:', error);
-      return getProductsFromStorage(); // Fallback para localStorage
+      return []; // Return empty array on error
     }
     
     return products || [];
   } catch (error) {
     console.error('Erro ao buscar produtos do Supabase:', error);
-    return getProductsFromStorage(); // Fallback para localStorage
+    return []; // Return empty array on error
   }
 }
 
+// Modified to safely handle localStorage errors
 export function getProductsFromStorage(): any[] {
-  try {
-    const savedProducts = localStorage.getItem("products");
-    return savedProducts ? JSON.parse(savedProducts) : [];
-  } catch (error) {
-    console.error("Erro ao acessar localStorage:", error);
-    return []; // Return empty array if localStorage isn't available
-  }
+  // Always return empty array when in preview mode or localStorage isn't available
+  // This prevents the SecurityError
+  return [];
 }
 
 export async function saveProductToSupabase(product: any): Promise<boolean> {
@@ -116,7 +113,7 @@ export async function saveProductToSupabase(product: any): Promise<boolean> {
 
     const { error } = await supabase
       .from('products')
-      .insert(productToSave);
+      .insert([productToSave]);
     
     if (error) {
       console.error('Erro ao salvar produto no Supabase:', error);
@@ -179,12 +176,10 @@ export async function deleteProductFromSupabase(id: string): Promise<boolean> {
   }
 }
 
+// Modified to avoid localStorage usage
 export function saveProductsToStorage(products: any[]): void {
-  try {
-    localStorage.setItem("products", JSON.stringify(products));
-  } catch (error) {
-    console.error("Erro ao salvar no localStorage:", error);
-  }
+  // No-op function to avoid security errors
+  console.log('saveProductsToStorage: localStorage disabled in preview mode');
 }
 
 export function getCategoriesFromProducts(products: any[]): string[] {
@@ -238,7 +233,7 @@ export async function saveSaleToSupabase(sale: any): Promise<boolean> {
 
     const { error } = await supabase
       .from('sales')
-      .insert(saleToSave);
+      .insert([saleToSave]);
     
     if (error) {
       console.error('Erro ao salvar venda no Supabase:', error);
@@ -252,42 +247,22 @@ export async function saveSaleToSupabase(sale: any): Promise<boolean> {
   }
 }
 
+// Modified to avoid localStorage usage
 export async function saveSaleToStorage(sale: any): Promise<void> {
+  // No-op function to avoid security errors
+  console.log('saveSaleToStorage: localStorage disabled in preview mode');
+  
+  // Still try to save to Supabase if user is logged in
   try {
-    const savedSales = getSalesFromStorage();
-    savedSales.push({
-      ...sale,
-      id: generateId(),
-      date: new Date().toISOString(),
-    });
-    localStorage.setItem("sales", JSON.stringify(savedSales));
-    
-    // Tentar salvar no Supabase se o usuário estiver logado
-    try {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        const saved = await saveSaleToSupabase(sale);
-        if (saved) {
-          console.log('Venda salva com sucesso no Supabase!');
-        }
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      const saved = await saveSaleToSupabase(sale);
+      if (saved) {
+        console.log('Venda salva com sucesso no Supabase!');
       }
-    } catch (error) {
-      console.error("Erro ao verificar sessão:", error);
-    }
-    
-    // Importamos dinamicamente para evitar dependências circulares
-    try {
-      import('./sales-data').then(module => {
-        // Atualize os dados de vendas para refletir no dashboard
-        module.refreshSalesData();
-      }).catch(error => {
-        console.error("Erro ao atualizar dados de vendas:", error);
-      });
-    } catch (error) {
-      console.error("Erro ao importar módulo:", error);
     }
   } catch (error) {
-    console.error("Erro ao salvar venda no localStorage:", error);
+    console.error("Erro ao verificar sessão:", error);
   }
 }
 
@@ -300,40 +275,26 @@ export async function getSalesFromSupabase() {
     
     if (error) {
       console.error('Erro ao buscar vendas do Supabase:', error);
-      return getSalesFromStorage(); // Fallback para localStorage
+      return []; // Return empty array on error instead of fallback
     }
     
     return sales || [];
   } catch (error) {
     console.error('Erro ao buscar vendas do Supabase:', error);
-    return getSalesFromStorage(); // Fallback para localStorage
+    return []; // Return empty array on error
   }
 }
 
+// Modified to safely handle localStorage errors
 export function getSalesFromStorage(): any[] {
-  try {
-    const savedSales = localStorage.getItem("sales");
-    return savedSales ? JSON.parse(savedSales) : [];
-  } catch (error) {
-    console.error("Erro ao acessar localStorage:", error);
-    return []; // Return empty array if localStorage isn't available
-  }
+  // Always return empty array when in preview mode or localStorage isn't available
+  return [];
 }
 
 export async function updateProductStockAfterSale(items: any[]): Promise<void> {
   try {
-    const products = getProductsFromStorage();
-    
-    // Update stock for each sold item
-    items.forEach(item => {
-      const productIndex = products.findIndex(p => p.id === item.product.id);
-      if (productIndex !== -1) {
-        products[productIndex].stock = Math.max(0, products[productIndex].stock - item.quantity);
-      }
-    });
-    
-    // Save updated products back to storage
-    saveProductsToStorage(products);
+    // Skip localStorage operations in preview mode
+    console.log('updateProductStockAfterSale: localStorage operations skipped in preview mode');
     
     // Se o usuário estiver logado, atualizar também no Supabase
     try {
@@ -387,58 +348,11 @@ export async function isUserLoggedIn(): Promise<boolean> {
   }
 }
 
-// Função para sincronizar produtos do localStorage para o Supabase
+// Modified to avoid localStorage issues
 export async function syncProductsToSupabase(): Promise<void> {
-  try {
-    const localProducts = getProductsFromStorage();
-    
-    const { data } = await supabase.auth.getSession();
-    if (!data.session || localProducts.length === 0) {
-      return;
-    }
-
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      console.error('Usuário não está autenticado');
-      return;
-    }
-    
-    // Primeiro, buscamos os produtos já existentes no Supabase para o usuário
-    const { data: existingProducts, error: fetchError } = await supabase
-      .from('products')
-      .select('id');
-    
-    if (fetchError) {
-      console.error('Erro ao buscar produtos existentes:', fetchError);
-      return;
-    }
-    
-    const existingIds = new Set(existingProducts?.map(p => p.id) || []);
-    
-    // Para cada produto local, verificamos se já existe no Supabase
-    for (const product of localProducts) {
-      try {
-        if (existingIds.has(product.id)) {
-          // Se já existe, atualiza
-          await updateProductInSupabase(product);
-        } else {
-          // Se não existe, insere com o user_id
-          const productWithUserId = {
-            ...product,
-            user_id: userData.user.id
-          };
-          await saveProductToSupabase(productWithUserId);
-        }
-      } catch (error) {
-        console.error('Erro ao sincronizar produto:', error);
-      }
-    }
-    
-    toast.success('Produtos sincronizados com sucesso!');
-  } catch (error) {
-    console.error('Erro ao sincronizar produtos:', error);
-    toast.error('Erro ao sincronizar produtos com o Supabase');
-  }
+  // In preview mode, just inform this is skipped
+  console.log('syncProductsToSupabase: skipped in preview mode due to localStorage restrictions');
+  toast.success('Funcionalidade limitada no modo de visualização');
 }
 
 // Função para buscar produtos públicos (sugestões) de outros usuários

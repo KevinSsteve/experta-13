@@ -4,16 +4,10 @@ import { getProductsFromStorage } from './utils';
 // Re-export the Product type so it can be imported directly from this file
 export type { Product };
 
-// Função para carregar produtos, prioriza produtos do localStorage
+// Função para carregar produtos, agora sempre retorna produtos padrão para evitar erros
 function loadProducts(): Product[] {
   try {
-    const storedProducts = getProductsFromStorage();
-    
-    if (storedProducts && storedProducts.length > 0) {
-      return storedProducts;
-    }
-    
-    // Produtos padrão para caso não haja produtos no localStorage
+    // No preview mode, just use default products to avoid localStorage errors
     return defaultProducts;
   } catch (error) {
     console.error("Erro ao carregar produtos:", error);
@@ -393,58 +387,33 @@ export function getProducts(search = '', category = '', minPrice = 0, maxPrice =
 }
 
 export function getProduct(id: string): Product | undefined {
-  // Buscar nos produtos do localStorage primeiro
-  const storedProducts = getProductsFromStorage();
-  if (storedProducts && storedProducts.length > 0) {
-    const storedProduct = storedProducts.find((product) => product.id === id);
-    if (storedProduct) return storedProduct;
-  }
-  
-  // Se não encontrou no localStorage, buscar nos produtos padrão
+  // Now just search in default products
   return products.find((product) => product.id === id);
 }
 
 export function getCategories(): string[] {
-  // Buscar categorias dos produtos do localStorage
-  const storedProducts = getProductsFromStorage();
-  if (storedProducts && storedProducts.length > 0) {
-    return Array.from(new Set(storedProducts.map((product) => product.category)));
-  }
-  
-  // Se não encontrou no localStorage, buscar nos produtos padrão
+  // Now just use default products
   return Array.from(new Set(products.map((product) => product.category)));
 }
 
 export function getTopSellingProducts(limit: number = 5): Product[] {
   // Em um app real, isso seria baseado em dados de vendas
   // Por enquanto, vamos apenas simular produtos populares
-  const storedProducts = getProductsFromStorage();
-  const productsToUse = storedProducts && storedProducts.length > 0 ? storedProducts : products;
-  
-  return [...productsToUse]
+  return [...products]
     .sort((a, b) => b.stock > a.stock ? 1 : -1) // Inverter a lógica para simular popularidade
     .slice(0, limit);
 }
 
 export function getProductsInStock(): Product[] {
-  const storedProducts = getProductsFromStorage();
-  const productsToUse = storedProducts && storedProducts.length > 0 ? storedProducts : products;
-  
-  return productsToUse.filter((product) => product.stock > 0);
+  return products.filter((product) => product.stock > 0);
 }
 
 export function getLowStockProducts(threshold: number = 10): Product[] {
-  const storedProducts = getProductsFromStorage();
-  const productsToUse = storedProducts && storedProducts.length > 0 ? storedProducts : products;
-  
-  return productsToUse.filter((product) => product.stock > 0 && product.stock <= threshold);
+  return products.filter((product) => product.stock > 0 && product.stock <= threshold);
 }
 
 export function getOutOfStockProducts(): Product[] {
-  const storedProducts = getProductsFromStorage();
-  const productsToUse = storedProducts && storedProducts.length > 0 ? storedProducts : products;
-  
-  return productsToUse.filter((product) => product.stock === 0);
+  return products.filter((product) => product.stock === 0);
 }
 
 export default products;

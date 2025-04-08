@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { getCategories } from "@/lib/products-data";
 import { Product } from "@/contexts/CartContext";
+import { Loader2 } from "lucide-react";
 
 // Esquema de validação para o formulário de produto
 const productSchema = z.object({
@@ -45,7 +46,25 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: ProductFormProps) {
-  const [categories] = useState(getCategories);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    // Load categories from Supabase
+    const loadCategories = async () => {
+      try {
+        const categoriesList = await getCategories();
+        setCategories(categoriesList);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+        toast.error('Erro ao carregar categorias');
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -102,23 +121,30 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Categoria</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar categoria" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isLoadingCategories ? (
+                  <div className="flex items-center space-x-2 h-10 px-4 border rounded">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Carregando categorias...</span>
+                  </div>
+                ) : (
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecionar categoria" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -167,8 +193,13 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
           )}
         />
 
-        <Button type="submit" disabled={isSubmitting} className="mt-4">
-          {isSubmitting ? "Salvando..." : defaultValues?.id ? "Atualizar Produto" : "Adicionar Produto"}
+        <Button type="submit" disabled={isSubmitting || isLoadingCategories} className="mt-4">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : defaultValues?.id ? "Atualizar Produto" : "Adicionar Produto"}
         </Button>
       </form>
     </Form>

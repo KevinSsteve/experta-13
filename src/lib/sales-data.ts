@@ -1,8 +1,7 @@
-
 import { getSalesFromStorage } from './utils';
+import { supabase } from '@/integrations/supabase/client';
 
-// Dados de vendas simulados para o dashboard
-
+// Tipos de dados
 export interface Sale {
   id: string;
   date: string;
@@ -27,17 +26,42 @@ export interface SalesByCategory {
   percentage: number;
 }
 
-// Função para obter as vendas
-function getSalesData(): Sale[] {
-  const storedSales = getSalesFromStorage();
+// Função para obter as vendas do Supabase
+export async function fetchSalesFromSupabase() {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('*')
+    .order('date', { ascending: false });
   
-  // Se houver vendas armazenadas, use-as
-  if (storedSales && storedSales.length > 0) {
-    return storedSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  if (error) {
+    console.error('Erro ao buscar vendas do Supabase:', error);
+    return [];
   }
   
-  // Caso contrário, gere dados simulados
-  return generateSalesData();
+  return data as Sale[];
+}
+
+// Função para obter as vendas
+export async function getSalesData(): Promise<Sale[]> {
+  try {
+    // Primeiro, tenta buscar do Supabase
+    const supabaseSales = await fetchSalesFromSupabase();
+    if (supabaseSales && supabaseSales.length > 0) {
+      return supabaseSales;
+    }
+    
+    // Se não encontrar no Supabase, usa armazenamento local
+    const storedSales = getSalesFromStorage();
+    if (storedSales && storedSales.length > 0) {
+      return storedSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+    
+    // Caso contrário, gera dados simulados
+    return generateSalesData();
+  } catch (error) {
+    console.error('Erro ao obter dados de vendas:', error);
+    return generateSalesData();
+  }
 }
 
 // Função para gerar dados aleatórios de vendas dos últimos 30 dias
@@ -74,10 +98,9 @@ function generateSalesData(): Sale[] {
   return sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-const salesData = getSalesData();
-
 // Função para obter as vendas dos últimos X dias
-export function getRecentSales(days: number = 7): Sale[] {
+export async function getRecentSales(days: number = 7): Promise<Sale[]> {
+  const salesData = await getSalesData();
   const now = new Date();
   const cutoff = new Date(now);
   cutoff.setDate(cutoff.getDate() - days);
@@ -86,7 +109,7 @@ export function getRecentSales(days: number = 7): Sale[] {
 }
 
 // Função para calcular vendas diárias
-export function getDailySales(days: number = 7): DailySales[] {
+export async function getDailySales(days: number = 7): Promise<DailySales[]> {
   const dailySales: { [key: string]: DailySales } = {};
   const now = new Date();
   
@@ -104,7 +127,7 @@ export function getDailySales(days: number = 7): DailySales[] {
   }
   
   // Calcular vendas para cada dia
-  const recentSales = getRecentSales(days);
+  const recentSales = await getRecentSales(days);
   recentSales.forEach(sale => {
     const dateString = sale.date.split('T')[0];
     if (dailySales[dateString]) {
@@ -119,9 +142,12 @@ export function getDailySales(days: number = 7): DailySales[] {
 }
 
 // Função para calcular vendas por categoria
-export function getSalesByCategory(): SalesByCategory[] {
+export async function getSalesByCategory(): Promise<SalesByCategory[]> {
   const categories: { [key: string]: number } = {};
   let totalSales = 0;
+  
+  // Obter os dados de vendas
+  const salesData = await getSalesData();
   
   // Calcular vendas por categoria usando dados reais
   salesData.forEach(sale => {
@@ -137,24 +163,65 @@ export function getSalesByCategory(): SalesByCategory[] {
     }
   });
   
-  // Se não houver dados de vendas por categoria, use categorias simuladas
+  // Se não houver dados de vendas por categoria, busque categorias dos produtos
   if (Object.keys(categories).length === 0) {
-    const defaultCategories = [
-      'Alimentos Básicos',
-      'Laticínios',
-      'Hortifruti',
-      'Carnes',
-      'Padaria',
-      'Bebidas',
-      'Limpeza',
-      'Higiene'
-    ];
-    
-    totalSales = salesData.reduce((sum, sale) => sum + sale.total, 0);
-    
-    defaultCategories.forEach(category => {
-      categories[category] = parseFloat((Math.random() * totalSales * 0.3).toFixed(2));
-    });
+    try {
+      const { data: products } = await supabase
+        .from('products')
+        .select('category, price')
+        .order('category');
+      
+      if (products && products.length > 0) {
+        // Agrupar por categoria
+        products.forEach(product => {
+          if (!categories[product.category]) {
+            categories[product.category] = 0;
+          }
+          // Simular algumas vendas baseadas nos produtos existentes
+          categories[product.category] += product.price * Math.floor(Math.random() * 5 + 1);
+        });
+        
+        totalSales = Object.values(categories).reduce((sum, value) => sum + value, 0);
+      } else {
+        // Usar categorias padrão se não houver produtos
+        const defaultCategories = [
+          'Alimentos Básicos',
+          'Laticínios',
+          'Hortifruti',
+          'Carnes',
+          'Padaria',
+          'Bebidas',
+          'Limpeza',
+          'Higiene'
+        ];
+        
+        totalSales = salesData.reduce((sum, sale) => sum + sale.total, 0);
+        
+        defaultCategories.forEach(category => {
+          categories[category] = parseFloat((Math.random() * totalSales * 0.3).toFixed(2));
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar categorias de produtos:', error);
+      
+      // Usar categorias padrão em caso de erro
+      const defaultCategories = [
+        'Alimentos Básicos',
+        'Laticínios',
+        'Hortifruti',
+        'Carnes',
+        'Padaria',
+        'Bebidas',
+        'Limpeza',
+        'Higiene'
+      ];
+      
+      totalSales = salesData.reduce((sum, sale) => sum + sale.total, 0);
+      
+      defaultCategories.forEach(category => {
+        categories[category] = parseFloat((Math.random() * totalSales * 0.3).toFixed(2));
+      });
+    }
   }
   
   // Converter para o formato esperado
@@ -166,15 +233,18 @@ export function getSalesByCategory(): SalesByCategory[] {
 }
 
 // Função para calcular KPIs
-export function getSalesKPIs(days: number = 7) {
-  const recentSales = getRecentSales(days);
+export async function getSalesKPIs(days: number = 7) {
+  const recentSales = await getRecentSales(days);
   
   const totalRevenue = recentSales.reduce((sum, sale) => sum + sale.total, 0);
   const totalSales = recentSales.length;
   const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
   
   // Comparar com o período anterior
-  const previousPeriodSales = getRecentSales(days * 2).slice(recentSales.length);
+  const previousDays = days * 2;
+  const allSales = await getRecentSales(previousDays);
+  const previousPeriodSales = allSales.slice(recentSales.length);
+  
   const previousRevenue = previousPeriodSales.reduce((sum, sale) => sum + sale.total, 0);
   const previousSales = previousPeriodSales.length;
   const previousAvgTicket = previousSales > 0 ? previousRevenue / previousSales : 0;
@@ -200,5 +270,3 @@ export function getSalesKPIs(days: number = 7) {
     ticketChange: parseFloat(ticketChange.toFixed(1)),
   };
 }
-
-export default salesData;

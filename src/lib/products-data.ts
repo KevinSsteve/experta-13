@@ -1,10 +1,187 @@
-
 import { Product } from '../contexts/CartContext';
+import { supabase } from '@/integrations/supabase/client';
 
 // Re-export the Product type so it can be imported directly from this file
 export type { Product };
 
-const products: Product[] = [
+// Função para buscar produtos do Supabase
+export async function fetchProductsFromSupabase(): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      console.error('Erro ao buscar produtos do Supabase:', error);
+      return [];
+    }
+    
+    return data as Product[];
+  } catch (error) {
+    console.error('Erro ao buscar produtos:', error);
+    return [];
+  }
+}
+
+// Função para obter produtos
+export async function getProducts(search = '', category = '', minPrice = 0, maxPrice = Infinity, inStock = false): Promise<Product[]> {
+  try {
+    // Buscar produtos do Supabase
+    let products = await fetchProductsFromSupabase();
+    
+    // Se não encontrar produtos no Supabase, use os dados hardcoded
+    if (products.length === 0) {
+      products = hardcodedProducts;
+    }
+    
+    // Filtrar produtos
+    let filteredProducts = [...products];
+    
+    // Filtrar por busca
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredProducts = filteredProducts.filter(
+        (product) => 
+          product.name.toLowerCase().includes(searchLower) || 
+          (product.code && product.code.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Filtrar por categoria
+    if (category) {
+      filteredProducts = filteredProducts.filter(
+        (product) => product.category === category
+      );
+    }
+    
+    // Filtrar por preço
+    filteredProducts = filteredProducts.filter(
+      (product) => product.price >= minPrice && product.price <= maxPrice
+    );
+    
+    // Filtrar por estoque
+    if (inStock) {
+      filteredProducts = filteredProducts.filter(
+        (product) => product.stock > 0
+      );
+    }
+    
+    return filteredProducts;
+  } catch (error) {
+    console.error('Erro ao obter produtos:', error);
+    return [];
+  }
+}
+
+export async function getProduct(id: string): Promise<Product | undefined> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data as Product;
+  } catch (error) {
+    console.error('Erro ao buscar produto:', error);
+    // Fallback para dados hardcoded
+    return hardcodedProducts.find((product) => product.id === id);
+  }
+}
+
+export async function getCategories(): Promise<string[]> {
+  try {
+    const products = await fetchProductsFromSupabase();
+    return Array.from(new Set(products.map((product) => product.category)));
+  } catch (error) {
+    console.error('Erro ao obter categorias:', error);
+    return Array.from(new Set(hardcodedProducts.map((product) => product.category)));
+  }
+}
+
+export async function getTopSellingProducts(limit: number = 5): Promise<Product[]> {
+  try {
+    // Em uma implementação real, você buscaria os produtos mais vendidos
+    // com base nos dados de vendas
+    const products = await fetchProductsFromSupabase();
+    
+    if (products.length === 0) {
+      return [...hardcodedProducts].sort(() => Math.random() - 0.5).slice(0, limit);
+    }
+    
+    // Simulando produtos mais vendidos (ordenando aleatoriamente)
+    return [...products].sort(() => Math.random() - 0.5).slice(0, limit);
+  } catch (error) {
+    console.error('Erro ao obter produtos mais vendidos:', error);
+    return [...hardcodedProducts].sort(() => Math.random() - 0.5).slice(0, limit);
+  }
+}
+
+export async function getLowStockProducts(threshold: number = 10): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .gt('stock', 0)
+      .lte('stock', threshold)
+      .order('stock');
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data as Product[] || [];
+  } catch (error) {
+    console.error('Erro ao obter produtos com estoque baixo:', error);
+    return hardcodedProducts.filter((product) => product.stock > 0 && product.stock <= threshold);
+  }
+}
+
+export async function getProductsInStock(): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .gt('stock', 0)
+      .order('name');
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data as Product[] || [];
+  } catch (error) {
+    console.error('Erro ao obter produtos em estoque:', error);
+    return hardcodedProducts.filter((product) => product.stock > 0);
+  }
+}
+
+export async function getOutOfStockProducts(): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('stock', 0)
+      .order('name');
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data as Product[] || [];
+  } catch (error) {
+    console.error('Erro ao obter produtos fora de estoque:', error);
+    return hardcodedProducts.filter((product) => product.stock === 0);
+  }
+}
+
+// Produtos hardcoded para fallback
+const hardcodedProducts: Product[] = [
   {
     id: "1",
     name: "Arroz Premium 5kg",
@@ -307,66 +484,4 @@ const products: Product[] = [
   },
 ];
 
-export function getProducts(search = '', category = '', minPrice = 0, maxPrice = Infinity, inStock = false): Product[] {
-  let filteredProducts = [...products];
-  
-  // Filtrar por busca
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filteredProducts = filteredProducts.filter(
-      (product) => 
-        product.name.toLowerCase().includes(searchLower) || 
-        (product.code && product.code.toLowerCase().includes(searchLower))
-    );
-  }
-  
-  // Filtrar por categoria
-  if (category) {
-    filteredProducts = filteredProducts.filter(
-      (product) => product.category === category
-    );
-  }
-  
-  // Filtrar por preço
-  filteredProducts = filteredProducts.filter(
-    (product) => product.price >= minPrice && product.price <= maxPrice
-  );
-  
-  // Filtrar por estoque
-  if (inStock) {
-    filteredProducts = filteredProducts.filter(
-      (product) => product.stock > 0
-    );
-  }
-  
-  return filteredProducts;
-}
-
-export function getProduct(id: string): Product | undefined {
-  return products.find((product) => product.id === id);
-}
-
-export function getCategories(): string[] {
-  return Array.from(new Set(products.map((product) => product.category)));
-}
-
-export function getTopSellingProducts(limit: number = 5): Product[] {
-  // Isso é uma simulação - em um app real, usaria dados reais de vendas
-  return [...products]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, limit);
-}
-
-export function getProductsInStock(): Product[] {
-  return products.filter((product) => product.stock > 0);
-}
-
-export function getLowStockProducts(threshold: number = 10): Product[] {
-  return products.filter((product) => product.stock > 0 && product.stock <= threshold);
-}
-
-export function getOutOfStockProducts(): Product[] {
-  return products.filter((product) => product.stock === 0);
-}
-
-export default products;
+export default hardcodedProducts;

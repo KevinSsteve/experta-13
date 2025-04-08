@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -389,253 +388,255 @@ const Products = () => {
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[60vh] w-full">
-                <TabsContent value="store" className="mt-0">
-                  {isMobile ? (
-                    // Versão mobile: Cards em vez de tabela
-                    <div className="grid gap-4">
-                      {filteredProducts.length === 0 ? (
-                        <div className="px-4 py-8 text-center text-muted-foreground">
-                          {publicProducts.length === 0
-                            ? "Nenhum produto disponível na loja."
-                            : "Nenhum produto encontrado com os critérios de busca."}
-                        </div>
-                      ) : (
-                        filteredProducts.map((product) => (
-                          <Card key={product.id}>
-                            <CardContent className="p-4">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="font-medium">{product.name}</h3>
-                                  <div className="text-sm text-muted-foreground mb-2">
-                                    {product.code || "Sem código"} • {product.category}
-                                  </div>
-                                  <div className="font-medium">{formatCurrency(product.price)}</div>
-                                </div>
-                                <Button 
-                                  onClick={() => addToStock(product)}
-                                  disabled={isSubmitting}
-                                  size="sm"
-                                >
-                                  <PlusCircle className="h-4 w-4 mr-1" />
-                                  Adicionar ao estoque
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
-                      )}
-                    </div>
-                  ) : (
-                    // Versão desktop: Tabela
-                    <table className="min-w-full divide-y divide-border">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="px-4 py-2 text-left">Nome</th>
-                          <th className="px-4 py-2 text-left">Código</th>
-                          <th className="px-4 py-2 text-left">Categoria</th>
-                          <th className="px-4 py-2 text-left">Preço</th>
-                          <th className="px-4 py-2 text-right">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                <Tabs value={activeTab} className="w-full">
+                  <TabsContent value="store" className="mt-0">
+                    {isMobile ? (
+                      // Versão mobile: Cards em vez de tabela
+                      <div className="grid gap-4">
                         {filteredProducts.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                              {publicProducts.length === 0
-                                ? "Nenhum produto disponível na loja."
-                                : "Nenhum produto encontrado com os critérios de busca."}
-                            </td>
-                          </tr>
+                          <div className="px-4 py-8 text-center text-muted-foreground">
+                            {publicProducts.length === 0
+                              ? "Nenhum produto disponível na loja."
+                              : "Nenhum produto encontrado com os critérios de busca."}
+                          </div>
                         ) : (
                           filteredProducts.map((product) => (
-                            <tr key={product.id} className="border-b hover:bg-muted/50">
-                              <td className="px-4 py-2">{product.name}</td>
-                              <td className="px-4 py-2">{product.code || "-"}</td>
-                              <td className="px-4 py-2">{product.category}</td>
-                              <td className="px-4 py-2">{formatCurrency(product.price)}</td>
-                              <td className="px-4 py-2 text-right">
-                                <Button 
-                                  onClick={() => addToStock(product)}
-                                  disabled={isSubmitting}
-                                  size="sm"
-                                  variant="secondary"
-                                >
-                                  <PlusCircle className="h-4 w-4 mr-1" />
-                                  Adicionar ao estoque
-                                </Button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="my-products" className="mt-0">
-                  {isMobile ? (
-                    // Versão mobile: Cards em vez de tabela
-                    <div className="grid gap-4">
-                      {filteredProducts.length === 0 ? (
-                        <div className="px-4 py-8 text-center text-muted-foreground">
-                          {userProducts.length === 0
-                            ? "Nenhum produto no seu estoque. Adicione produtos da loja ou crie um novo produto."
-                            : "Nenhum produto encontrado com os critérios de busca."}
-                        </div>
-                      ) : (
-                        filteredProducts.map((product) => (
-                          <Card key={product.id}>
-                            <CardContent className="p-4">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="font-medium">{product.name}</h3>
-                                  <div className="text-sm text-muted-foreground mb-2">
-                                    {product.code || "Sem código"} • {product.category}
-                                  </div>
-                                  <div className="flex space-x-2 items-center">
+                            <Card key={product.id}>
+                              <CardContent className="p-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h3 className="font-medium">{product.name}</h3>
+                                    <div className="text-sm text-muted-foreground mb-2">
+                                      {product.code || "Sem código"} • {product.category}
+                                    </div>
                                     <div className="font-medium">{formatCurrency(product.price)}</div>
-                                    <span
-                                      className={`px-2 py-1 rounded-full text-xs ${
-                                        product.stock === 0
-                                          ? "bg-red-100 text-red-700"
-                                          : product.stock < 10
-                                          ? "bg-amber-100 text-amber-700"
-                                          : "bg-green-100 text-green-700"
-                                      }`}
-                                    >
-                                      {product.stock} un
-                                    </span>
                                   </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button
+                                  <Button 
+                                    onClick={() => addToStock(product)}
+                                    disabled={isSubmitting}
                                     size="sm"
-                                    variant="outline"
-                                    onClick={() => openEditDialog(product)}
                                   >
-                                    <Pencil className="h-4 w-4" />
+                                    <PlusCircle className="h-4 w-4 mr-1" />
+                                    Adicionar ao estoque
                                   </Button>
-                                  
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button size="sm" variant="destructive">
-                                        <Trash className="h-4 w-4" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>
-                                          Confirmar exclusão
-                                        </AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Tem certeza que deseja excluir o produto "{product.name}"?
-                                          Esta ação não pode ser desfeita.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleDeleteProduct(product.id)}
-                                        >
-                                          Excluir
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
                                 </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
-                      )}
-                    </div>
-                  ) : (
-                    // Versão desktop: Tabela
-                    <table className="min-w-full divide-y divide-border">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="px-4 py-2 text-left">Nome</th>
-                          <th className="px-4 py-2 text-left">Código</th>
-                          <th className="px-4 py-2 text-left">Categoria</th>
-                          <th className="px-4 py-2 text-left">Preço</th>
-                          <th className="px-4 py-2 text-left">Estoque</th>
-                          <th className="px-4 py-2 text-right">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredProducts.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                              {userProducts.length === 0
-                                ? "Nenhum produto no seu estoque. Adicione produtos da loja ou crie um novo produto."
-                                : "Nenhum produto encontrado com os critérios de busca."}
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredProducts.map((product) => (
-                            <tr key={product.id} className="border-b hover:bg-muted/50">
-                              <td className="px-4 py-2">{product.name}</td>
-                              <td className="px-4 py-2">{product.code || "-"}</td>
-                              <td className="px-4 py-2">{product.category}</td>
-                              <td className="px-4 py-2">{formatCurrency(product.price)}</td>
-                              <td className="px-4 py-2">
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs ${
-                                    product.stock === 0
-                                      ? "bg-red-100 text-red-700"
-                                      : product.stock < 10
-                                      ? "bg-amber-100 text-amber-700"
-                                      : "bg-green-100 text-green-700"
-                                  }`}
-                                >
-                                  {product.stock} un
-                                </span>
-                              </td>
-                              <td className="px-4 py-2 text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => openEditDialog(product)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button size="sm" variant="destructive">
-                                        <Trash className="h-4 w-4" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>
-                                          Confirmar exclusão
-                                        </AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Tem certeza que deseja excluir o produto "{product.name}"?
-                                          Esta ação não pode ser desfeita.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleDeleteProduct(product.id)}
-                                        >
-                                          Excluir
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
-                              </td>
-                            </tr>
+                              </CardContent>
+                            </Card>
                           ))
                         )}
-                      </tbody>
-                    </table>
-                  )}
-                </TabsContent>
+                      </div>
+                    ) : (
+                      // Versão desktop: Tabela
+                      <table className="min-w-full divide-y divide-border">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="px-4 py-2 text-left">Nome</th>
+                            <th className="px-4 py-2 text-left">Código</th>
+                            <th className="px-4 py-2 text-left">Categoria</th>
+                            <th className="px-4 py-2 text-left">Preço</th>
+                            <th className="px-4 py-2 text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredProducts.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                                {publicProducts.length === 0
+                                  ? "Nenhum produto disponível na loja."
+                                  : "Nenhum produto encontrado com os critérios de busca."}
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredProducts.map((product) => (
+                              <tr key={product.id} className="border-b hover:bg-muted/50">
+                                <td className="px-4 py-2">{product.name}</td>
+                                <td className="px-4 py-2">{product.code || "-"}</td>
+                                <td className="px-4 py-2">{product.category}</td>
+                                <td className="px-4 py-2">{formatCurrency(product.price)}</td>
+                                <td className="px-4 py-2 text-right">
+                                  <Button 
+                                    onClick={() => addToStock(product)}
+                                    disabled={isSubmitting}
+                                    size="sm"
+                                    variant="secondary"
+                                  >
+                                    <PlusCircle className="h-4 w-4 mr-1" />
+                                    Adicionar ao estoque
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="my-products" className="mt-0">
+                    {isMobile ? (
+                      // Versão mobile: Cards em vez de tabela
+                      <div className="grid gap-4">
+                        {filteredProducts.length === 0 ? (
+                          <div className="px-4 py-8 text-center text-muted-foreground">
+                            {userProducts.length === 0
+                              ? "Nenhum produto no seu estoque. Adicione produtos da loja ou crie um novo produto."
+                              : "Nenhum produto encontrado com os critérios de busca."}
+                          </div>
+                        ) : (
+                          filteredProducts.map((product) => (
+                            <Card key={product.id}>
+                              <CardContent className="p-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h3 className="font-medium">{product.name}</h3>
+                                    <div className="text-sm text-muted-foreground mb-2">
+                                      {product.code || "Sem código"} • {product.category}
+                                    </div>
+                                    <div className="flex space-x-2 items-center">
+                                      <div className="font-medium">{formatCurrency(product.price)}</div>
+                                      <span
+                                        className={`px-2 py-1 rounded-full text-xs ${
+                                          product.stock === 0
+                                            ? "bg-red-100 text-red-700"
+                                            : product.stock < 10
+                                            ? "bg-amber-100 text-amber-700"
+                                            : "bg-green-100 text-green-700"
+                                        }`}
+                                      >
+                                        {product.stock} un
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => openEditDialog(product)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button size="sm" variant="destructive">
+                                          <Trash className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            Confirmar exclusão
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Tem certeza que deseja excluir o produto "{product.name}"?
+                                            Esta ação não pode ser desfeita.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleDeleteProduct(product.id)}
+                                          >
+                                            Excluir
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </div>
+                    ) : (
+                      // Versão desktop: Tabela
+                      <table className="min-w-full divide-y divide-border">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="px-4 py-2 text-left">Nome</th>
+                            <th className="px-4 py-2 text-left">Código</th>
+                            <th className="px-4 py-2 text-left">Categoria</th>
+                            <th className="px-4 py-2 text-left">Preço</th>
+                            <th className="px-4 py-2 text-left">Estoque</th>
+                            <th className="px-4 py-2 text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredProducts.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                                {userProducts.length === 0
+                                  ? "Nenhum produto no seu estoque. Adicione produtos da loja ou crie um novo produto."
+                                  : "Nenhum produto encontrado com os critérios de busca."}
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredProducts.map((product) => (
+                              <tr key={product.id} className="border-b hover:bg-muted/50">
+                                <td className="px-4 py-2">{product.name}</td>
+                                <td className="px-4 py-2">{product.code || "-"}</td>
+                                <td className="px-4 py-2">{product.category}</td>
+                                <td className="px-4 py-2">{formatCurrency(product.price)}</td>
+                                <td className="px-4 py-2">
+                                  <span
+                                    className={`px-2 py-1 rounded-full text-xs ${
+                                      product.stock === 0
+                                        ? "bg-red-100 text-red-700"
+                                        : product.stock < 10
+                                        ? "bg-amber-100 text-amber-700"
+                                        : "bg-green-100 text-green-700"
+                                    }`}
+                                  >
+                                    {product.stock} un
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => openEditDialog(product)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button size="sm" variant="destructive">
+                                          <Trash className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            Confirmar exclusão
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Tem certeza que deseja excluir o produto "{product.name}"?
+                                            Esta ação não pode ser desfeita.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleDeleteProduct(product.id)}
+                                          >
+                                            Excluir
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </ScrollArea>
             </CardContent>
           </Card>

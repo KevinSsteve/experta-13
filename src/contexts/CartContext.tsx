@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -6,12 +7,11 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  image: string;
   category: string;
   stock: number;
-  image: string;
   code?: string;
   description?: string;
-  isPublic?: boolean;
 }
 
 export interface CartItem {

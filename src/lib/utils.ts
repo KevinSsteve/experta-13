@@ -127,8 +127,7 @@ export async function updateProductInSupabase(product: any): Promise<boolean> {
         stock: product.stock,
         image: product.image || '/placeholder.svg',
         code: product.code || null,
-        description: product.description || null,
-        is_public: product.isPublic
+        description: product.description || null
       })
       .eq('id', product.id);
     
@@ -386,11 +385,7 @@ export async function getPublicProductSuggestions(): Promise<any[]> {
       return [];
     }
     
-    // Converter is_public para isPublic para manter a consistência na aplicação
-    return (products || []).map(product => ({
-      ...product,
-      isPublic: product.is_public
-    }));
+    return products || [];
   } catch (error) {
     console.error('Erro ao buscar sugestões de produtos:', error);
     return [];

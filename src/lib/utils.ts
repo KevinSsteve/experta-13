@@ -84,8 +84,13 @@ export async function getProductsFromSupabase() {
 }
 
 export function getProductsFromStorage(): any[] {
-  const savedProducts = localStorage.getItem("products");
-  return savedProducts ? JSON.parse(savedProducts) : [];
+  try {
+    const savedProducts = localStorage.getItem("products");
+    return savedProducts ? JSON.parse(savedProducts) : [];
+  } catch (error) {
+    console.error("Erro ao acessar localStorage:", error);
+    return []; // Return empty array if localStorage isn't available
+  }
 }
 
 export async function saveProductToSupabase(product: any): Promise<boolean> {
@@ -96,20 +101,22 @@ export async function saveProductToSupabase(product: any): Promise<boolean> {
       return false;
     }
 
+    const productToSave = {
+      id: product.id || undefined, // Supabase irá gerar um UUID se não fornecido
+      name: product.name,
+      price: product.price,
+      category: product.category,
+      stock: product.stock,
+      image: product.image || '/placeholder.svg',
+      code: product.code || null,
+      description: product.description || null,
+      is_public: product.isPublic || false,
+      user_id: userData.user.id
+    };
+
     const { error } = await supabase
       .from('products')
-      .insert({
-        id: product.id || undefined, // Supabase irá gerar um UUID se não fornecido
-        name: product.name,
-        price: product.price,
-        category: product.category,
-        stock: product.stock,
-        image: product.image || '/placeholder.svg',
-        code: product.code || null,
-        description: product.description || null,
-        is_public: product.isPublic || false,
-        user_id: userData.user.id
-      });
+      .insert(productToSave);
     
     if (error) {
       console.error('Erro ao salvar produto no Supabase:', error);
@@ -125,18 +132,20 @@ export async function saveProductToSupabase(product: any): Promise<boolean> {
 
 export async function updateProductInSupabase(product: any): Promise<boolean> {
   try {
+    const productToUpdate = {
+      name: product.name,
+      price: product.price,
+      category: product.category,
+      stock: product.stock,
+      image: product.image || '/placeholder.svg',
+      code: product.code || null,
+      description: product.description || null,
+      is_public: product.isPublic
+    };
+
     const { error } = await supabase
       .from('products')
-      .update({
-        name: product.name,
-        price: product.price,
-        category: product.category,
-        stock: product.stock,
-        image: product.image || '/placeholder.svg',
-        code: product.code || null,
-        description: product.description || null,
-        is_public: product.isPublic
-      })
+      .update(productToUpdate)
       .eq('id', product.id);
     
     if (error) {
@@ -171,7 +180,11 @@ export async function deleteProductFromSupabase(id: string): Promise<boolean> {
 }
 
 export function saveProductsToStorage(products: any[]): void {
-  localStorage.setItem("products", JSON.stringify(products));
+  try {
+    localStorage.setItem("products", JSON.stringify(products));
+  } catch (error) {
+    console.error("Erro ao salvar no localStorage:", error);
+  }
 }
 
 export function getCategoriesFromProducts(products: any[]): string[] {
@@ -215,15 +228,17 @@ export async function saveSaleToSupabase(sale: any): Promise<boolean> {
       return false;
     }
 
+    const saleToSave = {
+      total: sale.total,
+      amount_paid: sale.amountPaid,
+      change: sale.change,
+      items: sale.products,
+      user_id: userData.user.id
+    };
+
     const { error } = await supabase
       .from('sales')
-      .insert({
-        total: sale.total,
-        amount_paid: sale.amountPaid,
-        change: sale.change,
-        items: sale.products,
-        user_id: userData.user.id
-      });
+      .insert(saleToSave);
     
     if (error) {
       console.error('Erro ao salvar venda no Supabase:', error);
@@ -238,30 +253,42 @@ export async function saveSaleToSupabase(sale: any): Promise<boolean> {
 }
 
 export async function saveSaleToStorage(sale: any): Promise<void> {
-  const savedSales = getSalesFromStorage();
-  savedSales.push({
-    ...sale,
-    id: generateId(),
-    date: new Date().toISOString(),
-  });
-  localStorage.setItem("sales", JSON.stringify(savedSales));
-  
-  // Tentar salvar no Supabase se o usuário estiver logado
-  const { data } = await supabase.auth.getSession();
-  if (data.session) {
-    const saved = await saveSaleToSupabase(sale);
-    if (saved) {
-      console.log('Venda salva com sucesso no Supabase!');
+  try {
+    const savedSales = getSalesFromStorage();
+    savedSales.push({
+      ...sale,
+      id: generateId(),
+      date: new Date().toISOString(),
+    });
+    localStorage.setItem("sales", JSON.stringify(savedSales));
+    
+    // Tentar salvar no Supabase se o usuário estiver logado
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        const saved = await saveSaleToSupabase(sale);
+        if (saved) {
+          console.log('Venda salva com sucesso no Supabase!');
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao verificar sessão:", error);
     }
+    
+    // Importamos dinamicamente para evitar dependências circulares
+    try {
+      import('./sales-data').then(module => {
+        // Atualize os dados de vendas para refletir no dashboard
+        module.refreshSalesData();
+      }).catch(error => {
+        console.error("Erro ao atualizar dados de vendas:", error);
+      });
+    } catch (error) {
+      console.error("Erro ao importar módulo:", error);
+    }
+  } catch (error) {
+    console.error("Erro ao salvar venda no localStorage:", error);
   }
-  
-  // Importamos dinamicamente para evitar dependências circulares
-  import('./sales-data').then(module => {
-    // Atualize os dados de vendas para refletir no dashboard
-    module.refreshSalesData();
-  }).catch(error => {
-    console.error("Erro ao atualizar dados de vendas:", error);
-  });
 }
 
 export async function getSalesFromSupabase() {
@@ -284,74 +311,92 @@ export async function getSalesFromSupabase() {
 }
 
 export function getSalesFromStorage(): any[] {
-  const savedSales = localStorage.getItem("sales");
-  return savedSales ? JSON.parse(savedSales) : [];
+  try {
+    const savedSales = localStorage.getItem("sales");
+    return savedSales ? JSON.parse(savedSales) : [];
+  } catch (error) {
+    console.error("Erro ao acessar localStorage:", error);
+    return []; // Return empty array if localStorage isn't available
+  }
 }
 
 export async function updateProductStockAfterSale(items: any[]): Promise<void> {
-  const products = getProductsFromStorage();
-  
-  // Update stock for each sold item
-  items.forEach(item => {
-    const productIndex = products.findIndex(p => p.id === item.product.id);
-    if (productIndex !== -1) {
-      products[productIndex].stock = Math.max(0, products[productIndex].stock - item.quantity);
-    }
-  });
-  
-  // Save updated products back to storage
-  saveProductsToStorage(products);
-  
-  // Se o usuário estiver logado, atualizar também no Supabase
-  const { data } = await supabase.auth.getSession();
-  if (data.session) {
-    for (const item of items) {
-      try {
-        // Obter o produto atual do Supabase para ter o estoque atualizado
-        const { data: productData, error: selectError } = await supabase
-          .from('products')
-          .select('stock')
-          .eq('id', item.product.id)
-          .single();
-        
-        if (selectError || !productData) {
-          console.error('Erro ao obter estoque atual do produto:', selectError);
-          continue;
-        }
-        
-        // Calcular novo estoque e atualizar no Supabase
-        const newStock = Math.max(0, productData.stock - item.quantity);
-        const { error: updateError } = await supabase
-          .from('products')
-          .update({ stock: newStock })
-          .eq('id', item.product.id);
-        
-        if (updateError) {
-          console.error('Erro ao atualizar estoque do produto no Supabase:', updateError);
-        }
-      } catch (error) {
-        console.error('Erro ao atualizar estoque do produto:', error);
+  try {
+    const products = getProductsFromStorage();
+    
+    // Update stock for each sold item
+    items.forEach(item => {
+      const productIndex = products.findIndex(p => p.id === item.product.id);
+      if (productIndex !== -1) {
+        products[productIndex].stock = Math.max(0, products[productIndex].stock - item.quantity);
       }
+    });
+    
+    // Save updated products back to storage
+    saveProductsToStorage(products);
+    
+    // Se o usuário estiver logado, atualizar também no Supabase
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        for (const item of items) {
+          try {
+            // Obter o produto atual do Supabase para ter o estoque atualizado
+            const { data: productData, error: selectError } = await supabase
+              .from('products')
+              .select('stock')
+              .eq('id', item.product.id)
+              .single();
+            
+            if (selectError || !productData) {
+              console.error('Erro ao obter estoque atual do produto:', selectError);
+              continue;
+            }
+            
+            // Calcular novo estoque e atualizar no Supabase
+            const newStock = Math.max(0, productData.stock - item.quantity);
+            const { error: updateError } = await supabase
+              .from('products')
+              .update({ stock: newStock })
+              .eq('id', item.product.id);
+            
+            if (updateError) {
+              console.error('Erro ao atualizar estoque do produto no Supabase:', updateError);
+            }
+          } catch (error) {
+            console.error('Erro ao atualizar estoque do produto:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao verificar sessão:", error);
     }
+  } catch (error) {
+    console.error("Erro ao atualizar estoque após venda:", error);
   }
 }
 
 // Função auxiliar para verificar se o usuário está logado
 export async function isUserLoggedIn(): Promise<boolean> {
-  const { data } = await supabase.auth.getSession();
-  return !!data.session;
+  try {
+    const { data } = await supabase.auth.getSession();
+    return !!data.session;
+  } catch (error) {
+    console.error("Erro ao verificar sessão:", error);
+    return false;
+  }
 }
 
 // Função para sincronizar produtos do localStorage para o Supabase
 export async function syncProductsToSupabase(): Promise<void> {
-  const localProducts = getProductsFromStorage();
-  const { data } = await supabase.auth.getSession();
-  
-  if (!data.session || localProducts.length === 0) {
-    return;
-  }
-
   try {
+    const localProducts = getProductsFromStorage();
+    
+    const { data } = await supabase.auth.getSession();
+    if (!data.session || localProducts.length === 0) {
+      return;
+    }
+
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
       console.error('Usuário não está autenticado');
@@ -372,17 +417,20 @@ export async function syncProductsToSupabase(): Promise<void> {
     
     // Para cada produto local, verificamos se já existe no Supabase
     for (const product of localProducts) {
-      if (existingIds.has(product.id)) {
-        // Se já existe, atualiza
-        await updateProductInSupabase(product);
-      } else {
-        // Se não existe, insere
-        // Adiciona o user_id ao produto antes de salvar
-        const productWithUserId = {
-          ...product,
-          user_id: userData.user.id
-        };
-        await saveProductToSupabase(productWithUserId);
+      try {
+        if (existingIds.has(product.id)) {
+          // Se já existe, atualiza
+          await updateProductInSupabase(product);
+        } else {
+          // Se não existe, insere com o user_id
+          const productWithUserId = {
+            ...product,
+            user_id: userData.user.id
+          };
+          await saveProductToSupabase(productWithUserId);
+        }
+      } catch (error) {
+        console.error('Erro ao sincronizar produto:', error);
       }
     }
     
@@ -406,8 +454,7 @@ export async function getPublicProductSuggestions(): Promise<any[]> {
       .from('products')
       .select('*')
       .eq('is_public', true)
-      .neq('user_id', userData.user.id) // Apenas produtos de outros usuários
-      .limit(20);
+      .neq('user_id', userData.user.id); // Apenas produtos de outros usuários
     
     if (error) {
       console.error('Erro ao buscar sugestões de produtos:', error);

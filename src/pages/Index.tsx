@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { 
   formatCurrency, 
-  debounce
+  debounce, 
+  getProductsFromStorage, 
+  filterProducts
 } from '@/lib/utils';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Input } from '@/components/ui/input';
@@ -15,7 +17,6 @@ import {
 } from '@/components/ui/card';
 import { Search, ShoppingCart, ArrowUpCircle } from 'lucide-react';
 import { Product } from '@/contexts/CartContext';
-import { getProducts } from '@/lib/products-data';
 
 const Index = () => {
   const { addItem } = useCart();
@@ -50,7 +51,9 @@ const Index = () => {
   
   // Load data on component mount
   useEffect(() => {
+    const products = getProductsFromStorage();
     updateFilteredProducts();
+    setIsLoading(false);
   }, []);
 
   // Debounced filter function
@@ -59,17 +62,10 @@ const Index = () => {
   }, 300);
 
   // Update filtered products based on search query
-  const updateFilteredProducts = async () => {
-    setIsLoading(true);
-    try {
-      const products = await getProducts(searchQuery);
-      setFilteredProducts(products);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setFilteredProducts([]);
-    } finally {
-      setIsLoading(false);
-    }
+  const updateFilteredProducts = () => {
+    const products = getProductsFromStorage();
+    const filtered = filterProducts(products, searchQuery);
+    setFilteredProducts(filtered);
   };
   
   // Handle search input
@@ -113,7 +109,10 @@ const Index = () => {
                   <div className="text-center py-12">
                     <p className="text-2xl font-medium mb-2">Nenhum produto encontrado</p>
                     <p className="text-muted-foreground">
-                      Tente ajustar sua pesquisa para encontrar produtos ou adicione produtos na página de Produtos.
+                      {getProductsFromStorage().length === 0 
+                        ? "Nenhum produto cadastrado. Adicione produtos na página de Produtos."
+                        : "Tente ajustar sua pesquisa para encontrar produtos."
+                      }
                     </p>
                   </div>
                 ) : (

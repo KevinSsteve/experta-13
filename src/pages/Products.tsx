@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,56 +31,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Product } from "@/contexts/CartContext";
-import { formatCurrency, generateId, addOrUpdateProduct, deleteProduct, getProductsFromStorage } from "@/lib/utils";
+import { generateId, formatCurrency } from "@/lib/utils";
 import { ProductForm, ProductFormValues } from "@/components/products/ProductForm";
 import { toast } from "sonner";
 import { Search, Plus, Pencil, Trash } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from "@/integrations/supabase/client";
 
 const Products = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    // Carregar produtos do localStorage se existirem
+    const savedProducts = localStorage.getItem("products");
+    return savedProducts ? JSON.parse(savedProducts) : [];
+  });
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
-
-  // Load products on component mount
-  useEffect(() => {
-    loadProducts();
-    
-    // Set up realtime subscription for products
-    const channel = supabase
-      .channel('public:products')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'products' 
-      }, () => {
-        loadProducts();
-      })
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  // Load products from Supabase
-  const loadProducts = async () => {
-    setIsLoading(true);
-    try {
-      const products = await getProductsFromStorage();
-      setProducts(products);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      toast.error('Erro ao carregar produtos');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Filtrar produtos baseado na busca
   const filteredProducts = products.filter(
@@ -90,7 +58,7 @@ const Products = () => {
       product.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddProduct = async (data: ProductFormValues) => {
+  const handleAddProduct = (data: ProductFormValues) => {
     // Ensure all required fields have values to satisfy the Product type
     const newProduct: Product = {
       id: generateId(),
@@ -103,64 +71,43 @@ const Products = () => {
       description: data.description,
     };
     
-    const success = await addOrUpdateProduct(newProduct);
+    const updatedProducts = [...products, newProduct];
+    setProducts(updatedProducts);
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
     
-    if (success) {
-      setIsAddDialogOpen(false);
-      toast.success("Produto adicionado com sucesso!");
-      await loadProducts();
-    } else {
-      toast.error("Erro ao adicionar produto");
-    }
+    setIsAddDialogOpen(false);
+    toast.success("Produto adicionado com sucesso!");
   };
 
-  const handleEditProduct = async (data: ProductFormValues) => {
+  const handleEditProduct = (data: ProductFormValues) => {
     if (!editingProduct) return;
     
-    const updatedProduct: Product = {
-      ...editingProduct,
-      ...data
-    };
+    const updatedProducts = products.map((product) =>
+      product.id === editingProduct.id
+        ? { ...product, ...data }
+        : product
+    );
     
-    const success = await addOrUpdateProduct(updatedProduct);
+    setProducts(updatedProducts);
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
     
-    if (success) {
-      setIsEditDialogOpen(false);
-      setEditingProduct(null);
-      toast.success("Produto atualizado com sucesso!");
-      await loadProducts();
-    } else {
-      toast.error("Erro ao atualizar produto");
-    }
+    setIsEditDialogOpen(false);
+    setEditingProduct(null);
+    toast.success("Produto atualizado com sucesso!");
   };
 
-  const handleDeleteProduct = async (id: string) => {
-    const success = await deleteProduct(id);
+  const handleDeleteProduct = (id: string) => {
+    const updatedProducts = products.filter((product) => product.id !== id);
+    setProducts(updatedProducts);
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
     
-    if (success) {
-      toast.success("Produto excluído com sucesso!");
-      await loadProducts();
-    } else {
-      toast.error("Erro ao excluir produto");
-    }
+    toast.success("Produto excluído com sucesso!");
   };
 
   const openEditDialog = (product: Product) => {
     setEditingProduct(product);
     setIsEditDialogOpen(true);
   };
-
-  if (isLoading) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4">
-          <div className="flex items-center justify-center h-64">
-            <p className="text-lg">Carregando produtos...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>

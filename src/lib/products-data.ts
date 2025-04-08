@@ -1,12 +1,10 @@
 
 import { Product } from '../contexts/CartContext';
-import { supabase } from "@/integrations/supabase/client";
 
 // Re-export the Product type so it can be imported directly from this file
 export type { Product };
 
-// Default products to use as fallback when database is not available
-const defaultProducts: Product[] = [
+const products: Product[] = [
   {
     id: "1",
     name: "Arroz Premium 5kg",
@@ -309,60 +307,8 @@ const defaultProducts: Product[] = [
   },
 ];
 
-// Function to load products from Supabase or use defaults
-async function loadProducts(): Promise<Product[]> {
-  try {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*');
-    
-    if (error) {
-      console.error('Error loading products from Supabase:', error);
-      return defaultProducts;
-    }
-    
-    if (data && data.length > 0) {
-      return data;
-    }
-    
-    // If no products in database, seed with default products
-    await seedDefaultProducts();
-    return defaultProducts;
-  } catch (error) {
-    console.error('Error in loadProducts:', error);
-    return defaultProducts;
-  }
-}
-
-// Function to seed default products if none exist
-async function seedDefaultProducts() {
-  try {
-    const { error } = await supabase
-      .from('products')
-      .insert(defaultProducts);
-    
-    if (error) {
-      console.error('Error seeding default products:', error);
-    }
-  } catch (error) {
-    console.error('Error in seedDefaultProducts:', error);
-  }
-}
-
-// Create a cached version of products to avoid excessive API calls
-let cachedProducts: Product[] | null = null;
-let lastFetchTime = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-export async function getProducts(search = '', category = '', minPrice = 0, maxPrice = Infinity, inStock = false): Promise<Product[]> {
-  // Refresh cache if needed
-  const now = Date.now();
-  if (!cachedProducts || now - lastFetchTime > CACHE_DURATION) {
-    cachedProducts = await loadProducts();
-    lastFetchTime = now;
-  }
-  
-  let filteredProducts = [...(cachedProducts || defaultProducts)];
+export function getProducts(search = '', category = '', minPrice = 0, maxPrice = Infinity, inStock = false): Product[] {
+  let filteredProducts = [...products];
   
   // Filtrar por busca
   if (search) {
@@ -396,54 +342,31 @@ export async function getProducts(search = '', category = '', minPrice = 0, maxP
   return filteredProducts;
 }
 
-export async function getProduct(id: string): Promise<Product | undefined> {
-  try {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching product:', error);
-      return undefined;
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error in getProduct:', error);
-    return undefined;
-  }
+export function getProduct(id: string): Product | undefined {
+  return products.find((product) => product.id === id);
 }
 
-export async function getCategories(): Promise<string[]> {
-  const products = await loadProducts();
+export function getCategories(): string[] {
   return Array.from(new Set(products.map((product) => product.category)));
 }
 
-export async function getTopSellingProducts(limit: number = 5): Promise<Product[]> {
-  // In a real app, this would query sales data to find top products
-  // For now, we'll just return some random products
-  const products = await loadProducts();
+export function getTopSellingProducts(limit: number = 5): Product[] {
+  // Isso é uma simulação - em um app real, usaria dados reais de vendas
   return [...products]
     .sort(() => Math.random() - 0.5)
     .slice(0, limit);
 }
 
-export async function getProductsInStock(): Promise<Product[]> {
-  const products = await loadProducts();
+export function getProductsInStock(): Product[] {
   return products.filter((product) => product.stock > 0);
 }
 
-export async function getLowStockProducts(threshold: number = 10): Promise<Product[]> {
-  const products = await loadProducts();
+export function getLowStockProducts(threshold: number = 10): Product[] {
   return products.filter((product) => product.stock > 0 && product.stock <= threshold);
 }
 
-export async function getOutOfStockProducts(): Promise<Product[]> {
-  const products = await loadProducts();
+export function getOutOfStockProducts(): Product[] {
   return products.filter((product) => product.stock === 0);
 }
 
-// Export default products for fallback
-export default defaultProducts;
+export default products;

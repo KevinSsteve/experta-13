@@ -7,38 +7,47 @@ import {
   getRecentSales
 } from '@/lib/sales';
 import { getTopSellingProducts, getLowStockProducts } from '@/lib/products-data';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useDashboardData = (timeRange: string) => {
   const days = parseInt(timeRange);
+  const { user } = useAuth();
+  const userId = user?.id;
   
   const kpisQuery = useQuery({
-    queryKey: ['salesKpis', days],
-    queryFn: () => getSalesKPIs(days)
+    queryKey: ['salesKpis', days, userId],
+    queryFn: () => getSalesKPIs(days, userId),
+    enabled: !!userId // Só executa se houver um userId
   });
   
   const dailySalesQuery = useQuery({
-    queryKey: ['dailySales', days],
-    queryFn: () => fetchDailySales(days)
+    queryKey: ['dailySales', days, userId],
+    queryFn: () => fetchDailySales(days, userId),
+    enabled: !!userId
   });
   
   const salesByCategoryQuery = useQuery({
-    queryKey: ['salesByCategory'],
-    queryFn: () => fetchSalesByCategory()
+    queryKey: ['salesByCategory', userId],
+    queryFn: () => fetchSalesByCategory(userId),
+    enabled: !!userId
   });
   
   const recentSalesQuery = useQuery({
-    queryKey: ['recentSales'],
-    queryFn: () => getRecentSales(5)
+    queryKey: ['recentSales', userId],
+    queryFn: () => getRecentSales(5, userId),
+    enabled: !!userId
   });
   
   const topProductsQuery = useQuery({
-    queryKey: ['topProducts'],
-    queryFn: () => getTopSellingProducts(5)
+    queryKey: ['topProducts', userId],
+    queryFn: () => getTopSellingProducts(5, userId),
+    enabled: !!userId
   });
   
   const lowStockProductsQuery = useQuery({
-    queryKey: ['lowStockProducts'],
-    queryFn: () => getLowStockProducts(10)
+    queryKey: ['lowStockProducts', userId],
+    queryFn: () => getLowStockProducts(10, userId),
+    enabled: !!userId
   });
 
   return {

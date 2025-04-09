@@ -4,19 +4,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { Bell, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/lib/products-data';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const StockAlertsBanner = () => {
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
   const [isVisible, setIsVisible] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
   const STOCK_THRESHOLD = 10; // Limiar para considerar estoque baixo
 
   useEffect(() => {
+    // Se não houver usuário autenticado, não buscar produtos
+    if (!user) return;
+    
     const fetchLowStockProducts = async () => {
       try {
         const { data, error } = await supabase
           .from('products')
           .select('*')
+          .eq('user_id', user.id) // Filtrar apenas produtos do usuário atual
           .gt('stock', 0)  // Produtos com estoque maior que zero
           .lt('stock', STOCK_THRESHOLD) // Mas menor que o limiar
           .limit(5); // Limitar a 5 produtos para notificação
@@ -40,15 +46,19 @@ export const StockAlertsBanner = () => {
               variant: "destructive",
             });
           }
+        } else {
+          // Se não houver produtos com estoque baixo, limpar o estado
+          setLowStockProducts([]);
         }
       } catch (error) {
         console.error('Erro ao buscar produtos com estoque baixo:', error);
+        setLowStockProducts([]);
       }
     };
 
     fetchLowStockProducts();
     
-    // Configurar canal de tempo real para atualizações de estoque
+    // Configurar canal de tempo real para atualizações de estoque do usuário atual
     const channel = supabase
       .channel('stock-changes')
       .on(
@@ -57,7 +67,7 @@ export const StockAlertsBanner = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'products',
-          filter: `stock=lt.${STOCK_THRESHOLD}`,
+          filter: `user_id=eq.${user.id} AND stock=lt.${STOCK_THRESHOLD}`,
         },
         (payload) => {
           // Atualizar a lista quando houver alterações
@@ -69,8 +79,9 @@ export const StockAlertsBanner = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, user]);
 
+  // Se não há produtos com estoque baixo ou o banner não é visível, não renderizar nada
   if (lowStockProducts.length === 0 || !isVisible) return null;
 
   return (

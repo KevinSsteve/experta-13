@@ -13,8 +13,10 @@ import { Sale } from '@/lib/sales/types';
 import { formatCurrency } from '@/lib/utils';
 import { adaptSupabaseSale } from '@/lib/sales/adapters';
 import { Json } from '@/integrations/supabase/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const SalesReportCard = () => {
+  const { user } = useAuth();
   const [dateRange, setDateRange] = useState<{
     from: Date;
     to: Date;
@@ -24,18 +26,30 @@ export const SalesReportCard = () => {
   });
 
   const { data: salesData, isLoading } = useQuery({
-    queryKey: ['salesReport', dateRange.from.toISOString(), dateRange.to.toISOString()],
+    queryKey: ['salesReport', dateRange.from.toISOString(), dateRange.to.toISOString(), user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('sales')
         .select('*')
         .gte('date', dateRange.from.toISOString())
         .lte('date', dateRange.to.toISOString())
         .order('date', { ascending: true });
+      
+      // Filtrar por usuário se estiver autenticado
+      if (user) {
+        query = query.eq('user_id', user.id);
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         console.error('Erro ao buscar dados de vendas:', error);
         throw error;
+      }
+
+      // Se não temos dados, retornar array vazio
+      if (!data || data.length === 0) {
+        return [];
       }
 
       // Convert Supabase data to Sale type before processing
@@ -60,7 +74,8 @@ export const SalesReportCard = () => {
       });
       
       return Object.values(salesByDay);
-    }
+    },
+    enabled: !!user // Só executa a query se houver um usuário autenticado
   });
 
   const exportToCSV = () => {

@@ -1,16 +1,24 @@
+
 import { Product } from '../contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 
 // Re-export the Product type so it can be imported directly from this file
 export type { Product };
 
-// Função para buscar produtos do Supabase
-export async function fetchProductsFromSupabase(): Promise<Product[]> {
+// Função para buscar produtos do Supabase para o usuário atual
+export async function fetchProductsFromSupabase(userId?: string): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
       .select('*')
       .order('name');
+    
+    // Se um ID de usuário for fornecido, filtrar por esse usuário
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error('Erro ao buscar produtos do Supabase:', error);
@@ -25,10 +33,10 @@ export async function fetchProductsFromSupabase(): Promise<Product[]> {
 }
 
 // Função para obter produtos
-export async function getProducts(search = '', category = '', minPrice = 0, maxPrice = Infinity, inStock = false): Promise<Product[]> {
+export async function getProducts(search = '', category = '', minPrice = 0, maxPrice = Infinity, inStock = false, userId?: string): Promise<Product[]> {
   try {
-    // Buscar produtos do Supabase
-    let products = await fetchProductsFromSupabase();
+    // Buscar produtos do Supabase para o usuário atual
+    let products = await fetchProductsFromSupabase(userId);
     
     // Se não encontrar produtos no Supabase, use os dados hardcoded
     if (products.length === 0) {
@@ -74,13 +82,19 @@ export async function getProducts(search = '', category = '', minPrice = 0, maxP
   }
 }
 
-export async function getProduct(id: string): Promise<Product | undefined> {
+export async function getProduct(id: string, userId?: string): Promise<Product | undefined> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
       .select('*')
-      .eq('id', id)
-      .single();
+      .eq('id', id);
+    
+    // Se um ID de usuário for fornecido, filtrar por esse usuário
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query.single();
     
     if (error) {
       throw error;
@@ -94,9 +108,9 @@ export async function getProduct(id: string): Promise<Product | undefined> {
   }
 }
 
-export async function getCategories(): Promise<string[]> {
+export async function getCategories(userId?: string): Promise<string[]> {
   try {
-    const products = await fetchProductsFromSupabase();
+    const products = await fetchProductsFromSupabase(userId);
     return Array.from(new Set(products.map((product) => product.category)));
   } catch (error) {
     console.error('Erro ao obter categorias:', error);
@@ -104,11 +118,11 @@ export async function getCategories(): Promise<string[]> {
   }
 }
 
-export async function getTopSellingProducts(limit: number = 5): Promise<Product[]> {
+export async function getTopSellingProducts(limit: number = 5, userId?: string): Promise<Product[]> {
   try {
     // Em uma implementação real, você buscaria os produtos mais vendidos
-    // com base nos dados de vendas
-    const products = await fetchProductsFromSupabase();
+    // com base nos dados de vendas do usuário atual
+    const products = await fetchProductsFromSupabase(userId);
     
     if (products.length === 0) {
       return [...hardcodedProducts].sort(() => Math.random() - 0.5).slice(0, limit);
@@ -122,14 +136,21 @@ export async function getTopSellingProducts(limit: number = 5): Promise<Product[
   }
 }
 
-export async function getLowStockProducts(threshold: number = 10): Promise<Product[]> {
+export async function getLowStockProducts(threshold: number = 10, userId?: string): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
       .select('*')
       .gt('stock', 0)
       .lte('stock', threshold)
       .order('stock');
+    
+    // Se um ID de usuário for fornecido, filtrar por esse usuário
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       throw error;
@@ -142,13 +163,20 @@ export async function getLowStockProducts(threshold: number = 10): Promise<Produ
   }
 }
 
-export async function getProductsInStock(): Promise<Product[]> {
+export async function getProductsInStock(userId?: string): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
       .select('*')
       .gt('stock', 0)
       .order('name');
+    
+    // Se um ID de usuário for fornecido, filtrar por esse usuário
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       throw error;
@@ -161,13 +189,20 @@ export async function getProductsInStock(): Promise<Product[]> {
   }
 }
 
-export async function getOutOfStockProducts(): Promise<Product[]> {
+export async function getOutOfStockProducts(userId?: string): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
       .select('*')
       .eq('stock', 0)
       .order('name');
+    
+    // Se um ID de usuário for fornecido, filtrar por esse usuário
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       throw error;

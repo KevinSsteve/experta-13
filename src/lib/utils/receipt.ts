@@ -91,7 +91,10 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   
   // Informações da venda
   yPos += addLine(`Data: ${formatDate(sale.date)}`, yPos);
-  yPos += addLine(`ID Venda: ${sale.id.slice(0, 8)}`, yPos);
+  
+  // Verificar se o ID da venda existe antes de usar slice
+  const saleId = sale.id ? sale.id.slice(0, 8) : 'N/A';
+  yPos += addLine(`ID Venda: ${saleId}`, yPos);
   
   // Informações do cliente
   if (sale.customer && typeof sale.customer === 'object') {
@@ -239,7 +242,7 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   yPos += addLine(`NIF Emissor: ${COMPANY_INFO.nif}`, yPos, THERMAL_CONFIG.fontSize.small);
   
   // Código para verificação fiscal (simulado)
-  const fiscalCode = sale.id.slice(0, 6).toUpperCase();
+  const fiscalCode = sale.id ? sale.id.slice(0, 6).toUpperCase() : 'N/A';
   yPos += addLine(`Código de Verificação: ${fiscalCode}`, yPos, THERMAL_CONFIG.fontSize.small);
   yPos += 3;
   
@@ -257,7 +260,8 @@ export const downloadReceipt = (sale: Sale) => {
   const doc = generateReceiptPDF(sale);
   
   // Nome do arquivo: recibo-ID-DATA.pdf
-  const filename = `recibo-${sale.id.slice(0, 8)}-${new Date(sale.date).toISOString().split('T')[0]}.pdf`;
+  const saleId = sale.id ? sale.id.slice(0, 8) : 'sem-id';
+  const filename = `recibo-${saleId}-${new Date(sale.date).toISOString().split('T')[0]}.pdf`;
   
   // Download do arquivo
   doc.save(filename);
@@ -275,7 +279,8 @@ export const shareReceipt = async (sale: Sale) => {
     const blob = doc.output('blob');
     
     // Nome do arquivo: recibo-ID-DATA.pdf
-    const filename = `recibo-${sale.id.slice(0, 8)}-${new Date(sale.date).toISOString().split('T')[0]}.pdf`;
+    const saleId = sale.id ? sale.id.slice(0, 8) : 'sem-id';
+    const filename = `recibo-${saleId}-${new Date(sale.date).toISOString().split('T')[0]}.pdf`;
     
     // Verificar se a API de compartilhamento está disponível
     if (navigator.share) {

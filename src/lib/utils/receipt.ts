@@ -131,36 +131,41 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   
   // Itens da venda
   if (Array.isArray(sale.items)) {
-    // Se for um array, presumimos que são CartItems
-    (sale.items as CartItem[]).forEach((item: CartItem) => {
+    // Se for um array, verificamos se são CartItems ou outro tipo de item
+    (sale.items as Array<any>).forEach((item: any) => {
       const maxWidth = 25; // Largura máxima para o nome do produto
-      const name = item.product.name.length > maxWidth 
-        ? item.product.name.slice(0, maxWidth) + '...' 
-        : item.product.name;
       
-      yPos += addLine(name, yPos, THERMAL_CONFIG.fontSize.small);
-      
-      // Quantidade, preço e total na mesma linha
-      doc.text(
-        item.quantity.toString(), 
-        pageWidth - 30, 
-        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-        { align: 'right' }
-      );
-      
-      doc.text(
-        formatCurrency(item.product.price), 
-        pageWidth - 20, 
-        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-        { align: 'right' }
-      );
-      
-      doc.text(
-        formatCurrency(item.product.price * item.quantity), 
-        pageWidth - margin.right, 
-        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-        { align: 'right' }
-      );
+      // Verifica se o item tem estrutura de CartItem
+      if (item && typeof item === 'object' && 'product' in item && 'quantity' in item) {
+        const cartItem = item as CartItem;
+        const name = cartItem.product.name.length > maxWidth 
+          ? cartItem.product.name.slice(0, maxWidth) + '...' 
+          : cartItem.product.name;
+        
+        yPos += addLine(name, yPos, THERMAL_CONFIG.fontSize.small);
+        
+        // Quantidade, preço e total na mesma linha
+        doc.text(
+          cartItem.quantity.toString(), 
+          pageWidth - 30, 
+          yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+          { align: 'right' }
+        );
+        
+        doc.text(
+          formatCurrency(cartItem.product.price), 
+          pageWidth - 20, 
+          yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+          { align: 'right' }
+        );
+        
+        doc.text(
+          formatCurrency(cartItem.product.price * cartItem.quantity), 
+          pageWidth - margin.right, 
+          yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+          { align: 'right' }
+        );
+      }
     });
   } else if (typeof sale.products !== 'undefined' && Array.isArray(sale.products)) {
     // Se tivermos products array, usamos ele
@@ -207,7 +212,11 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   
   if (typeof sale.amountPaid === 'number') {
     yPos += addLine(`Valor pago: ${formatCurrency(sale.amountPaid)}`, yPos);
-    yPos += addLine(`Troco: ${formatCurrency(sale.amountPaid - sale.total)}`, yPos);
+    if (typeof sale.change === 'number') {
+      yPos += addLine(`Troco: ${formatCurrency(sale.change)}`, yPos);
+    } else {
+      yPos += addLine(`Troco: ${formatCurrency(sale.amountPaid - sale.total)}`, yPos);
+    }
   }
   
   yPos += 3;

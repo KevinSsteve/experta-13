@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -30,7 +29,7 @@ import {
 } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, FileDown, ChevronDown, Eye, ArrowLeft, Receipt } from 'lucide-react';
+import { Search, FileDown, ChevronDown, Eye, ArrowLeft } from 'lucide-react';
 import { Sale } from '@/lib/sales/types';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,7 +39,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { InvoiceModal } from '@/components/invoice/InvoiceModal';
 
 const SalesHistory = () => {
   const { user } = useAuth();
@@ -178,7 +176,7 @@ const SalesHistory = () => {
                       <TableHead>Itens</TableHead>
                       <TableHead>Método de Pagamento</TableHead>
                       <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -199,24 +197,13 @@ const SalesHistory = () => {
                           {formatCurrency(sale.total)}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => handleViewSaleDetails(sale)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            
-                            <InvoiceModal 
-                              sale={sale} 
-                              trigger={
-                                <Button variant="ghost" size="icon">
-                                  <Receipt className="h-4 w-4" />
-                                </Button>
-                              } 
-                            />
-                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleViewSaleDetails(sale)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

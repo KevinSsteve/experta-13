@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -122,55 +123,4 @@
 
 #root {
   @apply min-h-screen w-full;
-}
-
-/* Estilos para impressão de faturas */
-@media print {
-  body {
-    background-color: white;
-    margin: 0;
-    padding: 0;
-  }
-  
-  body * {
-    visibility: hidden;
-  }
-  
-  .invoice-print-mode [data-state="open"] [role="dialog"],
-  .invoice-print-mode [data-state="open"] [role="dialog"] * {
-    visibility: visible;
-  }
-  
-  .invoice-print-mode [data-state="open"] [role="dialog"] {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 15px;
-    background: white;
-    box-shadow: none;
-    border: none;
-  }
-  
-  .print\:hidden {
-    display: none !important;
-  }
-  
-  .print\:border-none {
-    border: none !important;
-  }
-  
-  .print\:shadow-none {
-    box-shadow: none !important;
-  }
-  
-  .print\:p-0 {
-    padding: 0 !important;
-  }
-  
-  .print\:max-w-none {
-    max-width: none !important;
-  }
 }

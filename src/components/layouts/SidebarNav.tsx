@@ -23,10 +23,7 @@ export function SidebarNav() {
     <div className="flex flex-col h-full pb-4 pt-5">
       <div className="px-4 pb-4 mb-6">
         <Link to="/" className="flex items-center">
-          <div className="h-8 w-8 rounded-md bg-sidebar-primary flex items-center justify-center">
-            <span className="text-sidebar-primary-foreground font-semibold text-xl">M</span>
-          </div>
-          <span className="ml-3 text-xl font-semibold text-sidebar-foreground">Moloja</span>
+          <span className="text-xl font-semibold text-sidebar-foreground">moloja</span>
         </Link>
       </div>
       

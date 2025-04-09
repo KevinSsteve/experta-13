@@ -212,7 +212,9 @@ const SalesHistory = () => {
                         <TableCell>
                           {typeof sale.items === 'number' 
                             ? sale.items 
-                            : sale.items.length}
+                            : Array.isArray(sale.items) 
+                              ? sale.items.length
+                              : 0}
                         </TableCell>
                         <TableCell>{sale.paymentMethod}</TableCell>
                         <TableCell className="text-right font-medium">

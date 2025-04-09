@@ -53,7 +53,9 @@ export const RecentSalesList = ({ data, isLoading }: RecentSalesListProps) => {
                   <p className="text-xs text-muted-foreground">
                     {typeof sale.items === 'number' 
                       ? `${sale.items} ${sale.items === 1 ? "item" : "itens"}` 
-                      : `${sale.items.length} ${sale.items.length === 1 ? "item" : "itens"}`}
+                      : Array.isArray(sale.items)
+                        ? `${sale.items.length} ${sale.items.length === 1 ? "item" : "itens"}`
+                        : "0 itens"}
                   </p>
                 </div>
               </div>

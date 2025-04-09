@@ -136,7 +136,7 @@ export function ShoppingCart() {
         
         {/* Footer */}
         <div className="border-t border-border p-4">
-          {state.items.length > 0 && (
+          {state.items.length > 0 ? (
             <>
               <div className="flex justify-between mb-2">
                 <span className="text-sm">Subtotal</span>
@@ -159,9 +159,7 @@ export function ShoppingCart() {
                 </Button>
               </div>
             </>
-          )}
-          
-          {state.items.length === 0 && (
+          ) : (
             <Button className="w-full" onClick={closeCart}>
               Continuar comprando
             </Button>

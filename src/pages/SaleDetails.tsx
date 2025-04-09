@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -82,7 +81,6 @@ const SaleDetails = () => {
       if (shared) {
         toast.success('Recibo compartilhado com sucesso');
       } else {
-        // O recibo foi baixado como fallback
         toast.info('O recibo foi baixado porque o compartilhamento não está disponível');
       }
     } catch (error) {
@@ -138,7 +136,6 @@ const SaleDetails = () => {
     );
   }
   
-  // Get customer data safely
   const customerName = typeof sale.customer === 'object' && sale.customer 
     ? (sale.customer as CustomerInfo).name || 'Cliente não identificado' 
     : (sale.customer as string || 'Cliente não identificado');

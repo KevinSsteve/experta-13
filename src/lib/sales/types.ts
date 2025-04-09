@@ -12,6 +12,7 @@ export interface Sale {
   paymentMethod: string;
   customer?: string;
   products?: any[];
+  user_id?: string;  // Added user_id property
 }
 
 export interface DailySales {

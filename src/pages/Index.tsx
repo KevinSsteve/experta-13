@@ -119,6 +119,13 @@ const Index = () => {
   // Visible products based on current display count
   const visibleProducts = filteredProducts.slice(0, displayCount);
 
+  console.log("Rendering Index component", {
+    userProducts: userProducts?.length || 0,
+    filteredProducts: filteredProducts.length,
+    visibleProducts: visibleProducts.length,
+    user: !!user
+  });
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
@@ -159,10 +166,17 @@ const Index = () => {
           {/* Products grid */}
           <section>
             {isLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-4">
+              <div className="grid grid-cols-2 grid-cols-2 gap-2">
                 {Array(8).fill(0).map((_, i) => (
                   <div key={i} className="bg-card animate-pulse aspect-square rounded-lg"></div>
                 ))}
+              </div>
+            ) : error ? (
+              <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+                <p>Erro ao carregar produtos: {(error as Error).message}</p>
+                <Button onClick={() => window.location.reload()} className="mt-2">
+                  Tentar Novamente
+                </Button>
               </div>
             ) : (
               <>
@@ -183,7 +197,7 @@ const Index = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-4">
+                    <div className="grid grid-cols-2 gap-2">
                       {visibleProducts.map(product => (
                         <Card key={product.id} className="overflow-hidden group h-full flex flex-col">
                           <AspectRatio ratio={1} className="bg-muted relative overflow-hidden">
@@ -201,13 +215,13 @@ const Index = () => {
                             )}
                           </AspectRatio>
                           
-                          <CardContent className="p-2 sm:p-4 flex-grow">
+                          <CardContent className="p-2 flex-grow">
                             <div className="flex justify-between items-start">
                               <div>
-                                <h3 className="font-medium line-clamp-1 text-sm sm:text-base">{product.name}</h3>
-                                <p className="text-xs text-muted-foreground mb-2">{product.category}</p>
+                                <h3 className="font-medium line-clamp-1 text-sm">{product.name}</h3>
+                                <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
                               </div>
-                              <span className="text-sm sm:text-lg font-medium text-primary">
+                              <span className="text-sm font-medium text-primary">
                                 {formatCurrency(product.price)}
                               </span>
                             </div>
@@ -216,14 +230,14 @@ const Index = () => {
                             )}
                           </CardContent>
                           
-                          <CardFooter className="p-2 sm:p-4 pt-0 mt-auto">
+                          <CardFooter className="p-2 pt-0 mt-auto">
                             <Button 
-                              className="w-full text-xs sm:text-sm"
+                              className="w-full text-xs"
                               size="sm"
                               disabled={product.stock === 0}
                               onClick={() => addItem(product)}
                             >
-                              <ShoppingCart className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                              <ShoppingCart className="mr-1 h-3 w-3" />
                               Adicionar
                             </Button>
                           </CardFooter>

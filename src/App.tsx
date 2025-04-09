@@ -22,8 +22,6 @@ import SalesReports from '@/pages/SalesReports';
 const queryClient = new QueryClient();
 
 function App() {
-  const isPublic = process.env.NODE_ENV === 'development' && process.env.REACT_APP_PUBLIC_DATA === 'true';
-
   return (
     <BrowserRouter>
       <ThemeProvider>

@@ -11,7 +11,8 @@ import {
   Settings,
   LogOut,
   Home,
-  User
+  User,
+  Receipt
 } from "lucide-react";
 
 const navItems = [
@@ -39,6 +40,11 @@ const navItems = [
     title: "Inventário",
     href: "/inventory",
     icon: Store,
+  },
+  {
+    title: "Histórico de Vendas",
+    href: "/sales-history",
+    icon: Receipt,
   },
   {
     title: "Perfil",

@@ -51,7 +51,9 @@ export const RecentSalesList = ({ data, isLoading }: RecentSalesListProps) => {
                     {formatCurrency(sale.total)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {sale.items} {sale.items === 1 ? "item" : "itens"}
+                    {typeof sale.items === 'number' 
+                      ? `${sale.items} ${sale.items === 1 ? "item" : "itens"}` 
+                      : `${sale.items.length} ${sale.items.length === 1 ? "item" : "itens"}`}
                   </p>
                 </div>
               </div>

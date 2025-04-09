@@ -95,7 +95,7 @@ const SalesHistory = () => {
       Cliente: typeof sale.customer === 'string' ? sale.customer : 'Cliente não identificado',
       Total: formatCurrency(sale.total),
       'Método de Pagamento': sale.paymentMethod,
-      Itens: sale.items
+      Itens: typeof sale.items === 'number' ? sale.items : sale.items.length
     }));
     
     const dataStr = JSON.stringify(salesData, null, 2);
@@ -209,7 +209,11 @@ const SalesHistory = () => {
                             ? sale.customer 
                             : 'Cliente não identificado'}
                         </TableCell>
-                        <TableCell>{sale.items || 0}</TableCell>
+                        <TableCell>
+                          {typeof sale.items === 'number' 
+                            ? sale.items 
+                            : sale.items.length}
+                        </TableCell>
                         <TableCell>{sale.paymentMethod}</TableCell>
                         <TableCell className="text-right font-medium">
                           {formatCurrency(sale.total)}

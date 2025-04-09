@@ -26,12 +26,10 @@ import {
   PaginationEllipsis,
   PaginationItem,
   PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, FileDown, ChevronDown, Eye } from 'lucide-react';
+import { Search, FileDown, ChevronDown, Eye, ArrowLeft } from 'lucide-react';
 import { Sale } from '@/lib/sales/types';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -89,7 +87,7 @@ const SalesHistory = () => {
     const dataStr = JSON.stringify(salesData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = `vendas_${new Date().toISOString().slice(0, 10)}.json';
+    const exportFileDefaultName = `vendas_${new Date().toISOString().slice(0, 10)}.json`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);

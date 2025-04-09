@@ -1,22 +1,23 @@
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/components/theme-provider';
-import { Auth } from '@/pages/Auth';
-import { Index } from '@/pages/Index';
-import { Dashboard } from '@/pages/Dashboard';
-import { Products } from '@/pages/Products';
-import { ProductDetails } from '@/pages/ProductDetails';
-import { Inventory } from '@/pages/Inventory';
-import { Checkout } from '@/pages/Checkout';
-import { SalesHistory } from '@/pages/SalesHistory';
-import { Profile } from '@/pages/Profile';
-import { Settings } from '@/pages/Settings';
-import { NotFound } from '@/pages/NotFound';
+import Auth from '@/pages/Auth';
+import Index from '@/pages/Index';
+import Dashboard from '@/pages/Dashboard';
+import Products from '@/pages/Products';
+import ProductDetails from '@/pages/ProductDetails';
+import Inventory from '@/pages/Inventory';
+import Checkout from '@/pages/Checkout';
+import SalesHistory from '@/pages/SalesHistory';
+import Profile from '@/pages/Profile';
+import Settings from '@/pages/Settings';
+import NotFound from '@/pages/NotFound';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { SalesReports } from '@/pages/SalesReports';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import SalesReports from '@/pages/SalesReports';
 
 const queryClient = new QueryClient();
 

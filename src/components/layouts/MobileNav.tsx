@@ -1,6 +1,7 @@
+
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Menu, Store, ShoppingBag, Package, Receipt, History, BarChart } from "lucide-react"
+import { Menu, Store, ShoppingBag, Package, Receipt, History, BarChart, LogOut, LogIn, LayoutDashboard } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/AuthContext"
@@ -10,7 +11,7 @@ import { buttonVariants } from "@/components/ui/button"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -102,7 +103,7 @@ export function MobileNav() {
               size="sm"
               className="justify-start"
               onClick={() => {
-                logout();
+                signOut();
                 setOpen(false);
               }}
             >

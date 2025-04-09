@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,7 +36,6 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Pencil, ShieldCheck, Store, UserRound, Loader2 } from 'lucide-react';
 
-// Validação dos campos do formulário
 const profileFormSchema = z.object({
   name: z.string().min(2, {
     message: "Nome deve ter pelo menos 2 caracteres",
@@ -50,10 +48,8 @@ const profileFormSchema = z.object({
   position: z.string().optional(),
 });
 
-// Tipo para gerenciar o estado do formulário
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-// Função para traduzir o papel do usuário
 const translateRole = (role: string): string => {
   const roleMap: Record<string, string> = {
     'admin': 'Administrador',
@@ -63,10 +59,8 @@ const translateRole = (role: string): string => {
   return roleMap[role] || role;
 };
 
-// Componente principal da página de perfil
 const Profile = () => {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const { user, profile, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
@@ -82,42 +76,27 @@ const Profile = () => {
     },
   });
 
-  // Busca o perfil do usuário no carregamento da página
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (error) throw error;
-        
-        setProfile(data);
-        
-        // Preenche o formulário com os dados do perfil
-        form.reset({
-          name: data.name || '',
-          email: user.email || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          position: data.position || '',
-        });
-      } catch (error) {
-        console.error('Erro ao buscar perfil:', error);
-        toast.error('Não foi possível carregar seu perfil');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (!user) return;
     
-    fetchProfile();
-  }, [user, form]);
+    setIsLoading(true);
+    
+    if (profile) {
+      form.reset({
+        name: profile.name || '',
+        email: user.email || '',
+        phone: profile.phone || '',
+        address: profile.address || '',
+        position: profile.position || '',
+      });
+      setIsLoading(false);
+    } else {
+      refreshProfile().then(() => {
+        setIsLoading(false);
+      });
+    }
+  }, [user, profile, form, refreshProfile]);
 
-  // Função que salva as alterações do perfil
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user) return;
     
@@ -136,6 +115,8 @@ const Profile = () => {
       
       if (error) throw error;
       
+      await refreshProfile();
+      
       toast.success('Perfil atualizado com sucesso');
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
@@ -145,7 +126,6 @@ const Profile = () => {
     }
   };
 
-  // Função para alterar a senha
   const handleChangePassword = async (currentPassword: string, newPassword: string) => {
     setIsSaving(true);
     

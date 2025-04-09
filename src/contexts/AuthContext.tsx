@@ -45,7 +45,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
       
-      return data as ProfileData;
+      // Ensure all required fields exist in the profile data
+      const profileData: ProfileData = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        phone: data.phone || null,
+        address: data.address || null,
+        position: data.position || null,
+        role: data.role,
+        avatar_url: data.avatar_url
+      };
+      
+      return profileData;
     } catch (error) {
       console.error("Erro ao buscar perfil:", error);
       return null;

@@ -35,7 +35,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               onClick={toggleSidebar} 
               className="absolute top-4 right-4 p-1 text-sidebar-foreground hover:bg-sidebar-accent rounded-md"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
           )}
           <SidebarNav />
@@ -45,7 +45,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Overlay para fechar o sidebar em dispositivos móveis */}
       {sidebarOpen && isMobile && (
         <div 
-          className="fixed inset-0 z-20 bg-black/50" 
+          className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm" 
           onClick={toggleSidebar}
         ></div>
       )}
@@ -54,7 +54,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="flex flex-col flex-1">
         <TopBar toggleSidebar={toggleSidebar} />
         
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-3 md:p-4 lg:p-6 overflow-y-auto pb-20 lg:pb-6">
           {children}
         </main>
         

@@ -58,21 +58,21 @@ export const ProductsList = ({
   // Versão móvel (cards)
   if (isMobile) {
     return (
-      <div className="grid gap-4">
+      <div className="grid gap-3">
         {products.map((product) => (
           <Card key={product.id} className="overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start gap-3">
+            <CardContent className="p-3">
+              <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-medium truncate">{product.name}</h3>
-                  <div className="text-sm text-muted-foreground mb-2 truncate">
+                  <h3 className="font-medium truncate text-sm">{product.name}</h3>
+                  <div className="text-xs text-muted-foreground mb-1 truncate">
                     {product.code || "Sem código"} • {product.category}
                   </div>
-                  <div className="font-medium">{formatCurrency(product.price)}</div>
+                  <div className="font-medium text-sm">{formatCurrency(product.price)}</div>
                   
                   {!isStore && (
                     <span
-                      className={`mt-1 inline-block px-2 py-1 rounded-full text-xs ${
+                      className={`mt-1 inline-block px-2 py-0.5 rounded-full text-xs ${
                         product.stock === 0
                           ? "bg-red-100 text-red-700"
                           : product.stock < 10
@@ -85,34 +85,35 @@ export const ProductsList = ({
                   )}
                 </div>
                 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   {isStore ? (
                     <Button 
                       onClick={() => onAdd && onAdd(product)}
                       disabled={isSubmitting}
                       size="sm"
-                      className="whitespace-nowrap"
+                      className="whitespace-nowrap text-xs px-2 py-1 h-auto"
                     >
-                      <PlusCircle className="h-4 w-4 mr-1" />
+                      <PlusCircle className="h-3 w-3 mr-1" />
                       Adicionar
                     </Button>
                   ) : (
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => onEdit && onEdit(product)}
+                        className="h-7 w-7 p-0"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3 w-3" />
                       </Button>
                       
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="destructive">
-                            <Trash className="h-4 w-4" />
+                          <Button size="sm" variant="destructive" className="h-7 w-7 p-0">
+                            <Trash className="h-3 w-3" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="max-w-[90vw]">
                           <AlertDialogHeader>
                             <AlertDialogTitle>
                               Confirmar exclusão
@@ -122,8 +123,8 @@ export const ProductsList = ({
                               Esta ação não pode ser desfeita.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                            <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => onDelete && onDelete(product.id)}
                             >

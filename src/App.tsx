@@ -15,6 +15,7 @@ import Products from "./pages/Products";
 import Inventory from "./pages/Inventory";
 import Checkout from "./pages/Checkout";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
                   <Route path="/inventory" element={<Inventory />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/profile" element={<Profile />} />
                 </Route>
                 
                 {/* Rota para página não encontrada */}

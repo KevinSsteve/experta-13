@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useReducer, useMemo, useState } from 'react';
+import { createContext, useContext, useReducer, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useAuth } from '@/contexts/AuthContext';
 

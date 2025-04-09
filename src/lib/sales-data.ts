@@ -1,3 +1,4 @@
+
 import { getSalesFromStorage } from './utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
@@ -45,7 +46,10 @@ function adaptSupabaseSale(supabaseSale: any): Sale {
     
     // Handle customer
     if (supabaseSale.items.customer && supabaseSale.items.customer.name) {
-      customer = supabaseSale.items.customer.name;
+      // Get customer name as string instead of rendering an object
+      customer = typeof supabaseSale.items.customer.name === 'string' 
+        ? supabaseSale.items.customer.name 
+        : 'Cliente';
     }
     
     // Handle products

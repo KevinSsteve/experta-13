@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -176,11 +177,13 @@ const Checkout = () => {
                       <div key={item.product.id} className="flex items-center justify-between py-2">
                         <div className="flex items-center space-x-4">
                           <div className="h-16 w-16 bg-muted rounded overflow-hidden flex-shrink-0">
-                            <img 
-                              src={item.product.image} 
-                              alt={item.product.name}
-                              className="h-full w-full object-cover"
-                            />
+                            {item.product.image && (
+                              <img 
+                                src={item.product.image} 
+                                alt={item.product.name}
+                                className="h-full w-full object-cover"
+                              />
+                            )}
                           </div>
                           <div>
                             <h3 className="font-medium">{item.product.name}</h3>

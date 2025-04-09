@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { QueryClientProvider } from "@/components/providers/QueryProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -22,7 +22,7 @@ import SaleDetails from "./pages/SaleDetails";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
-  <QueryClientProvider>
+  <QueryProvider>
     <ThemeProvider>
       <AuthProvider>
         <TooltipProvider>
@@ -56,7 +56,7 @@ const App = () => (
         </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>
-  </QueryClientProvider>
+  </QueryProvider>
 );
 
 export default App;

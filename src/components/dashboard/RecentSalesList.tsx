@@ -36,11 +36,11 @@ export const RecentSalesList = ({ data, isLoading }: RecentSalesListProps) => {
               <div key={sale.id} className="flex justify-between items-center">
                 <div>
                   <p className="font-medium">
-                    {sale.customer ? (
-                      typeof sale.customer === 'object' 
+                    {sale.customer != null 
+                      ? typeof sale.customer === 'object' 
                         ? sale.customer.name || "Cliente anônimo" 
                         : sale.customer
-                    ) : "Cliente anônimo"}
+                      : "Cliente anônimo"}
                   </p>
                   <div className="text-sm text-muted-foreground">
                     {formatDate(sale.date)} · {sale.paymentMethod}

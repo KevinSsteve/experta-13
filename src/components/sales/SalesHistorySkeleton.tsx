@@ -15,6 +15,7 @@ export function SalesHistorySkeleton() {
             <Skeleton className="h-8 w-64 mb-2" />
             <Skeleton className="h-4 w-48" />
           </div>
+          <Skeleton className="h-10 w-32" />
         </div>
       </CardHeader>
       <CardContent>
@@ -27,10 +28,17 @@ export function SalesHistorySkeleton() {
           </div>
         ) : (
           // Desktop version - table row skeletons
-          <div className="space-y-4">
-            {Array(5).fill(null).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
+          <div>
+            <div className="grid grid-cols-5 gap-4 mb-4">
+              {Array(5).fill(null).map((_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
+            <div className="space-y-4">
+              {Array(5).fill(null).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

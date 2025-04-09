@@ -1,46 +1,46 @@
 
-import { CartItem } from '@/contexts/CartContext';
+import { CartItem } from "@/contexts/CartContext";
 
-// Sale data interfaces
+// Interface para informações do cliente
+export interface CustomerInfo {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  nif?: string; // NIF (Número de Identificação Fiscal) para SAFT Angola
+}
+
+// Interface para representar uma venda
 export interface Sale {
   id: string;
   date: string;
+  customer: string | CustomerInfo;
+  items: CartItem[] | number;
   total: number;
-  amountPaid?: number;
-  change?: number;
-  items: number | CartItem[];
   paymentMethod: string;
-  customer?: string | CustomerInfo;
-  products?: any[];
+  amountPaid?: number;
+  notes?: string;
   user_id?: string;
-  notes?: string;  // Added notes property
+  products?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    quantity?: number;
+    image?: string;
+  }>
 }
 
-// Added a customer type to properly define customer properties
-export interface CustomerInfo {
-  name?: string;
-  phone?: string;
-  email?: string;
-  nif?: string;  // Added NIF property
-}
-
-export interface DailySales {
-  date: string;
-  sales: number;
-  transactions: number;
-}
-
-export interface SalesByCategory {
-  category: string;
-  sales: number;
-  percentage: number;
-}
-
-export interface SalesKPIs {
-  totalRevenue: number;
+// Tipo para o resumo de vendas
+export interface SalesSummary {
   totalSales: number;
-  averageTicket: number;
-  revenueChange: number;
-  salesChange: number;
-  ticketChange: number;
+  totalRevenue: number;
+  averageOrderValue: number;
+  salesByDay: Record<string, number>;
+  salesByCategory: Record<string, number>;
+  topProducts: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    revenue: number;
+  }>;
 }

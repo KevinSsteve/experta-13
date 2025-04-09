@@ -4,11 +4,11 @@ import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  getDailySales, 
-  getSalesByCategory, 
+  fetchDailySales, 
+  fetchSalesByCategory, 
   getSalesKPIs, 
   getRecentSales
-} from '@/lib/sales-data';
+} from '@/lib/sales';
 import { getTopSellingProducts, getLowStockProducts } from '@/lib/products-data';
 import { formatCurrency, formatShortDate, formatDate } from '@/lib/utils';
 import {

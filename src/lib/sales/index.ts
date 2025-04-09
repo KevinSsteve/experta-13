@@ -1,5 +1,5 @@
 
-import { Sale, DailySales, SalesByCategory, SalesKPIs } from './types';
+import { Sale, DailySales, SalesByCategory, SalesKPIs, SalesSummary, CustomerInfo } from './types';
 import { fetchSalesFromSupabase, adaptSupabaseSale } from './adapters';
 import { generateSalesData } from './generators';
 import { getDailySales, getSalesByCategory, calculateSalesKPIs } from './analytics';

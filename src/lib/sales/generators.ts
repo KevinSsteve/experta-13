@@ -27,7 +27,7 @@ export function generateSalesData(): Sale[] {
       change: amountPaid - total,
       items,
       paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
-      customer: Math.random() > 0.3 ? `Cliente ${Math.floor(Math.random() * 100) + 1}` : undefined,
+      customer: Math.random() > 0.3 ? `Cliente ${Math.floor(Math.random() * 100) + 1}` : 'Cliente não identificado',
     });
   }
   

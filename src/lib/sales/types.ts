@@ -19,6 +19,7 @@ export interface Sale {
   total: number;
   paymentMethod: string;
   amountPaid?: number;
+  change?: number; // Added change property that was missing
   notes?: string;
   user_id?: string;
   products?: Array<{
@@ -27,6 +28,8 @@ export interface Sale {
     price: number;
     quantity?: number;
     image?: string;
+    category?: string; // Added category property to support analytics
+    product?: any; // Support for nested product structure
   }>
 }
 
@@ -43,4 +46,26 @@ export interface SalesSummary {
     quantity: number;
     revenue: number;
   }>;
+}
+
+// Adding the missing type exports that are used in analytics and components
+export interface DailySales {
+  date: string;
+  sales: number;
+  transactions: number;
+}
+
+export interface SalesByCategory {
+  category: string;
+  sales: number;
+  percentage: number;
+}
+
+export interface SalesKPIs {
+  totalRevenue: number;
+  totalSales: number;
+  averageTicket: number;
+  revenueChange: number;
+  salesChange: number;
+  ticketChange: number;
 }

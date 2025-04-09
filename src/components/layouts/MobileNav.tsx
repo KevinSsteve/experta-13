@@ -1,97 +1,129 @@
+import { useState } from "react"
+import { Link } from "react-router-dom"
+import { Menu, Store, ShoppingBag, Package, Receipt, History, BarChart } from "lucide-react"
 
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { 
-  Home, ShoppingBasket, Package, ShoppingCart, 
-  BarChart3, AlertCircle 
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
-const navigation = [
-  { name: "Início", href: "/", icon: Home },
-  { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
-  { name: "Produtos", href: "/products", icon: ShoppingBasket },
-  { name: "Estoque", href: "/inventory", icon: Package },
-  { name: "Checkout", href: "/checkout", icon: ShoppingCart },
-];
+import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/AuthContext"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { buttonVariants } from "@/components/ui/button"
 
 export function MobileNav() {
-  const location = useLocation();
-  const [hasLowStock, setHasLowStock] = useState(false);
-  
-  // Verificar se há produtos com estoque baixo
-  useEffect(() => {
-    const checkLowStock = async () => {
-      try {
-        const { count, error } = await supabase
-          .from('products')
-          .select('*', { count: 'exact', head: true })
-          .gt('stock', 0)
-          .lt('stock', 10);
-          
-        if (error) throw error;
-        
-        setHasLowStock(count ? count > 0 : false);
-      } catch (error) {
-        console.error('Erro ao verificar produtos com estoque baixo:', error);
-      }
-    };
+  const [open, setOpen] = useState(false)
+  const { user, logout } = useAuth();
 
-    checkLowStock();
-    
-    // Atualizar quando houver mudanças no estoque
-    const channel = supabase
-      .channel('mobile-stock-alerts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'products',
-        },
-        () => {
-          checkLowStock();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-  
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-10 bg-background border-t border-border">
-      <nav className="flex">
-        {navigation.map((item) => {
-          const isActive = location.pathname === item.href || 
-                          (item.href !== "/" && location.pathname.startsWith(item.href));
-          
-          // Adicionar indicador de alerta para Estoque
-          const showAlert = item.href === "/inventory" && hasLowStock;
-          
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={cn(
-                "flex flex-1 flex-col items-center justify-center py-3 relative",
-                isActive 
-                  ? "text-primary" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="md:hidden"
+        >
+          <Menu className="h-6 w-6" />
+          <span className="sr-only">Toggle navigation menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-72">
+        <Link to="/" className="flex items-center gap-2 py-4">
+          <Store className="h-6 w-6" />
+          <h1 className="text-lg font-semibold">BizPOS</h1>
+        </Link>
+        <nav className="grid gap-2 py-4">
+          <Link
+            to="/dashboard"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'justify-start'
+            )}
+            onClick={() => setOpen(false)}
+          >
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            Dashboard
+          </Link>
+          <Link
+            to="/products"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'justify-start'
+            )}
+            onClick={() => setOpen(false)}
+          >
+            <ShoppingBag className="mr-2 h-4 w-4" />
+            Produtos
+          </Link>
+          <Link
+            to="/inventory"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'justify-start'
+            )}
+            onClick={() => setOpen(false)}
+          >
+            <Package className="mr-2 h-4 w-4" />
+            Estoque
+          </Link>
+          <Link
+            to="/checkout"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'justify-start'
+            )}
+            onClick={() => setOpen(false)}
+          >
+            <Receipt className="mr-2 h-4 w-4" />
+            PDV
+          </Link>
+          <Link
+            to="/sales-history"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'justify-start'
+            )}
+            onClick={() => setOpen(false)}
+          >
+            <History className="mr-2 h-4 w-4" />
+            Histórico
+          </Link>
+          <Link
+            to="/sales-reports"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'justify-start'
+            )}
+            onClick={() => setOpen(false)}
+          >
+            <BarChart className="mr-2 h-4 w-4" />
+            Relatórios
+          </Link>
+          {user ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="justify-start"
+              onClick={() => {
+                logout();
+                setOpen(false);
+              }}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs mt-1">{item.name}</span>
-              
-              {showAlert && (
-                <span className="absolute top-2 right-1/4 h-2 w-2 bg-red-500 rounded-full"></span>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </Button>
+          ) : (
+            <Link
+              to="/auth"
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'sm' }),
+                'justify-start'
               )}
+              onClick={() => setOpen(false)}
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Entrar
             </Link>
-          );
-        })}
-      </nav>
-    </div>
+          )}
+        </nav>
+      </SheetContent>
+    </Sheet>
   );
 }

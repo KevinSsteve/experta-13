@@ -2,6 +2,7 @@
 import { Product } from './types';
 import { fetchProductsFromSupabase } from './adapters';
 import hardcodedProducts from './fallback';
+import { supabase } from '@/integrations/supabase/client';
 
 // Função para obter produtos
 export async function getProducts(search = '', category = '', minPrice = 0, maxPrice = Infinity, inStock = false, userId?: string): Promise<Product[]> {

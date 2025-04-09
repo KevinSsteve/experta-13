@@ -49,7 +49,8 @@ import {
   Edit,
   Trash2,
   Plus,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -64,58 +65,59 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   formatCurrency, 
-  debounce, 
-  getProductsFromStorage, 
-  saveProductsToStorage,
-  getCategoriesFromProducts, 
-  filterProducts,
-  getLowStockProducts,
-  getOutOfStockProducts
+  debounce 
 } from '@/lib/utils';
 import { ProductForm, ProductFormValues } from '@/components/products/ProductForm';
 import { toast } from "sonner";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Product } from '@/contexts/CartContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { getProducts, getCategories } from '@/lib/products/queries';
+import { useQuery } from '@tanstack/react-query';
 
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [category, setCategory] = useState('all');
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
-  const [outOfStockProducts, setOutOfStockProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('all');
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   
-  // Load data on component mount
-  useEffect(() => {
-    loadInventoryData();
-  }, []);
+  // Use React Query to fetch products data
+  const { 
+    data: products = [], 
+    isLoading: isLoadingProducts, 
+    error: productsError,
+    refetch: refetchProducts
+  } = useQuery({
+    queryKey: ['products', user?.id],
+    queryFn: async () => getProducts(searchQuery, category !== 'all' ? category : '', 0, Infinity, false, user?.id),
+    enabled: !!user
+  });
 
-  // Load inventory data
-  const loadInventoryData = () => {
-    const products = getProductsFromStorage();
-    
-    // We need to apply filters manually for category since filterProducts doesn't accept category param
-    let filteredProducts = filterProducts(products, searchQuery);
-    
-    // Apply category filter separately if needed
-    if (category !== 'all') {
-      filteredProducts = filteredProducts.filter(product => product.category === category);
-    }
-    
-    setAllProducts(filteredProducts);
-    setLowStockProducts(getLowStockProducts(products));
-    setOutOfStockProducts(getOutOfStockProducts(products));
-    setCategories(getCategoriesFromProducts(products));
-  };
+  // Use React Query to fetch categories
+  const { 
+    data: categories = [], 
+    isLoading: isLoadingCategories 
+  } = useQuery({
+    queryKey: ['categories', user?.id],
+    queryFn: async () => getCategories(user?.id),
+    enabled: !!user
+  });
+
+  // Get low stock products (stock < 10)
+  const lowStockProducts = products.filter(product => product.stock > 0 && product.stock < 10);
+  
+  // Get out of stock products
+  const outOfStockProducts = products.filter(product => product.stock === 0);
 
   // Debounced search function
   const debouncedSearch = debounce(() => {
-    loadInventoryData();
+    refetchProducts();
   }, 300);
 
   // Handle search input
@@ -127,64 +129,106 @@ const Inventory = () => {
   // Handle category selection
   const handleCategoryChange = (value: string) => {
     setCategory(value);
-    loadInventoryData();
+    refetchProducts();
   };
 
   // Add product
-  const handleAddProduct = (data: ProductFormValues) => {
-    // Ensure all required fields have values to satisfy the Product type
-    const newProduct: Product = {
-      id: Math.random().toString(36).substring(2) + Date.now().toString(36),
-      name: data.name,
-      price: data.price,
-      category: data.category,
-      stock: data.stock,
-      image: data.image || "/placeholder.svg",
-      code: data.code,
-      description: data.description,
-    };
-    
-    const products = getProductsFromStorage();
-    const updatedProducts = [...products, newProduct];
-    saveProductsToStorage(updatedProducts);
-    
-    setIsAddDialogOpen(false);
-    toast.success("Produto adicionado com sucesso!");
-    loadInventoryData();
+  const handleAddProduct = async (data: ProductFormValues) => {
+    if (!user) {
+      toast.error("Você precisa estar logado para adicionar produtos");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const newProduct = {
+        name: data.name,
+        price: data.price,
+        category: data.category,
+        stock: data.stock,
+        description: data.description || null,
+        code: data.code || null,
+        image: data.image || "/placeholder.svg",
+        user_id: user.id
+      };
+      
+      const { data: insertedProduct, error } = await supabase
+        .from('products')
+        .insert([newProduct])
+        .select();
+      
+      if (error) throw error;
+      
+      setIsAddDialogOpen(false);
+      toast.success("Produto adicionado com sucesso!");
+      refetchProducts();
+    } catch (error: any) {
+      console.error('Erro ao adicionar produto:', error);
+      toast.error(`Erro ao adicionar produto: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Edit product
-  const handleEditProduct = (data: ProductFormValues) => {
-    if (!currentProduct) return;
+  const handleEditProduct = async (data: ProductFormValues) => {
+    if (!currentProduct || !user) return;
     
-    const products = getProductsFromStorage();
-    const updatedProducts = products.map((product: Product) =>
-      product.id === currentProduct.id
-        ? { ...product, ...data }
-        : product
-    );
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: data.name,
+          price: data.price,
+          category: data.category,
+          stock: data.stock,
+          description: data.description || null,
+          code: data.code || null,
+          image: data.image || "/placeholder.svg",
+        })
+        .eq('id', currentProduct.id);
+      
+      if (error) throw error;
+      
+      setIsEditDialogOpen(false);
+      setCurrentProduct(null);
+      toast.success("Produto atualizado com sucesso!");
+      refetchProducts();
+    } catch (error: any) {
+      console.error('Erro ao atualizar produto:', error);
+      toast.error(`Erro ao atualizar produto: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete product
+  const handleDeleteProduct = async (id: string) => {
+    if (!user) return;
     
-    saveProductsToStorage(updatedProducts);
-    setIsEditDialogOpen(false);
-    setCurrentProduct(null);
-    toast.success("Produto atualizado com sucesso!");
-    loadInventoryData();
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast.success("Produto excluído com sucesso!");
+      refetchProducts();
+    } catch (error: any) {
+      console.error('Erro ao excluir produto:', error);
+      toast.error(`Erro ao excluir produto: ${error.message}`);
+    }
   };
 
   // Open edit dialog
   const openEditDialog = (product: Product) => {
     setCurrentProduct(product);
     setIsEditDialogOpen(true);
-  };
-
-  // Delete product
-  const handleDeleteProduct = (id: string) => {
-    const products = getProductsFromStorage();
-    const updatedProducts = products.filter((product: Product) => product.id !== id);
-    saveProductsToStorage(updatedProducts);
-    
-    toast.success("Produto excluído com sucesso!");
-    loadInventoryData();
   };
 
   // Get current products based on active tab
@@ -196,7 +240,7 @@ const Inventory = () => {
         return outOfStockProducts;
       case 'all':
       default:
-        return allProducts;
+        return products;
     }
   };
 
@@ -294,6 +338,51 @@ const Inventory = () => {
     </Card>
   );
 
+  if (isLoadingProducts) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
+            </div>
+            <div className="h-40 flex items-center justify-center">
+              <p className="text-muted-foreground">Carregando produtos...</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (productsError) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
+            </div>
+            <Card className="bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600 mb-4">Erro ao carregar produtos:</p>
+                <p className="text-sm text-red-600">{(productsError as Error).message}</p>
+                <Button 
+                  onClick={() => refetchProducts()} 
+                  className="mt-4"
+                  variant="outline"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Tentar novamente
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
@@ -317,7 +406,7 @@ const Inventory = () => {
                     Preencha as informações do produto e clique em salvar.
                   </DialogDescription>
                 </DialogHeader>
-                <ProductForm onSubmit={handleAddProduct} />
+                <ProductForm onSubmit={handleAddProduct} isSubmitting={isSubmitting} />
               </DialogContent>
             </Dialog>
           </div>
@@ -332,7 +421,7 @@ const Inventory = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">{getProductsFromStorage().length}</p>
+                <p className="text-3xl font-bold">{products.length}</p>
               </CardContent>
             </Card>
             
@@ -556,6 +645,7 @@ const Inventory = () => {
             <ProductForm
               onSubmit={handleEditProduct}
               defaultValues={currentProduct}
+              isSubmitting={isSubmitting}
             />
           )}
         </DialogContent>

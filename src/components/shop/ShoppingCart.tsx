@@ -3,13 +3,18 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { formatCurrency } from '@/lib/utils';
-import { X, Trash, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { X, Trash, Plus, Minus, ShoppingBag, Printer, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { saveSaleToStorage } from '@/lib/utils';
+import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
 
 export function ShoppingCart() {
   const { state, closeCart, removeItem, updateQuantity, clearCart, getTotalPrice } = useCart();
   const [mounted, setMounted] = useState(false);
+  const [showReceiptOptions, setShowReceiptOptions] = useState(false);
+  const [lastSale, setLastSale] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,6 +24,34 @@ export function ShoppingCart() {
   const handleCheckout = () => {
     closeCart();
     navigate('/checkout');
+  };
+
+  const handlePrintReceipt = () => {
+    if (!lastSale) return;
+    
+    try {
+      printReceipt(lastSale);
+      toast.success('Recibo enviado para impressão');
+    } catch (error) {
+      console.error('Erro ao imprimir recibo:', error);
+      toast.error('Erro ao imprimir recibo');
+    }
+  };
+
+  const handleShareReceipt = async () => {
+    if (!lastSale) return;
+    
+    try {
+      const shared = await shareReceipt(lastSale);
+      if (shared) {
+        toast.success('Recibo compartilhado com sucesso');
+      } else {
+        toast.info('O recibo foi baixado porque o compartilhamento não está disponível');
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar recibo:', error);
+      toast.error('Erro ao compartilhar recibo');
+    }
   };
 
   // Adiciona ou remove a classe que esconde o overflow quando o carrinho está aberto
@@ -35,6 +68,40 @@ export function ShoppingCart() {
       document.body.classList.remove('overflow-hidden');
     };
   }, [state.isOpen, mounted]);
+
+  // Verifica se há uma venda recente no localStorage
+  useEffect(() => {
+    const checkLastSale = () => {
+      try {
+        const storedSales = localStorage.getItem('sales');
+        if (storedSales) {
+          const sales = JSON.parse(storedSales);
+          if (Array.isArray(sales) && sales.length > 0) {
+            const lastSaleData = sales[sales.length - 1];
+            // Verifica se a venda foi feita há menos de 1 minuto
+            const saleTime = new Date(lastSaleData.date).getTime();
+            const currentTime = new Date().getTime();
+            const timeDiff = (currentTime - saleTime) / 1000 / 60; // diferença em minutos
+            
+            if (timeDiff < 1) {
+              setLastSale(lastSaleData);
+              setShowReceiptOptions(true);
+            } else {
+              setShowReceiptOptions(false);
+              setLastSale(null);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar última venda:', error);
+      }
+    };
+    
+    // Verifica quando o carrinho é aberto
+    if (state.isOpen) {
+      checkLastSale();
+    }
+  }, [state.isOpen]);
 
   if (!mounted) {
     return null;
@@ -66,6 +133,34 @@ export function ShoppingCart() {
         
         {/* Body */}
         <div className="flex flex-col h-[calc(100%-8rem)] overflow-y-auto p-4">
+          {showReceiptOptions && (
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+              <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                Sua compra foi finalizada com sucesso!
+              </p>
+              <div className="flex space-x-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs" 
+                  onClick={handlePrintReceipt}
+                >
+                  <Printer className="h-3 w-3 mr-1" />
+                  Imprimir
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs" 
+                  onClick={handleShareReceipt}
+                >
+                  <Share2 className="h-3 w-3 mr-1" />
+                  Compartilhar
+                </Button>
+              </div>
+            </div>
+          )}
+
           {state.items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
               <ShoppingBag className="h-12 w-12 mb-4 opacity-30" />

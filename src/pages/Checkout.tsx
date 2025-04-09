@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { 
@@ -8,6 +8,7 @@ import {
   saveSaleToStorage, 
   updateProductStockAfterSale 
 } from '@/lib/utils';
+import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
 import { 
   Card, 
   CardContent,
@@ -30,7 +31,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Check, Trash2, Calculator } from 'lucide-react';
+import { Check, Trash2, Calculator, Download, Printer, Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -38,6 +39,7 @@ interface CheckoutFormValues {
   customerName: string;
   customerPhone?: string;
   customerEmail?: string;
+  customerNIF?: string; // Adicionar campo para NIF do cliente
   notes?: string;
   amountPaid: number;
 }
@@ -46,6 +48,7 @@ const Checkout = () => {
   const { state, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [change, setChange] = useState(0);
+  const [completedSale, setCompletedSale] = useState<any>(null);
   const navigate = useNavigate();
   
   const form = useForm<CheckoutFormValues>({
@@ -53,6 +56,7 @@ const Checkout = () => {
       customerName: '',
       customerPhone: '',
       customerEmail: '',
+      customerNIF: '',
       notes: '',
       amountPaid: 0,
     },
@@ -83,6 +87,7 @@ const Checkout = () => {
         name: data.customerName,
         phone: data.customerPhone || '',
         email: data.customerEmail || '',
+        nif: data.customerNIF || '', // Adicionar NIF do cliente
       },
       total: getTotalPrice(),
       amountPaid: data.amountPaid,
@@ -113,7 +118,8 @@ const Checkout = () => {
             customer: {
               name: saleData.customer.name,
               phone: saleData.customer.phone,
-              email: saleData.customer.email
+              email: saleData.customer.email,
+              nif: saleData.customer.nif // Adicionar NIF no Supabase
             },
             paymentMethod: saleData.paymentMethod,
             notes: saleData.notes,
@@ -135,18 +141,61 @@ const Checkout = () => {
       
       toast.success('Venda finalizada com sucesso!');
       
-      clearCart();
-      form.reset();
+      // Armazena os dados da venda para uso nas funções de recibo
+      setCompletedSale(saleData);
       
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+      // Não limpe o carrinho ainda para permitir opções de impressão
     } catch (error) {
       toast.error('Erro ao finalizar a venda. Por favor, tente novamente.');
       console.error('Error saving sale:', error);
-    } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const handlePrintReceipt = () => {
+    if (!completedSale) return;
+    
+    try {
+      printReceipt(completedSale);
+      toast.success('Recibo enviado para impressão');
+    } catch (error) {
+      console.error('Erro ao imprimir recibo:', error);
+      toast.error('Erro ao imprimir recibo');
+    }
+  };
+  
+  const handleDownloadReceipt = () => {
+    if (!completedSale) return;
+    
+    try {
+      downloadReceipt(completedSale);
+      toast.success('Recibo baixado com sucesso');
+    } catch (error) {
+      console.error('Erro ao baixar recibo:', error);
+      toast.error('Erro ao baixar recibo');
+    }
+  };
+  
+  const handleShareReceipt = async () => {
+    if (!completedSale) return;
+    
+    try {
+      const shared = await shareReceipt(completedSale);
+      if (shared) {
+        toast.success('Recibo compartilhado com sucesso');
+      } else {
+        toast.info('O recibo foi baixado porque o compartilhamento não está disponível');
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar recibo:', error);
+      toast.error('Erro ao compartilhar recibo');
+    }
+  };
+  
+  const finishAndNavigate = () => {
+    clearCart();
+    form.reset();
+    navigate('/dashboard');
   };
   
   return (
@@ -158,182 +207,278 @@ const Checkout = () => {
             <p className="text-muted-foreground">Revise o carrinho e complete a venda.</p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
+          {completedSale ? (
+            <Card>
               <CardHeader>
-                <CardTitle>Resumo do Pedido</CardTitle>
+                <CardTitle>Venda Finalizada</CardTitle>
                 <CardDescription>
-                  {state.items.length} {state.items.length === 1 ? 'item' : 'itens'} no carrinho
+                  A venda foi concluída com sucesso
                 </CardDescription>
               </CardHeader>
               
               <CardContent>
-                {state.items.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-lg font-medium">O carrinho está vazio</p>
-                    <p className="text-muted-foreground mt-1">
-                      Adicione produtos antes de finalizar a venda.
+                <div className="space-y-6">
+                  <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex items-center mb-4">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
+                      <h3 className="font-medium text-green-800 dark:text-green-300">
+                        Pagamento de {formatCurrency(completedSale.total)} concluído!
+                      </h3>
+                    </div>
+                    <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+                      O seu recibo está pronto. Você pode imprimir, baixar ou compartilhar usando as opções abaixo.
                     </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={handlePrintReceipt}
+                        className="flex-1"
+                      >
+                        <Printer className="mr-2 h-4 w-4" />
+                        Imprimir Recibo
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleDownloadReceipt}
+                        className="flex-1"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Baixar PDF
+                      </Button>
+                      <Button
+                        onClick={handleShareReceipt}
+                        className="flex-1"
+                      >
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Compartilhar
+                      </Button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {state.items.map((item) => (
-                      <div key={item.product.id} className="flex items-center justify-between py-2">
-                        <div className="flex items-center space-x-4">
-                          <div className="h-16 w-16 bg-muted rounded overflow-hidden flex-shrink-0">
-                            {item.product.image && (
-                              <img 
-                                src={item.product.image} 
-                                alt={item.product.name}
-                                className="h-full w-full object-cover"
-                              />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{item.product.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {formatCurrency(item.product.price)} × {item.quantity}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <div className="text-right">
-                            <p className="font-medium">
-                              {formatCurrency(item.product.price * item.quantity)}
-                            </p>
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={finishAndNavigate}>
+                      Continuar
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Resumo do Pedido</CardTitle>
+                  <CardDescription>
+                    {state.items.length} {state.items.length === 1 ? 'item' : 'itens'} no carrinho
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent>
+                  {state.items.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-lg font-medium">O carrinho está vazio</p>
+                      <p className="text-muted-foreground mt-1">
+                        Adicione produtos antes de finalizar a venda.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {state.items.map((item) => (
+                        <div key={item.product.id} className="flex items-center justify-between py-2">
+                          <div className="flex items-center space-x-4">
+                            <div className="h-16 w-16 bg-muted rounded overflow-hidden flex-shrink-0">
+                              {item.product.image && (
+                                <img 
+                                  src={item.product.image} 
+                                  alt={item.product.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{item.product.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {formatCurrency(item.product.price)} × {item.quantity}
+                              </p>
+                            </div>
                           </div>
                           
                           <div className="flex items-center space-x-2">
-                            <Input 
-                              type="number"
-                              min="1"
-                              max={item.product.stock}
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(
-                                item.product.id,
-                                parseInt(e.target.value) || 1
-                              )}
-                              className="w-16 h-8 text-center"
-                            />
+                            <div className="text-right">
+                              <p className="font-medium">
+                                {formatCurrency(item.product.price * item.quantity)}
+                              </p>
+                            </div>
                             
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                              onClick={() => removeItem(item.product.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center space-x-2">
+                              <Input 
+                                type="number"
+                                min="1"
+                                max={item.product.stock}
+                                value={item.quantity}
+                                onChange={(e) => updateQuantity(
+                                  item.product.id,
+                                  parseInt(e.target.value) || 1
+                                )}
+                                className="w-16 h-8 text-center"
+                              />
+                              
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                onClick={() => removeItem(item.product.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-              
-              <CardFooter className="flex flex-col">
-                <Separator className="my-4" />
-                
-                <div className="space-y-1.5 w-full">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{formatCurrency(getTotalPrice())}</span>
-                  </div>
-                  <div className="flex justify-between font-medium text-lg">
-                    <span>Total</span>
-                    <span>{formatCurrency(getTotalPrice())}</span>
-                  </div>
-                </div>
-              </CardFooter>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Dados da Venda</CardTitle>
-                <CardDescription>
-                  Complete as informações para finalizar a venda
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="customerName"
-                      rules={{ required: 'Nome do cliente é obrigatório' }}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome do Cliente</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Digite o nome do cliente" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="customerPhone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Telefone (opcional)</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="(XX) XXXXX-XXXX" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="customerEmail"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email (opcional)</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="email@exemplo.com" type="email" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      ))}
                     </div>
-                    
-                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-                      <h3 className="font-medium flex items-center">
-                        <Calculator className="mr-2 h-4 w-4" />
-                        Pagamento
-                      </h3>
+                  )}
+                </CardContent>
+                
+                <CardFooter className="flex flex-col">
+                  <Separator className="my-4" />
+                  
+                  <div className="space-y-1.5 w-full">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>{formatCurrency(getTotalPrice())}</span>
+                    </div>
+                    <div className="flex justify-between font-medium text-lg">
+                      <span>Total</span>
+                      <span>{formatCurrency(getTotalPrice())}</span>
+                    </div>
+                  </div>
+                </CardFooter>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Dados da Venda</CardTitle>
+                  <CardDescription>
+                    Complete as informações para finalizar a venda
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="customerName"
+                        rules={{ required: 'Nome do cliente é obrigatório' }}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome do Cliente</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Digite o nome do cliente" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="customerPhone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Telefone (opcional)</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="(XX) XXXXX-XXXX" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="customerEmail"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email (opcional)</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="email@exemplo.com" type="email" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      {/* Campo NIF do Cliente para SAFT Angola */}
+                      <FormField
+                        control={form.control}
+                        name="customerNIF"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>NIF do Cliente (opcional)</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Digite o NIF do cliente" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                        <h3 className="font-medium flex items-center">
+                          <Calculator className="mr-2 h-4 w-4" />
+                          Pagamento
+                        </h3>
+                        
+                        <FormField
+                          control={form.control}
+                          name="amountPaid"
+                          rules={{ 
+                            required: 'Valor pago é obrigatório',
+                            min: {
+                              value: getTotalPrice(),
+                              message: 'O valor pago deve ser maior ou igual ao total',
+                            }
+                          }}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Valor Pago</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  min={getTotalPrice()} 
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  onChange={(e) => handleAmountPaidChange(e.target.value)}
+                                  onBlur={field.onBlur}
+                                  name={field.name}
+                                  ref={field.ref}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="flex justify-between items-center p-2 bg-muted rounded">
+                          <span>Troco:</span>
+                          <span className="font-medium text-lg">{formatCurrency(change)}</span>
+                        </div>
+                      </div>
                       
                       <FormField
                         control={form.control}
-                        name="amountPaid"
-                        rules={{ 
-                          required: 'Valor pago é obrigatório',
-                          min: {
-                            value: getTotalPrice(),
-                            message: 'O valor pago deve ser maior ou igual ao total',
-                          }
-                        }}
+                        name="notes"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Valor Pago</FormLabel>
+                            <FormLabel>Observações (opcional)</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                min={getTotalPrice()} 
-                                step="0.01"
-                                placeholder="0.00"
-                                onChange={(e) => handleAmountPaidChange(e.target.value)}
-                                onBlur={field.onBlur}
-                                name={field.name}
-                                ref={field.ref}
+                              <Textarea 
+                                {...field} 
+                                placeholder="Digite observações sobre o pedido"
+                                rows={3}
                               />
                             </FormControl>
                             <FormMessage />
@@ -341,53 +486,30 @@ const Checkout = () => {
                         )}
                       />
                       
-                      <div className="flex justify-between items-center p-2 bg-muted rounded">
-                        <span>Troco:</span>
-                        <span className="font-medium text-lg">{formatCurrency(change)}</span>
+                      <div className="pt-2">
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={isSubmitting || state.items.length === 0}
+                        >
+                          {isSubmitting ? (
+                            <span className="flex items-center">
+                              Processando...
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <Check className="mr-2 h-4 w-4" />
+                              Finalizar Venda
+                            </span>
+                          )}
+                        </Button>
                       </div>
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Observações (opcional)</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              {...field} 
-                              placeholder="Digite observações sobre o pedido"
-                              rows={3}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="pt-2">
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
-                        disabled={isSubmitting || state.items.length === 0}
-                      >
-                        {isSubmitting ? (
-                          <span className="flex items-center">
-                            Processando...
-                          </span>
-                        ) : (
-                          <span className="flex items-center">
-                            <Check className="mr-2 h-4 w-4" />
-                            Finalizar Venda
-                          </span>
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </MainLayout>

@@ -5,91 +5,241 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Sale, CustomerInfo } from '@/lib/sales/types';
 import { CartItem } from '@/contexts/CartContext';
 
+// Configuração das dimensões para impressora térmica móvel (geralmente 80mm de largura)
+const THERMAL_CONFIG = {
+  width: 80, // 80mm
+  format: [80, 297], // Formato personalizado em mm
+  margin: {
+    top: 5,
+    right: 5,
+    bottom: 5,
+    left: 5
+  },
+  fontSize: {
+    header: 10,
+    title: 8,
+    body: 7,
+    small: 6
+  }
+};
+
+// Informações da empresa para SAFT de Angola
+const COMPANY_INFO = {
+  name: "MOLOJA",
+  nif: "5000123456", // NIF da empresa (substituir pelo valor real)
+  address: "Luanda, Angola",
+  phone: "+244 123 456 789",
+  website: "www.moloja.co.ao"
+};
+
 export const generateReceiptPDF = (sale: Sale): jsPDF => {
-  // Criar uma nova instância de PDF (portrait, mm, A4)
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.width;
+  // Criar uma nova instância de PDF no tamanho para impressora térmica
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: THERMAL_CONFIG.format
+  });
+  
+  const pageWidth = THERMAL_CONFIG.width;
+  const margin = THERMAL_CONFIG.margin;
+  const contentWidth = pageWidth - margin.left - margin.right;
+  
+  let yPos = margin.top;
+  
+  // Funções auxiliares
+  const centerText = (text: string, y: number, fontSize: number) => {
+    doc.setFontSize(fontSize);
+    doc.text(text, pageWidth / 2, y, { align: 'center' });
+    return fontSize * 0.35 + 1; // Retorna o espaço vertical usado
+  };
+  
+  const addLine = (text: string, y: number, fontSize: number = THERMAL_CONFIG.fontSize.body) => {
+    doc.setFontSize(fontSize);
+    doc.text(text, margin.left, y);
+    return fontSize * 0.35 + 1; // Retorna o espaço vertical usado
+  };
+  
+  const addWrappedText = (text: string, y: number, fontSize: number = THERMAL_CONFIG.fontSize.body) => {
+    doc.setFontSize(fontSize);
+    const textLines = doc.splitTextToSize(text, contentWidth);
+    doc.text(textLines, margin.left, y);
+    return (fontSize * 0.35 + 1) * textLines.length; // Retorna o espaço vertical usado
+  };
+  
+  const addSeparator = (y: number) => {
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.1);
+    doc.line(margin.left, y, pageWidth - margin.right, y);
+    return 2; // Retorna o espaço vertical usado
+  };
   
   // Adicionar cabeçalho
-  doc.setFontSize(20);
-  doc.text('RECIBO DE VENDA', pageWidth / 2, 20, { align: 'center' });
+  yPos += centerText(COMPANY_INFO.name, yPos, THERMAL_CONFIG.fontSize.header);
+  yPos += 2;
+  yPos += centerText(COMPANY_INFO.address, yPos, THERMAL_CONFIG.fontSize.small);
+  yPos += centerText(`Tel: ${COMPANY_INFO.phone}`, yPos, THERMAL_CONFIG.fontSize.small);
+  yPos += centerText(`NIF: ${COMPANY_INFO.nif}`, yPos, THERMAL_CONFIG.fontSize.small);
+  yPos += centerText(COMPANY_INFO.website, yPos, THERMAL_CONFIG.fontSize.small);
   
-  doc.setFontSize(12);
-  doc.text('Moloja', pageWidth / 2, 30, { align: 'center' });
+  yPos += 3;
+  yPos += addSeparator(yPos);
+  yPos += 3;
+  
+  // Título do recibo
+  yPos += centerText('RECIBO DE VENDA', yPos, THERMAL_CONFIG.fontSize.title);
+  yPos += 2;
   
   // Informações da venda
-  doc.setFontSize(10);
-  doc.text(`ID da Venda: ${sale.id}`, 15, 45);
-  doc.text(`Data: ${formatDate(sale.date)}`, 15, 50);
+  yPos += addLine(`Data: ${formatDate(sale.date)}`, yPos);
+  yPos += addLine(`ID Venda: ${sale.id.slice(0, 8)}`, yPos);
   
   // Informações do cliente
   if (sale.customer && typeof sale.customer === 'object') {
     const customer = sale.customer as CustomerInfo;
-    doc.text(`Cliente: ${customer.name || 'Cliente não identificado'}`, 15, 55);
-    if (customer.phone) doc.text(`Telefone: ${customer.phone}`, 15, 60);
-    if (customer.email) doc.text(`Email: ${customer.email}`, 15, 65);
+    yPos += addLine(`Cliente: ${customer.name || 'Cliente não identificado'}`, yPos);
+    if (customer.phone) yPos += addLine(`Telefone: ${customer.phone}`, yPos);
+    if (customer.email) yPos += addLine(`Email: ${customer.email}`, yPos);
+    // Adicionar NIF do cliente se disponível (SAFT Angola)
+    if (customer.nif) yPos += addLine(`NIF Cliente: ${customer.nif}`, yPos);
   } else if (typeof sale.customer === 'string') {
-    doc.text(`Cliente: ${sale.customer || 'Cliente não identificado'}`, 15, 55);
+    yPos += addLine(`Cliente: ${sale.customer || 'Cliente não identificado'}`, yPos);
   } else {
-    doc.text(`Cliente: Cliente não identificado`, 15, 55);
+    yPos += addLine(`Cliente: Cliente não identificado`, yPos);
   }
   
   // Método de pagamento
-  doc.text(`Método de Pagamento: ${sale.paymentMethod}`, 15, 70);
+  yPos += addLine(`Método de Pagamento: ${sale.paymentMethod}`, yPos);
+  
+  yPos += 3;
+  yPos += addSeparator(yPos);
+  yPos += 3;
+  
+  // Tabela de itens
+  yPos += centerText('ITENS', yPos, THERMAL_CONFIG.fontSize.title);
+  yPos += 2;
+  
+  // Cabeçalho da tabela
+  doc.setFontSize(THERMAL_CONFIG.fontSize.small);
+  doc.text("Item", margin.left, yPos);
+  doc.text("Qtd", pageWidth - 30, yPos, { align: 'right' });
+  doc.text("Preço", pageWidth - 20, yPos, { align: 'right' });
+  doc.text("Total", pageWidth - margin.right, yPos, { align: 'right' });
+  yPos += 2;
+  
+  yPos += addSeparator(yPos);
+  yPos += 2;
   
   // Itens da venda
-  const tableData = [];
-  
-  // Verificando se sale.items é um array de CartItem ou apenas um número
   if (Array.isArray(sale.items)) {
     // Se for um array, presumimos que são CartItems
     (sale.items as unknown as CartItem[]).forEach((item: CartItem) => {
-      tableData.push([
-        item.product.name, 
+      const maxWidth = 25; // Largura máxima para o nome do produto
+      const name = item.product.name.length > maxWidth 
+        ? item.product.name.slice(0, maxWidth) + '...' 
+        : item.product.name;
+      
+      yPos += addLine(name, yPos, THERMAL_CONFIG.fontSize.small);
+      
+      // Quantidade, preço e total na mesma linha
+      doc.text(
         item.quantity.toString(), 
+        pageWidth - 30, 
+        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+        { align: 'right' }
+      );
+      
+      doc.text(
         formatCurrency(item.product.price), 
-        formatCurrency(item.product.price * item.quantity)
-      ]);
+        pageWidth - 20, 
+        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+        { align: 'right' }
+      );
+      
+      doc.text(
+        formatCurrency(item.product.price * item.quantity), 
+        pageWidth - margin.right, 
+        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+        { align: 'right' }
+      );
     });
   } else if (typeof sale.products !== 'undefined' && Array.isArray(sale.products)) {
     // Se tivermos products array, usamos ele
     sale.products.forEach((product: any) => {
-      tableData.push([
-        product.name, 
-        product.quantity?.toString() || "1", 
+      const maxWidth = 25; // Largura máxima para o nome do produto
+      const name = product.name.length > maxWidth 
+        ? product.name.slice(0, maxWidth) + '...' 
+        : product.name;
+      
+      yPos += addLine(name, yPos, THERMAL_CONFIG.fontSize.small);
+      
+      // Quantidade, preço e total na mesma linha
+      const quantity = product.quantity?.toString() || "1";
+      doc.text(
+        quantity, 
+        pageWidth - 30, 
+        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+        { align: 'right' }
+      );
+      
+      doc.text(
         formatCurrency(product.price), 
-        formatCurrency(product.price * (product.quantity || 1))
-      ]);
+        pageWidth - 20, 
+        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+        { align: 'right' }
+      );
+      
+      doc.text(
+        formatCurrency(product.price * (product.quantity || 1)), 
+        pageWidth - margin.right, 
+        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
+        { align: 'right' }
+      );
     });
   }
   
-  autoTable(doc, {
-    head: [['Produto', 'Quantidade', 'Preço Unit.', 'Total']],
-    body: tableData,
-    startY: 80,
-    theme: 'striped',
-    headStyles: { fillColor: [80, 80, 80] },
-  });
-  
-  // Calcular a posição Y após a tabela
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  yPos += 3;
+  yPos += addSeparator(yPos);
+  yPos += 3;
   
   // Totais
-  doc.text(`Subtotal: ${formatCurrency(sale.total)}`, pageWidth - 60, finalY);
-  doc.text(`Total: ${formatCurrency(sale.total)}`, pageWidth - 60, finalY + 5);
+  yPos += addLine(`Subtotal: ${formatCurrency(sale.total)}`, yPos);
+  yPos += addLine(`Total: ${formatCurrency(sale.total)}`, yPos, THERMAL_CONFIG.fontSize.title);
+  
   if (typeof sale.amountPaid === 'number') {
-    doc.text(`Valor pago: ${formatCurrency(sale.amountPaid)}`, pageWidth - 60, finalY + 10);
-    doc.text(`Troco: ${formatCurrency(sale.amountPaid - sale.total)}`, pageWidth - 60, finalY + 15);
+    yPos += addLine(`Valor pago: ${formatCurrency(sale.amountPaid)}`, yPos);
+    yPos += addLine(`Troco: ${formatCurrency(sale.amountPaid - sale.total)}`, yPos);
   }
+  
+  yPos += 3;
+  yPos += addSeparator(yPos);
+  yPos += 3;
   
   // Observações (notas)
   if (sale.notes) {
-    doc.text(`Observações: ${sale.notes}`, 15, finalY + 20);
+    yPos += addLine('Observações:', yPos);
+    yPos += addWrappedText(sale.notes, yPos, THERMAL_CONFIG.fontSize.small);
+    yPos += 3;
   }
   
+  // Informações de SAFT para Angola
+  yPos += addSeparator(yPos);
+  yPos += 3;
+  yPos += addLine('INFORMAÇÕES FISCAIS', yPos, THERMAL_CONFIG.fontSize.title);
+  yPos += 2;
+  yPos += addLine(`Regime: Normal`, yPos, THERMAL_CONFIG.fontSize.small);
+  yPos += addLine(`NIF Emissor: ${COMPANY_INFO.nif}`, yPos, THERMAL_CONFIG.fontSize.small);
+  
+  // Código para verificação fiscal (simulado)
+  const fiscalCode = sale.id.slice(0, 6).toUpperCase();
+  yPos += addLine(`Código de Verificação: ${fiscalCode}`, yPos, THERMAL_CONFIG.fontSize.small);
+  yPos += 3;
+  
   // Rodapé
-  doc.setFontSize(8);
-  doc.text('Obrigado pela sua preferência!', pageWidth / 2, finalY + 30, { align: 'center' });
+  yPos += addSeparator(yPos);
+  yPos += 3;
+  yPos += centerText('Obrigado pela sua preferência!', yPos, THERMAL_CONFIG.fontSize.small);
+  yPos += 3;
+  yPos += centerText('www.moloja.co.ao', yPos, THERMAL_CONFIG.fontSize.small);
   
   return doc;
 };

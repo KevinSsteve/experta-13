@@ -81,13 +81,13 @@ const Checkout = () => {
     const saleData = {
       customer: {
         name: data.customerName,
-        phone: data.customerPhone,
-        email: data.customerEmail,
+        phone: data.customerPhone || '',
+        email: data.customerEmail || '',
       },
       total: getTotalPrice(),
       amountPaid: data.amountPaid,
       change: change,
-      notes: data.notes,
+      notes: data.notes || '',
       items: state.items,
       paymentMethod: 'Dinheiro',
     };
@@ -110,7 +110,11 @@ const Checkout = () => {
           amount_paid: saleData.amountPaid,
           change: saleData.change,
           items: {
-            customer: saleData.customer,
+            customer: {
+              name: saleData.customer.name,
+              phone: saleData.customer.phone,
+              email: saleData.customer.email
+            },
             paymentMethod: saleData.paymentMethod,
             notes: saleData.notes,
             products: simplifiedItems

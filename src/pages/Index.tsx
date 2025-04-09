@@ -159,7 +159,7 @@ const Index = () => {
           {/* Products grid */}
           <section>
             {isLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 {Array(8).fill(0).map((_, i) => (
                   <div key={i} className="bg-card animate-pulse aspect-square rounded-lg"></div>
                 ))}
@@ -183,7 +183,7 @@ const Index = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                       {visibleProducts.map(product => (
                         <Card key={product.id} className="overflow-hidden group h-full flex flex-col">
                           <AspectRatio ratio={1} className="bg-muted relative overflow-hidden">

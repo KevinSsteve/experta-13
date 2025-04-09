@@ -135,14 +135,14 @@ const Index = () => {
               <h1 className="text-2xl font-bold">Meu Estoque</h1>
               <p className="text-muted-foreground">Gerencie os produtos do seu estoque.</p>
             </div>
-            <div className="flex gap-2 mt-4 md:mt-0">
-              <Link to="/products">
-                <Button variant="outline">
+            <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
+              <Link to="/products" className="w-full sm:w-auto">
+                <Button variant="outline" className="w-full sm:w-auto">
                   Adicionar produtos ao estoque
                 </Button>
               </Link>
-              <Link to="/dashboard">
-                <Button>
+              <Link to="/dashboard" className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto">
                   Ver dashboard
                 </Button>
               </Link>
@@ -166,7 +166,7 @@ const Index = () => {
           {/* Products grid */}
           <section>
             {isLoading ? (
-              <div className="grid grid-cols-2 grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
                 {Array(8).fill(0).map((_, i) => (
                   <div key={i} className="bg-card animate-pulse aspect-square rounded-lg"></div>
                 ))}
@@ -197,7 +197,7 @@ const Index = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
                       {visibleProducts.map(product => (
                         <Card key={product.id} className="overflow-hidden group h-full flex flex-col">
                           <AspectRatio ratio={1} className="bg-muted relative overflow-hidden">
@@ -208,7 +208,7 @@ const Index = () => {
                             />
                             {product.stock === 0 && (
                               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                <span className="text-white font-medium text-sm px-2 py-1 bg-red-500 rounded-md">
+                                <span className="text-white font-medium text-xs sm:text-sm px-2 py-1 bg-red-500 rounded-md">
                                   Esgotado
                                 </span>
                               </div>
@@ -218,10 +218,10 @@ const Index = () => {
                           <CardContent className="p-2 flex-grow">
                             <div className="flex justify-between items-start">
                               <div>
-                                <h3 className="font-medium line-clamp-1 text-sm">{product.name}</h3>
+                                <h3 className="font-medium line-clamp-1 text-xs sm:text-sm">{product.name}</h3>
                                 <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
                               </div>
-                              <span className="text-sm font-medium text-primary">
+                              <span className="text-xs sm:text-sm font-medium text-primary">
                                 {formatCurrency(product.price)}
                               </span>
                             </div>

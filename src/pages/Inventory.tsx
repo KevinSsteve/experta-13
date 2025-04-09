@@ -1,14 +1,6 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +27,6 @@ import {
   DialogTitle,
   DialogTrigger 
 } from "@/components/ui/dialog";
-import { Label } from '@/components/ui/label';
 import { 
   Tabs, 
   TabsContent, 
@@ -46,25 +37,11 @@ import {
   AlertCircle, 
   Package, 
   Search, 
-  Edit,
-  Trash2,
   Plus,
   AlertTriangle,
   RefreshCw
 } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { 
-  formatCurrency, 
   debounce 
 } from '@/lib/utils';
 import { ProductForm, ProductFormValues } from '@/components/products/ProductForm';
@@ -75,6 +52,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getProducts, getCategories } from '@/lib/products/queries';
 import { useQuery } from '@tanstack/react-query';
+import { ProductTable } from '@/components/inventory/ProductTable';
 
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -244,100 +222,6 @@ const Inventory = () => {
     }
   };
 
-  // Renderiza um card de produto para visualização em dispositivos móveis
-  const renderProductCard = (product: Product) => (
-    <Card key={product.id} className="mb-4">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="h-12 w-12 bg-muted rounded overflow-hidden">
-              <img 
-                src={product.image} 
-                alt={product.name}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div>
-              <h3 className="font-medium">{product.name}</h3>
-              <p className="text-xs text-muted-foreground">
-                {product.code || "Sem código"} • {product.category}
-              </p>
-            </div>
-          </div>
-          
-          <div className="text-right">
-            <div className="font-medium">{formatCurrency(product.price)}</div>
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between mt-3 pt-3 border-t">
-          <div className="inline-flex items-center gap-1">
-            <span 
-              className={`h-2 w-2 rounded-full ${
-                product.stock === 0
-                  ? 'bg-red-500'
-                  : product.stock < 10
-                    ? 'bg-amber-500'
-                    : 'bg-green-500'
-              }`}
-            />
-            <span className="text-sm">
-              {product.stock} unidades
-            </span>
-          </div>
-          
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => openEditDialog(product)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                
-                <div className="pt-4">
-                  <p className="mb-2">
-                    <span className="font-medium">{product.name}</span>
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Código: {product.code || "Sem código"} • {product.category}
-                  </p>
-                </div>
-                
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => handleDeleteProduct(product.id)}
-                  >
-                    Excluir
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   if (isLoadingProducts) {
     return (
       <MainLayout>
@@ -394,7 +278,7 @@ const Inventory = () => {
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full md:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   {!isMobile && "Adicionar Produto"}
                 </Button>
@@ -412,7 +296,7 @@ const Inventory = () => {
           </div>
 
           {/* Inventory stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -437,7 +321,7 @@ const Inventory = () => {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="col-span-1 sm:col-span-2 md:col-span-1">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Sem Estoque</CardTitle>
@@ -484,7 +368,7 @@ const Inventory = () => {
           <Card>
             <CardHeader className="pb-0">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
+                <TabsList className="w-full md:w-auto overflow-x-auto">
                   <TabsTrigger value="all">
                     Todos os Produtos
                   </TabsTrigger>
@@ -498,135 +382,11 @@ const Inventory = () => {
               </Tabs>
             </CardHeader>
             <CardContent>
-              {isMobile ? (
-                // Mobile view - using cards
-                <div className="space-y-4">
-                  {getCurrentProducts().length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Nenhum produto encontrado nesta categoria
-                    </div>
-                  ) : (
-                    getCurrentProducts().map((product) => renderProductCard(product))
-                  )}
-                </div>
-              ) : (
-                // Desktop view - using table
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[100px]">Código</TableHead>
-                        <TableHead>Produto</TableHead>
-                        <TableHead>Categoria</TableHead>
-                        <TableHead className="text-right">Preço</TableHead>
-                        <TableHead className="text-center">Estoque</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    
-                    <TableBody>
-                      {getCurrentProducts().length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center">
-                            Nenhum produto encontrado nesta categoria
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        getCurrentProducts().map((product) => (
-                          <TableRow key={product.id}>
-                            <TableCell>{product.code || "-"}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-3">
-                                <div className="h-10 w-10 bg-muted rounded overflow-hidden">
-                                  <img 
-                                    src={product.image} 
-                                    alt={product.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </div>
-                                <div>
-                                  <div className="font-medium">{product.name}</div>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{product.category}</TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(product.price)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-center">
-                                <div className="inline-flex items-center gap-1">
-                                  <span 
-                                    className={`h-2 w-2 rounded-full ${
-                                      product.stock === 0
-                                        ? 'bg-red-500'
-                                        : product.stock < 10
-                                          ? 'bg-amber-500'
-                                          : 'bg-green-500'
-                                    }`}
-                                  />
-                                  <span className="text-sm">
-                                    {product.stock} unidades
-                                  </span>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end space-x-1">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => openEditDialog(product)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    
-                                    <div className="pt-4">
-                                      <p className="mb-2">
-                                        <span className="font-medium">{product.name}</span>
-                                      </p>
-                                      <p className="text-sm text-muted-foreground">
-                                        Código: {product.code || "Sem código"} • {product.category}
-                                      </p>
-                                    </div>
-                                    
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDeleteProduct(product.id)}
-                                      >
-                                        Excluir
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <ProductTable 
+                products={getCurrentProducts()}
+                onEdit={openEditDialog}
+                onDelete={handleDeleteProduct}
+              />
             </CardContent>
           </Card>
         </div>

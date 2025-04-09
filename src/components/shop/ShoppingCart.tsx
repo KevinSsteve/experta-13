@@ -77,11 +77,13 @@ export function ShoppingCart() {
               {state.items.map((item) => (
                 <div key={item.product.id} className="flex gap-4 py-2">
                   <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-border bg-muted">
-                    <img
-                      src={item.product.image}
-                      alt={item.product.name}
-                      className="h-full w-full object-cover"
-                    />
+                    {item.product.image && (
+                      <img
+                        src={item.product.image}
+                        alt={item.product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
                   </div>
                   
                   <div className="flex flex-1 flex-col">

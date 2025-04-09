@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Sale, CustomerInfo } from '@/lib/sales/types';
+import { CartItem } from '@/contexts/CartContext';
 
 export const generateReceiptPDF = (sale: Sale): jsPDF => {
   // Criar uma nova instância de PDF (portrait, mm, A4)
@@ -38,13 +39,26 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   
   // Itens da venda
   const tableData = [];
+  
+  // Verificando se sale.items é um array de CartItem ou apenas um número
   if (Array.isArray(sale.items)) {
-    sale.items.forEach((item) => {
+    // Se for um array, presumimos que são CartItems
+    (sale.items as unknown as CartItem[]).forEach((item: CartItem) => {
       tableData.push([
         item.product.name, 
         item.quantity.toString(), 
         formatCurrency(item.product.price), 
         formatCurrency(item.product.price * item.quantity)
+      ]);
+    });
+  } else if (typeof sale.products !== 'undefined' && Array.isArray(sale.products)) {
+    // Se tivermos products array, usamos ele
+    sale.products.forEach((product: any) => {
+      tableData.push([
+        product.name, 
+        product.quantity?.toString() || "1", 
+        formatCurrency(product.price), 
+        formatCurrency(product.price * (product.quantity || 1))
       ]);
     });
   }

@@ -8,7 +8,7 @@ export interface Sale {
   total: number;
   amountPaid?: number;
   change?: number;
-  items: number;
+  items: number | CartItem[];
   paymentMethod: string;
   customer?: string | CustomerInfo;
   products?: any[];

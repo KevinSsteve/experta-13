@@ -3,9 +3,6 @@ import { Product } from '@/lib/products-data';
 import { formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useState } from 'react';
-import { getLowStockProducts } from '@/lib/products-data';
 
 interface LowStockProductsListProps {
   data: Product[] | undefined;
@@ -13,28 +10,6 @@ interface LowStockProductsListProps {
 }
 
 export const LowStockProductsList = ({ data, isLoading }: LowStockProductsListProps) => {
-  const [realData, setRealData] = useState<Product[] | undefined>(data);
-  const [loading, setLoading] = useState<boolean>(isLoading);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      setLoading(true);
-      getLowStockProducts(10, user.id)
-        .then(products => {
-          setRealData(products);
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error('Erro ao buscar produtos com estoque baixo:', error);
-          setLoading(false);
-        });
-    } else {
-      setRealData(data);
-      setLoading(isLoading);
-    }
-  }, [user, data, isLoading]);
-
   // Helper function to safely render product name
   const renderProductName = (name: any): string => {
     return typeof name === 'string' ? name : 'Produto sem nome';
@@ -52,7 +27,7 @@ export const LowStockProductsList = ({ data, isLoading }: LowStockProductsListPr
         <AlertCircle className="h-4 w-4 text-amber-500" />
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="flex justify-between items-center">
@@ -67,9 +42,9 @@ export const LowStockProductsList = ({ data, isLoading }: LowStockProductsListPr
               </div>
             ))}
           </div>
-        ) : realData && realData.length > 0 ? (
+        ) : data && data.length > 0 ? (
           <div className="space-y-4">
-            {realData.map((product) => (
+            {data.map((product) => (
               <div key={product.id} className="flex justify-between items-center">
                 <div>
                   <p className="font-medium">{renderProductName(product.name)}</p>

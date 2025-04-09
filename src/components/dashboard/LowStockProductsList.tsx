@@ -19,6 +19,14 @@ export const LowStockProductsList = ({ data, isLoading }: LowStockProductsListPr
   const renderProductCategory = (category: any): string => {
     return typeof category === 'string' ? category : 'Sem categoria';
   };
+  
+  // Helper function to safely render stock info
+  const renderStockInfo = (stock: any): string => {
+    if (typeof stock === 'number') {
+      return `Restam ${stock} unidades`;
+    }
+    return 'Estoque não disponível';
+  };
 
   return (
     <Card>
@@ -59,7 +67,7 @@ export const LowStockProductsList = ({ data, isLoading }: LowStockProductsListPr
                   <p className={`text-xs ${
                     product.stock < 5 ? "text-red-500" : "text-amber-500"
                   }`}>
-                    Restam {product.stock} unidades
+                    {renderStockInfo(product.stock)}
                   </p>
                 </div>
               </div>

@@ -34,6 +34,11 @@ export const RecentSalesList = ({ data, isLoading }: RecentSalesListProps) => {
     
     return '0 itens';
   };
+  
+  // Helper function to safely render payment method
+  const renderPaymentMethod = (method: any): string => {
+    return typeof method === 'string' ? method : 'Método de pagamento não especificado';
+  };
 
   return (
     <Card>
@@ -65,7 +70,7 @@ export const RecentSalesList = ({ data, isLoading }: RecentSalesListProps) => {
                     {renderCustomerName(sale.customer)}
                   </p>
                   <div className="text-sm text-muted-foreground">
-                    {formatDate(sale.date)} · {sale.paymentMethod}
+                    {formatDate(sale.date)} · {renderPaymentMethod(sale.paymentMethod)}
                   </div>
                 </div>
                 <div className="text-right">

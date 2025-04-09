@@ -12,12 +12,8 @@ import { LowStockProductsList } from '@/components/dashboard/LowStockProductsLis
 import { SalesReportCard } from '@/components/dashboard/SalesReportCard';
 import { StockAlertsBanner } from '@/components/dashboard/StockAlertsBanner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Create a client
-const queryClient = new QueryClient();
-
-const DashboardContent = () => {
+const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
   const isMobile = useIsMobile();
   const {
@@ -96,14 +92,6 @@ const DashboardContent = () => {
         </div>
       </div>
     </MainLayout>
-  );
-};
-
-const Dashboard = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <DashboardContent />
-    </QueryClientProvider>
   );
 };
 

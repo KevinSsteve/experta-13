@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,12 +50,12 @@ const Dashboard = () => {
   
   const { data: dailySales, isLoading: isLoadingDailySales } = useQuery({
     queryKey: ['dailySales', days],
-    queryFn: () => getDailySales(days)
+    queryFn: () => fetchDailySales(days)
   });
   
   const { data: salesByCategory, isLoading: isLoadingSalesByCategory } = useQuery({
     queryKey: ['salesByCategory'],
-    queryFn: () => getSalesByCategory()
+    queryFn: () => fetchSalesByCategory()
   });
   
   const { data: recentSales, isLoading: isLoadingRecentSales } = useQuery({
@@ -74,7 +73,6 @@ const Dashboard = () => {
     queryFn: () => getLowStockProducts(10)
   });
   
-  // Function to render the trend indicator
   const renderTrendIndicator = (value: number) => {
     if (value > 0) {
       return (
@@ -99,7 +97,6 @@ const Dashboard = () => {
     }
   };
   
-  // Loading skeleton for cards
   const KpiCardSkeleton = () => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -114,7 +111,6 @@ const Dashboard = () => {
     </Card>
   );
   
-  // Loading skeleton for charts
   const ChartSkeleton = () => (
     <div className="h-80 w-full flex items-center justify-center bg-muted/20 rounded-md">
       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -125,7 +121,6 @@ const Dashboard = () => {
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
         <div className="flex flex-col space-y-6">
-          {/* Heading */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
@@ -145,7 +140,6 @@ const Dashboard = () => {
             </Tabs>
           </div>
           
-          {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {isLoadingKpis ? (
               <>
@@ -214,9 +208,7 @@ const Dashboard = () => {
             )}
           </div>
           
-          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Sales Over Time */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Vendas ao longo do tempo</CardTitle>
@@ -284,7 +276,6 @@ const Dashboard = () => {
               </CardContent>
             </Card>
             
-            {/* Sales by Category */}
             <Card>
               <CardHeader>
                 <CardTitle>Vendas por Categoria</CardTitle>
@@ -324,7 +315,6 @@ const Dashboard = () => {
               </CardContent>
             </Card>
             
-            {/* Top Selling Products */}
             <Card>
               <CardHeader>
                 <CardTitle>Produtos Mais Vendidos</CardTitle>
@@ -373,7 +363,6 @@ const Dashboard = () => {
             </Card>
           </div>
           
-          {/* Recent Sales and Low Stock */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>

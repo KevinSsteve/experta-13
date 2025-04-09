@@ -2,7 +2,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import type { Sale } from '@/lib/sales/types';
+import type { Sale, CustomerInfo } from '@/lib/sales/types';
 
 export const generateReceiptPDF = (sale: Sale): jsPDF => {
   // Criar uma nova instância de PDF (portrait, mm, A4)
@@ -22,12 +22,15 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   doc.text(`Data: ${formatDate(sale.date)}`, 15, 50);
   
   // Informações do cliente
-  if (typeof sale.customer === 'object' && sale.customer) {
-    doc.text(`Cliente: ${sale.customer.name || 'Cliente não identificado'}`, 15, 55);
-    if (sale.customer.phone) doc.text(`Telefone: ${sale.customer.phone}`, 15, 60);
-    if (sale.customer.email) doc.text(`Email: ${sale.customer.email}`, 15, 65);
+  if (sale.customer && typeof sale.customer === 'object') {
+    const customer = sale.customer as CustomerInfo;
+    doc.text(`Cliente: ${customer.name || 'Cliente não identificado'}`, 15, 55);
+    if (customer.phone) doc.text(`Telefone: ${customer.phone}`, 15, 60);
+    if (customer.email) doc.text(`Email: ${customer.email}`, 15, 65);
   } else if (typeof sale.customer === 'string') {
     doc.text(`Cliente: ${sale.customer || 'Cliente não identificado'}`, 15, 55);
+  } else {
+    doc.text(`Cliente: Cliente não identificado`, 15, 55);
   }
   
   // Método de pagamento
@@ -63,6 +66,11 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   if (typeof sale.amountPaid === 'number') {
     doc.text(`Valor pago: ${formatCurrency(sale.amountPaid)}`, pageWidth - 60, finalY + 10);
     doc.text(`Troco: ${formatCurrency(sale.amountPaid - sale.total)}`, pageWidth - 60, finalY + 15);
+  }
+  
+  // Observações (notas)
+  if (sale.notes) {
+    doc.text(`Observações: ${sale.notes}`, 15, finalY + 20);
   }
   
   // Rodapé

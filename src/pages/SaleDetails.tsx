@@ -20,6 +20,7 @@ import {
   Info
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CustomerInfo } from '@/lib/sales/types';
 
 const SaleDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -137,6 +138,11 @@ const SaleDetails = () => {
     );
   }
   
+  // Get customer data safely
+  const customerName = typeof sale.customer === 'object' && sale.customer 
+    ? (sale.customer as CustomerInfo).name || 'Cliente não identificado' 
+    : (sale.customer as string || 'Cliente não identificado');
+  
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
@@ -173,16 +179,16 @@ const SaleDetails = () => {
                     
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground">Cliente</h3>
-                      <p>
-                        {typeof sale.customer === 'object' && sale.customer
-                          ? sale.customer.name || 'Cliente não identificado'
-                          : sale.customer || 'Cliente não identificado'}
-                      </p>
+                      <p>{customerName}</p>
                       
                       {typeof sale.customer === 'object' && sale.customer && (
                         <div className="mt-1 text-sm">
-                          {sale.customer.phone && <p>Tel: {sale.customer.phone}</p>}
-                          {sale.customer.email && <p>Email: {sale.customer.email}</p>}
+                          {(sale.customer as CustomerInfo).phone && (
+                            <p>Tel: {(sale.customer as CustomerInfo).phone}</p>
+                          )}
+                          {(sale.customer as CustomerInfo).email && (
+                            <p>Email: {(sale.customer as CustomerInfo).email}</p>
+                          )}
                         </div>
                       )}
                     </div>

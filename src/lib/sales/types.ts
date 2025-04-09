@@ -10,9 +10,17 @@ export interface Sale {
   change?: number;
   items: number;
   paymentMethod: string;
-  customer?: string;
+  customer?: string | CustomerInfo;
   products?: any[];
-  user_id?: string;  // Added user_id property
+  user_id?: string;
+  notes?: string;  // Added notes property
+}
+
+// Added a customer type to properly define customer properties
+export interface CustomerInfo {
+  name?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface DailySales {

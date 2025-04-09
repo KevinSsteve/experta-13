@@ -11,6 +11,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Sale } from '@/lib/sales/types';
 import { formatCurrency } from '@/lib/utils';
+import { adaptSupabaseSale } from '@/lib/sales/adapters';
+import { Json } from '@/integrations/supabase/types';
 
 export const SalesReportCard = () => {
   const [dateRange, setDateRange] = useState<{
@@ -36,10 +38,13 @@ export const SalesReportCard = () => {
         throw error;
       }
 
+      // Convert Supabase data to Sale type before processing
+      const salesArray = data.map(sale => adaptSupabaseSale(sale));
+      
       // Agrupar vendas por dia
       const salesByDay: { [key: string]: { date: string; total: number; count: number } } = {};
       
-      data.forEach((sale: Sale) => {
+      salesArray.forEach((sale: Sale) => {
         const dateStr = format(new Date(sale.date), 'yyyy-MM-dd');
         
         if (!salesByDay[dateStr]) {

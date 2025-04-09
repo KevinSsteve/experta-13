@@ -8,23 +8,21 @@ export function adaptSupabaseSale(supabaseSale: any): Sale {
   return {
     id: supabaseSale.id,
     date: supabaseSale.date,
-    customer: supabaseSale.customer || {
-      name: 'Cliente não identificado',
-      email: ''
-    },
-    items: Array.isArray(supabaseSale.items) 
+    customer: supabaseSale.customer || 'Cliente não identificado',
+    items: typeof supabaseSale.items === 'number' 
+      ? supabaseSale.items 
+      : (Array.isArray(supabaseSale.items) 
+          ? supabaseSale.items.length 
+          : 1),
+    total: supabaseSale.total,
+    paymentMethod: supabaseSale.payment_method || 'Dinheiro',
+    amountPaid: supabaseSale.amount_paid,
+    change: supabaseSale.change,
+    products: Array.isArray(supabaseSale.items) 
       ? supabaseSale.items 
       : (typeof supabaseSale.items === 'object' 
           ? [supabaseSale.items] 
           : []),
-    total: supabaseSale.total,
-    paymentMethod: supabaseSale.payment_method || 'Dinheiro',
-    status: supabaseSale.status || 'Concluída',
-    notes: supabaseSale.notes || '',
-    seller: supabaseSale.seller || {
-      name: 'Vendedor não identificado',
-      id: ''
-    },
     user_id: supabaseSale.user_id
   };
 }

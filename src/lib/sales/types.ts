@@ -21,6 +21,7 @@ export interface CustomerInfo {
   name?: string;
   phone?: string;
   email?: string;
+  nif?: string;  // Added NIF property
 }
 
 export interface DailySales {

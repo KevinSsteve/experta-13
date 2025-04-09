@@ -1,0 +1,306 @@
+
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { MainLayout } from '@/components/layouts/MainLayout';
+import { useQuery } from '@tanstack/react-query';
+import { getSalesData } from '@/lib/sales';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import {
+  ArrowLeft,
+  Download,
+  Printer,
+  Share2,
+  Info
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+const SaleDetails = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isSharing, setIsSharing] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  const { data: sales, isLoading } = useQuery({
+    queryKey: ['sales', user?.id],
+    queryFn: () => getSalesData(user?.id),
+    enabled: !!user?.id,
+  });
+  
+  const sale = sales?.find(s => s.id === id);
+  
+  const handleBack = () => {
+    navigate('/sales-history');
+  };
+  
+  const handlePrint = () => {
+    if (!sale) return;
+    
+    setIsPrinting(true);
+    try {
+      printReceipt(sale);
+      toast.success('Recibo enviado para impressão');
+    } catch (error) {
+      console.error('Erro ao imprimir recibo:', error);
+      toast.error('Erro ao imprimir recibo');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+  
+  const handleDownload = () => {
+    if (!sale) return;
+    
+    setIsDownloading(true);
+    try {
+      downloadReceipt(sale);
+      toast.success('Recibo baixado com sucesso');
+    } catch (error) {
+      console.error('Erro ao baixar recibo:', error);
+      toast.error('Erro ao baixar recibo');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+  
+  const handleShare = async () => {
+    if (!sale) return;
+    
+    setIsSharing(true);
+    try {
+      const shared = await shareReceipt(sale);
+      
+      if (shared) {
+        toast.success('Recibo compartilhado com sucesso');
+      } else {
+        // O recibo foi baixado como fallback
+        toast.info('O recibo foi baixado porque o compartilhamento não está disponível');
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar recibo:', error);
+      toast.error('Erro ao compartilhar recibo');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-6">
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-40" />
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-8 w-64 mb-2" />
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Array(5).fill(null).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+  
+  if (!sale) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-6">
+          <div className="flex flex-col items-center justify-center py-12">
+            <Info className="h-12 w-12 text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-semibold mb-2">Venda não encontrada</h2>
+            <p className="text-muted-foreground mb-6">
+              Não foi possível encontrar os detalhes desta venda.
+            </p>
+            <Button onClick={handleBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para histórico
+            </Button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+  
+  return (
+    <MainLayout>
+      <div className="container mx-auto py-6">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Button variant="outline" onClick={handleBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+          </div>
+          
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <CardTitle>Detalhes da Venda</CardTitle>
+                  <CardDescription>
+                    Informações completas sobre a transação
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="md:self-start">
+                  {formatDate(sale.date)}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">ID da Venda</h3>
+                      <p className="font-mono text-sm">{sale.id}</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Cliente</h3>
+                      <p>
+                        {typeof sale.customer === 'object' && sale.customer
+                          ? sale.customer.name || 'Cliente não identificado'
+                          : sale.customer || 'Cliente não identificado'}
+                      </p>
+                      
+                      {typeof sale.customer === 'object' && sale.customer && (
+                        <div className="mt-1 text-sm">
+                          {sale.customer.phone && <p>Tel: {sale.customer.phone}</p>}
+                          {sale.customer.email && <p>Email: {sale.customer.email}</p>}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Método de Pagamento</h3>
+                      <p>{sale.paymentMethod}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Total</h3>
+                      <p className="text-xl font-semibold">{formatCurrency(sale.total)}</p>
+                    </div>
+                    
+                    {typeof sale.amountPaid === 'number' && (
+                      <>
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground">Valor Pago</h3>
+                          <p>{formatCurrency(sale.amountPaid)}</p>
+                        </div>
+                        
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground">Troco</h3>
+                          <p>{formatCurrency(sale.amountPaid - sale.total)}</p>
+                        </div>
+                      </>
+                    )}
+                    
+                    {sale.notes && (
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Observações</h3>
+                        <p className="text-sm">{sale.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h3 className="text-sm font-medium mb-4">Itens da Venda</h3>
+                  
+                  {Array.isArray(sale.items) && sale.items.length > 0 ? (
+                    <div className="space-y-3">
+                      {sale.items.map((item, index) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center justify-between py-2 border-b last:border-b-0"
+                        >
+                          <div className="flex items-center">
+                            {item.product.image && (
+                              <div className="h-12 w-12 bg-muted rounded overflow-hidden mr-3">
+                                <img 
+                                  src={item.product.image} 
+                                  alt={item.product.name} 
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium">{item.product.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatCurrency(item.product.price)} × {item.quantity}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="font-medium">
+                            {formatCurrency(item.product.price * item.quantity)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">
+                      Detalhes dos itens não disponíveis
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+            
+            <CardFooter className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handlePrint}
+                disabled={isPrinting}
+                className="flex-1 sm:flex-initial"
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="flex-1 sm:flex-initial"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Baixar PDF
+              </Button>
+              
+              <Button
+                onClick={handleShare}
+                disabled={isSharing}
+                className="flex-1 sm:flex-initial"
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                Compartilhar
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    </MainLayout>
+  );
+};
+
+export default SaleDetails;

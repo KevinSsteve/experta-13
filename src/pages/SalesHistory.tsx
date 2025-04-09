@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -29,7 +30,7 @@ import {
 } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, FileDown, ChevronDown, Eye, ArrowLeft } from 'lucide-react';
+import { Search, FileDown, ChevronDown, Eye, ArrowLeft, Printer } from 'lucide-react';
 import { Sale } from '@/lib/sales/types';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,6 +40,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { downloadReceipt } from '@/lib/utils/receipt';
+import { toast } from 'sonner';
 
 const SalesHistory = () => {
   const { user } = useAuth();
@@ -71,7 +74,18 @@ const SalesHistory = () => {
   );
   
   const handleViewSaleDetails = (sale: Sale) => {
-    console.log("Ver detalhes da venda:", sale);
+    navigate(`/sales-history/${sale.id}`);
+  };
+  
+  const handlePrintReceipt = (sale: Sale, event: React.MouseEvent) => {
+    event.stopPropagation(); // Evitar navegação para detalhes
+    try {
+      downloadReceipt(sale);
+      toast.success('Recibo gerado com sucesso');
+    } catch (error) {
+      console.error('Erro ao gerar recibo:', error);
+      toast.error('Erro ao gerar recibo');
+    }
   };
   
   const handleExportSales = () => {
@@ -176,12 +190,16 @@ const SalesHistory = () => {
                       <TableHead>Itens</TableHead>
                       <TableHead>Método de Pagamento</TableHead>
                       <TableHead className="text-right">Total</TableHead>
-                      <TableHead></TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedSales.map((sale) => (
-                      <TableRow key={sale.id}>
+                      <TableRow 
+                        key={sale.id} 
+                        className="cursor-pointer"
+                        onClick={() => handleViewSaleDetails(sale)}
+                      >
                         <TableCell>{formatDate(sale.date)}</TableCell>
                         <TableCell className="font-mono text-xs">
                           {sale.id.slice(0, 8)}...
@@ -197,13 +215,27 @@ const SalesHistory = () => {
                           {formatCurrency(sale.total)}
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleViewSaleDetails(sale)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewSaleDetails(sale);
+                              }}
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={(e) => handlePrintReceipt(sale, e)}
+                              title="Gerar recibo PDF"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -18,6 +18,7 @@ import Checkout from "./pages/Checkout";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import SalesHistory from "./pages/SalesHistory";
+import SaleDetails from "./pages/SaleDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/sales-history" element={<SalesHistory />} />
+                  <Route path="/sales-history/:id" element={<SaleDetails />} />
                 </Route>
                 
                 {/* Rota para página não encontrada */}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
@@ -54,7 +53,6 @@ export function ShoppingCart() {
     }
   };
 
-  // Adiciona ou remove a classe que esconde o overflow quando o carrinho está aberto
   useEffect(() => {
     if (mounted) {
       if (state.isOpen) {
@@ -69,7 +67,6 @@ export function ShoppingCart() {
     };
   }, [state.isOpen, mounted]);
 
-  // Verifica se há uma venda recente no localStorage
   useEffect(() => {
     const checkLastSale = () => {
       try {
@@ -78,10 +75,9 @@ export function ShoppingCart() {
           const sales = JSON.parse(storedSales);
           if (Array.isArray(sales) && sales.length > 0) {
             const lastSaleData = sales[sales.length - 1];
-            // Verifica se a venda foi feita há menos de 1 minuto
             const saleTime = new Date(lastSaleData.date).getTime();
             const currentTime = new Date().getTime();
-            const timeDiff = (currentTime - saleTime) / 1000 / 60; // diferença em minutos
+            const timeDiff = (currentTime - saleTime) / 1000 / 60;
             
             if (timeDiff < 1) {
               setLastSale(lastSaleData);
@@ -97,7 +93,6 @@ export function ShoppingCart() {
       }
     };
     
-    // Verifica quando o carrinho é aberto
     if (state.isOpen) {
       checkLastSale();
     }
@@ -109,7 +104,6 @@ export function ShoppingCart() {
 
   return (
     <>
-      {/* Overlay */}
       {state.isOpen && (
         <div 
           className="fixed inset-0 z-40 bg-black/50 transition-opacity"
@@ -117,13 +111,11 @@ export function ShoppingCart() {
         />
       )}
       
-      {/* Drawer */}
       <div 
         className={`fixed top-0 right-0 z-50 h-full w-full max-w-md bg-background shadow-lg transform transition-transform duration-300 ease-in-out ${
           state.isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-4 h-16 border-b border-border">
           <h2 className="text-lg font-medium">Carrinho de Compras</h2>
           <Button variant="ghost" size="icon" onClick={closeCart}>
@@ -131,7 +123,6 @@ export function ShoppingCart() {
           </Button>
         </div>
         
-        {/* Body */}
         <div className="flex flex-col h-[calc(100%-8rem)] overflow-y-auto p-4">
           {showReceiptOptions && (
             <div className="mb-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
@@ -229,7 +220,6 @@ export function ShoppingCart() {
           )}
         </div>
         
-        {/* Footer */}
         <div className="border-t border-border p-4">
           {state.items.length > 0 ? (
             <>

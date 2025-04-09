@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -132,7 +131,7 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   // Itens da venda
   if (Array.isArray(sale.items)) {
     // Se for um array, presumimos que são CartItems
-    (sale.items as unknown as CartItem[]).forEach((item: CartItem) => {
+    (sale.items as CartItem[]).forEach((item: CartItem) => {
       const maxWidth = 25; // Largura máxima para o nome do produto
       const name = item.product.name.length > maxWidth 
         ? item.product.name.slice(0, maxWidth) + '...' 

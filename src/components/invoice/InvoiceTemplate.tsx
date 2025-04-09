@@ -11,12 +11,43 @@ interface InvoiceTemplateProps {
   onClose: () => void;
 }
 
+interface CustomerDetails {
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
 export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ sale, onClose }) => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   
   const handlePrint = () => {
     window.print();
   };
+  
+  // Safely parse customer object if it's not a string
+  const getCustomerDetails = (): CustomerDetails => {
+    if (!sale.customer) return {};
+    
+    if (typeof sale.customer === 'string') {
+      return { name: sale.customer };
+    }
+    
+    // If customer is an object, try to extract properties
+    try {
+      // Use type assertion to tell TypeScript this is an object with potential name, phone, email props
+      const customerObj = sale.customer as Record<string, any>;
+      return {
+        name: customerObj.name,
+        phone: customerObj.phone,
+        email: customerObj.email
+      };
+    } catch (error) {
+      console.error("Error parsing customer data:", error);
+      return {};
+    }
+  };
+  
+  const customerDetails = getCustomerDetails();
   
   return (
     <div className="p-6 max-w-3xl mx-auto bg-white rounded shadow-sm">
@@ -39,8 +70,8 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ sale, onClose 
             <p className="text-sm text-muted-foreground">Nº {sale.id.slice(0, 8)}</p>
           </div>
           <div className="text-right">
-            <p className="font-medium">{user?.name || 'Loja POS'}</p>
-            <p className="text-sm">{user?.email || ''}</p>
+            <p className="font-medium">{profile?.name || 'Loja POS'}</p>
+            <p className="text-sm">{profile?.email || ''}</p>
             <p className="text-sm">Data: {formatDate(sale.date)}</p>
           </div>
         </div>
@@ -49,13 +80,9 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ sale, onClose 
         <div className="space-y-2">
           <h2 className="font-semibold">Cliente</h2>
           <div className="border p-3 rounded">
-            <p>{typeof sale.customer === 'string' ? sale.customer : sale.customer?.name || 'Cliente não identificado'}</p>
-            {sale.customer && typeof sale.customer !== 'string' && (
-              <>
-                {sale.customer.phone && <p>Tel: {sale.customer.phone}</p>}
-                {sale.customer.email && <p>Email: {sale.customer.email}</p>}
-              </>
-            )}
+            <p>{customerDetails.name || 'Cliente não identificado'}</p>
+            {customerDetails.phone && <p>Tel: {customerDetails.phone}</p>}
+            {customerDetails.email && <p>Email: {customerDetails.email}</p>}
           </div>
         </div>
         

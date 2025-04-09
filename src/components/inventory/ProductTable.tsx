@@ -39,23 +39,16 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
     <Card key={product.id} className="mb-4">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="h-12 w-12 bg-muted rounded overflow-hidden">
-              <img 
-                src={product.image} 
-                alt={product.name}
-                className="h-full w-full object-cover"
-              />
-            </div>
+          <div className="flex-1 min-w-0">
             <div>
-              <h3 className="font-medium">{product.name}</h3>
-              <p className="text-xs text-muted-foreground">
+              <h3 className="font-medium text-base truncate">{product.name}</h3>
+              <p className="text-xs text-muted-foreground truncate">
                 {product.code || "Sem código"} • {product.category}
               </p>
             </div>
           </div>
           
-          <div className="text-right">
+          <div className="text-right ml-2">
             <div className="font-medium">{formatCurrency(product.price)}</div>
           </div>
         </div>
@@ -81,6 +74,7 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
               variant="outline" 
               size="sm"
               onClick={() => onEdit(product)}
+              className="h-8 w-8 p-0"
             >
               <Edit className="h-4 w-4" />
             </Button>
@@ -90,12 +84,12 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950"
+                  className="h-8 w-8 p-0 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="max-w-[90vw]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -103,19 +97,18 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 
-                <div className="pt-4">
-                  <p className="mb-2">
-                    <span className="font-medium">{product.name}</span>
-                  </p>
+                <div className="pt-2">
+                  <p className="font-medium">{product.name}</p>
                   <p className="text-sm text-muted-foreground">
                     Código: {product.code || "Sem código"} • {product.category}
                   </p>
                 </div>
                 
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-2">
+                  <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => onDelete(product.id)}
+                    className="sm:mt-0"
                   >
                     Excluir
                   </AlertDialogAction>
@@ -138,12 +131,12 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
 
   return isMobile ? (
     // Mobile view - using cards
-    <div className="space-y-4">
+    <div className="space-y-3">
       {products.map((product) => renderProductCard(product))}
     </div>
   ) : (
     // Desktop view - using table
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -162,13 +155,15 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
               <TableCell>{product.code || "-"}</TableCell>
               <TableCell>
                 <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 bg-muted rounded overflow-hidden">
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
+                  {product.image && (
+                    <div className="h-10 w-10 bg-muted rounded overflow-hidden">
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
                   <div>
                     <div className="font-medium">{product.name}</div>
                   </div>

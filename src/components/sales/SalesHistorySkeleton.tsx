@@ -2,8 +2,11 @@
 import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function SalesHistorySkeleton() {
+  const isMobile = useIsMobile();
+  
   return (
     <Card>
       <CardHeader>
@@ -15,11 +18,21 @@ export function SalesHistorySkeleton() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {Array(5).fill(null).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
-        </div>
+        {isMobile ? (
+          // Mobile version - card skeletons
+          <div className="space-y-4">
+            {Array(3).fill(null).map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          // Desktop version - table row skeletons
+          <div className="space-y-4">
+            {Array(5).fill(null).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

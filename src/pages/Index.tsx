@@ -30,6 +30,7 @@ const Index = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [displayCount, setDisplayCount] = useState(20);
+  const [isNearBottom, setIsNearBottom] = useState(false);
 
   // Use React Query to fetch user products
   const { data: userProducts, isLoading, error } = useQuery({
@@ -56,11 +57,17 @@ const Index = () => {
   // Handle scroll events for back to top button and infinite loading
   useEffect(() => {
     const handleScroll = () => {
+      // Show/hide back to top button
       setShowBackToTop(window.scrollY > 300);
       
-      // Verificar se o usuário está próximo ao final da página para carregar mais produtos
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-        setDisplayCount(prevCount => prevCount + 8);
+      // Check if user is near the bottom of page to trigger loading more
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const bottomThreshold = document.body.offsetHeight - 500;
+      
+      if (scrollPosition >= bottomThreshold) {
+        setIsNearBottom(true);
+      } else {
+        setIsNearBottom(false);
       }
     };
 
@@ -70,6 +77,13 @@ const Index = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  // Load more products when user is near bottom
+  useEffect(() => {
+    if (isNearBottom && filteredProducts.length > displayCount) {
+      setDisplayCount(prevCount => prevCount + 8);
+    }
+  }, [isNearBottom, filteredProducts.length, displayCount]);
 
   // Update filtered products when userProducts or searchQuery changes
   useEffect(() => {
@@ -145,7 +159,7 @@ const Index = () => {
           {/* Products grid */}
           <section>
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {Array(8).fill(0).map((_, i) => (
                   <div key={i} className="bg-card animate-pulse aspect-square rounded-lg"></div>
                 ))}
@@ -156,7 +170,7 @@ const Index = () => {
                   <div className="text-center py-12">
                     <p className="text-2xl font-medium mb-2">Nenhum produto encontrado</p>
                     <p className="text-muted-foreground mb-6">
-                      {userProducts.length === 0 
+                      {userProducts && userProducts.length === 0 
                         ? "Você ainda não tem produtos em seu estoque."
                         : "Tente ajustar sua pesquisa para encontrar produtos."
                       }

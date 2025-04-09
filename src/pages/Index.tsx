@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { 
@@ -20,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const Index = () => {
   const { addItem } = useCart();
@@ -145,7 +147,7 @@ const Index = () => {
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {Array(8).fill(0).map((_, i) => (
-                  <div key={i} className="bg-card animate-pulse h-64 rounded-lg"></div>
+                  <div key={i} className="bg-card animate-pulse aspect-square rounded-lg"></div>
                 ))}
               </div>
             ) : (
@@ -170,7 +172,7 @@ const Index = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {visibleProducts.map(product => (
                         <Card key={product.id} className="overflow-hidden group h-full flex flex-col">
-                          <div className="h-48 bg-muted relative overflow-hidden">
+                          <AspectRatio ratio={1} className="bg-muted relative overflow-hidden">
                             <img
                               src={product.image}
                               alt={product.name}
@@ -183,7 +185,7 @@ const Index = () => {
                                 </span>
                               </div>
                             )}
-                          </div>
+                          </AspectRatio>
                           
                           <CardContent className="p-4 flex-grow">
                             <div className="flex justify-between items-start">

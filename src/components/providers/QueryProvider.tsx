@@ -1,12 +1,12 @@
 
-import { QueryClient, QueryClientProvider as TanstackQueryProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useState } from 'react';
 
 interface QueryProviderProps {
   children: ReactNode;
 }
 
-export function QueryClientProvider({ children }: QueryProviderProps) {
+export function QueryProvider({ children }: QueryProviderProps) {
   // Create a client instance that is preserved during component lifecycle
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -19,8 +19,8 @@ export function QueryClientProvider({ children }: QueryProviderProps) {
   }));
 
   return (
-    <TanstackQueryProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
       {children}
-    </TanstackQueryProvider>
+    </QueryClientProvider>
   );
 }

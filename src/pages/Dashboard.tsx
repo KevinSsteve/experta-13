@@ -9,9 +9,13 @@ import { SalesByCategoryChart } from '@/components/dashboard/SalesByCategoryChar
 import { TopProductsChart } from '@/components/dashboard/TopProductsChart';
 import { RecentSalesList } from '@/components/dashboard/RecentSalesList';
 import { LowStockProductsList } from '@/components/dashboard/LowStockProductsList';
+import { SalesReportCard } from '@/components/dashboard/SalesReportCard';
+import { StockAlertsBanner } from '@/components/dashboard/StockAlertsBanner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
+  const isMobile = useIsMobile();
   const {
     kpis,
     dailySales,
@@ -44,6 +48,9 @@ const Dashboard = () => {
             </Tabs>
           </div>
           
+          {/* Alertas de estoque baixo */}
+          <StockAlertsBanner />
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <DashboardKPIs 
               data={kpis.data} 
@@ -66,6 +73,9 @@ const Dashboard = () => {
               data={topProducts.data} 
               isLoading={topProducts.isLoading} 
             />
+            
+            {/* Novo componente de relatório de vendas */}
+            <SalesReportCard />
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -134,8 +135,7 @@ const Products = () => {
     // Verificar se o produto já existe no estoque do usuário
     const existingProduct = userProducts.find(p => 
       p.name === product.name && 
-      p.category === product.category && 
-      p.price === product.price
+      p.category === product.category
     );
 
     if (existingProduct) {
@@ -146,31 +146,40 @@ const Products = () => {
     setIsSubmitting(true);
 
     try {
+      // Prepare the new product data
       const newProduct = {
         name: product.name,
         price: product.price,
         category: product.category,
         stock: 10, // Estoque inicial padrão
-        description: product.description || null,
-        code: product.code || null,
+        description: product.description || '',
+        code: product.code || '',
         image: product.image || "/placeholder.svg",
         user_id: user.id,
         is_public: false // O produto adicionado ao estoque do usuário não é público
       };
 
+      console.log("Adding product to stock:", newProduct);
+
+      // Insert the new product
       const { data: insertedProduct, error } = await supabase
         .from('products')
         .insert([newProduct])
         .select();
 
       if (error) {
-        console.error("Error details:", error);
+        console.error("Error details when adding to stock:", error);
         throw error;
       }
 
       console.log("Product added to stock successfully:", insertedProduct);
       toast.success("Produto adicionado ao seu estoque com sucesso!");
+      
+      // Refetch products to update the UI
       refetchUserProducts();
+      
+      // Switch to the "my-products" tab after adding
+      setActiveTab("my-products");
     } catch (error: any) {
       console.error("Detailed error adding product to stock:", error);
       toast.error(`Erro ao adicionar produto ao estoque: ${error.message}`);

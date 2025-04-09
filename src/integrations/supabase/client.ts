@@ -34,10 +34,36 @@ export const getPublicProducts = async (limit = 20) => {
       .order('name')
       .limit(limit);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao buscar produtos públicos:", error);
+      throw error;
+    }
+    
     return data;
   } catch (error) {
     console.error("Erro ao buscar produtos públicos:", error);
     return [];
   }
+};
+
+// Add a helper function to add a product to user's inventory
+export const addProductToInventory = async (product, userId) => {
+  if (!userId) {
+    throw new Error("User ID is required to add a product to inventory");
+  }
+  
+  const newProduct = {
+    ...product,
+    user_id: userId,
+    is_public: false,
+    stock: product.stock || 10
+  };
+  
+  const { data, error } = await supabase
+    .from('products')
+    .insert([newProduct])
+    .select();
+    
+  if (error) throw error;
+  return data;
 };

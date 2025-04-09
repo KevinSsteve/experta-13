@@ -9,6 +9,32 @@ interface RecentSalesListProps {
 }
 
 export const RecentSalesList = ({ data, isLoading }: RecentSalesListProps) => {
+  // Helper function to safely display customer information
+  const renderCustomerName = (customer: any): string => {
+    if (!customer) return 'Cliente não identificado';
+    
+    if (typeof customer === 'object') {
+      return customer.name || 'Cliente não identificado';
+    }
+    
+    return String(customer);
+  };
+  
+  // Helper function to safely count items
+  const countItems = (items: any): string => {
+    if (!items) return '0 itens';
+    
+    if (typeof items === 'number') {
+      return `${items} ${items === 1 ? "item" : "itens"}`;
+    }
+    
+    if (Array.isArray(items)) {
+      return `${items.length} ${items.length === 1 ? "item" : "itens"}`;
+    }
+    
+    return '0 itens';
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -36,11 +62,7 @@ export const RecentSalesList = ({ data, isLoading }: RecentSalesListProps) => {
               <div key={sale.id} className="flex justify-between items-center">
                 <div>
                   <p className="font-medium">
-                    {sale.customer 
-                      ? typeof sale.customer === 'object' 
-                        ? (sale.customer as { name?: string }).name || "Cliente anônimo" 
-                        : sale.customer
-                      : "Cliente anônimo"}
+                    {renderCustomerName(sale.customer)}
                   </p>
                   <div className="text-sm text-muted-foreground">
                     {formatDate(sale.date)} · {sale.paymentMethod}
@@ -51,11 +73,7 @@ export const RecentSalesList = ({ data, isLoading }: RecentSalesListProps) => {
                     {formatCurrency(sale.total)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {typeof sale.items === 'number' 
-                      ? `${sale.items} ${sale.items === 1 ? "item" : "itens"}` 
-                      : Array.isArray(sale.items)
-                        ? `${sale.items.length} ${sale.items.length === 1 ? "item" : "itens"}`
-                        : "0 itens"}
+                    {countItems(sale.items)}
                   </p>
                 </div>
               </div>

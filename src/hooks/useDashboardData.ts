@@ -17,37 +17,43 @@ export const useDashboardData = (timeRange: string) => {
   const kpisQuery = useQuery({
     queryKey: ['salesKpis', days, userId],
     queryFn: () => getSalesKPIs(days, userId),
-    enabled: !!userId // Só executa se houver um userId
+    enabled: !!userId, // Só executa se houver um userId
+    retry: false
   });
   
   const dailySalesQuery = useQuery({
     queryKey: ['dailySales', days, userId],
     queryFn: () => fetchDailySales(days, userId),
-    enabled: !!userId
+    enabled: !!userId,
+    retry: false
   });
   
   const salesByCategoryQuery = useQuery({
     queryKey: ['salesByCategory', userId],
     queryFn: () => fetchSalesByCategory(userId),
-    enabled: !!userId
+    enabled: !!userId,
+    retry: false
   });
   
   const recentSalesQuery = useQuery({
     queryKey: ['recentSales', userId],
     queryFn: () => getRecentSales(5, userId),
-    enabled: !!userId
+    enabled: !!userId,
+    retry: false
   });
   
   const topProductsQuery = useQuery({
     queryKey: ['topProducts', userId],
     queryFn: () => getTopSellingProducts(5, userId),
-    enabled: !!userId
+    enabled: !!userId,
+    retry: false
   });
   
   const lowStockProductsQuery = useQuery({
     queryKey: ['lowStockProducts', userId],
     queryFn: () => getLowStockProducts(10, userId),
-    enabled: !!userId
+    enabled: !!userId,
+    retry: false
   });
 
   return {

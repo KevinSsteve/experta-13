@@ -25,54 +25,60 @@ export const SalesReportCard = () => {
   const { data: salesData, isLoading } = useQuery({
     queryKey: ['salesReport', dateRange.from.toISOString(), dateRange.to.toISOString(), user?.id],
     queryFn: async () => {
-      let query = supabase
-        .from('sales')
-        .select('*')
-        .gte('date', dateRange.from.toISOString())
-        .lte('date', dateRange.to.toISOString())
-        .order('date', { ascending: true });
-      
-      // Filtrar por usuário se estiver autenticado
-      if (user) {
-        query = query.eq('user_id', user.id);
-      }
-      
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro ao buscar dados de vendas:', error);
-        throw error;
-      }
-
-      // Se não temos dados, retornar array vazio
-      if (!data || data.length === 0) {
-        return [];
-      }
-
-      // Convert Supabase data to Sale type before processing
-      const salesArray = data.map(sale => adaptSupabaseSale(sale));
-      
-      // Agrupar vendas por dia
-      const salesByDay: { [key: string]: { date: string; total: number; count: number } } = {};
-      
-      salesArray.forEach((sale) => {
-        const dateStr = format(new Date(sale.date), 'yyyy-MM-dd');
+      try {
+        let query = supabase
+          .from('sales')
+          .select('*')
+          .gte('date', dateRange.from.toISOString())
+          .lte('date', dateRange.to.toISOString())
+          .order('date', { ascending: true });
         
-        if (!salesByDay[dateStr]) {
-          salesByDay[dateStr] = {
-            date: dateStr,
-            total: 0,
-            count: 0
-          };
+        // Filtrar por usuário se estiver autenticado
+        if (user) {
+          query = query.eq('user_id', user.id);
         }
         
-        salesByDay[dateStr].total += sale.total;
-        salesByDay[dateStr].count += 1;
-      });
-      
-      return Object.values(salesByDay);
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Erro ao buscar dados de vendas:', error);
+          return [];
+        }
+
+        // Se não temos dados, retornar array vazio
+        if (!data || data.length === 0) {
+          return [];
+        }
+
+        // Convert Supabase data to Sale type before processing
+        const salesArray = data.map(sale => adaptSupabaseSale(sale));
+        
+        // Agrupar vendas por dia
+        const salesByDay: { [key: string]: { date: string; total: number; count: number } } = {};
+        
+        salesArray.forEach((sale) => {
+          const dateStr = format(new Date(sale.date), 'yyyy-MM-dd');
+          
+          if (!salesByDay[dateStr]) {
+            salesByDay[dateStr] = {
+              date: dateStr,
+              total: 0,
+              count: 0
+            };
+          }
+          
+          salesByDay[dateStr].total += sale.total;
+          salesByDay[dateStr].count += 1;
+        });
+        
+        return Object.values(salesByDay);
+      } catch (error) {
+        console.error('Error in sales report query:', error);
+        return [];
+      }
     },
-    enabled: !!user // Só executa a query se houver um usuário autenticado
+    enabled: !!user, // Só executa a query se houver um usuário autenticado
+    retry: false
   });
 
   const exportToCSV = () => {

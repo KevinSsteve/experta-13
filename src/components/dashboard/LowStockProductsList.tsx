@@ -18,7 +18,6 @@ export const LowStockProductsList = ({ data, isLoading }: LowStockProductsListPr
   const { user } = useAuth();
 
   useEffect(() => {
-    // Se houver um usuário autenticado, buscar dados reais
     if (user) {
       setLoading(true);
       getLowStockProducts(10, user.id)
@@ -31,11 +30,20 @@ export const LowStockProductsList = ({ data, isLoading }: LowStockProductsListPr
           setLoading(false);
         });
     } else {
-      // Se não houver usuário, usar os dados passados por props
       setRealData(data);
       setLoading(isLoading);
     }
   }, [user, data, isLoading]);
+
+  // Helper function to safely render product name
+  const renderProductName = (name: any): string => {
+    return typeof name === 'string' ? name : 'Produto sem nome';
+  };
+  
+  // Helper function to safely render product category
+  const renderProductCategory = (category: any): string => {
+    return typeof category === 'string' ? category : 'Sem categoria';
+  };
 
   return (
     <Card>
@@ -64,9 +72,9 @@ export const LowStockProductsList = ({ data, isLoading }: LowStockProductsListPr
             {realData.map((product) => (
               <div key={product.id} className="flex justify-between items-center">
                 <div>
-                  <p className="font-medium">{product.name}</p>
+                  <p className="font-medium">{renderProductName(product.name)}</p>
                   <p className="text-sm text-muted-foreground">
-                    {product.category}
+                    {renderProductCategory(product.category)}
                   </p>
                 </div>
                 <div className="text-right">

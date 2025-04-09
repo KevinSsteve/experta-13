@@ -108,8 +108,11 @@ const ProductDetails = () => {
       id: product.id,
       name: product.name,
       price: product.price,
-      quantity: 1,
-      image: product.image
+      image: product.image,
+      category: product.category,
+      stock: product.stock,
+      code: product.code,
+      description: product.description
     });
     
     toast({

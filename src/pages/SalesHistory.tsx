@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -56,7 +55,6 @@ const SalesHistory = () => {
     enabled: !!user?.id,
   });
   
-  // Filtrar vendas com base no termo de pesquisa
   const filteredSales = sales?.filter(sale => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -68,7 +66,6 @@ const SalesHistory = () => {
     );
   }) || [];
   
-  // Paginar resultados
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
   const paginatedSales = filteredSales.slice(
     (currentPage - 1) * itemsPerPage,
@@ -76,13 +73,10 @@ const SalesHistory = () => {
   );
   
   const handleViewSaleDetails = (sale: Sale) => {
-    // Futura implementação de detalhes da venda
     console.log("Ver detalhes da venda:", sale);
-    // navigate(`/sales/${sale.id}`); // Para uma futura página de detalhes
   };
   
   const handleExportSales = () => {
-    // Implementação simplificada de exportação
     const salesData = filteredSales.map(sale => ({
       ID: sale.id,
       Data: formatDate(sale.date),
@@ -95,7 +89,7 @@ const SalesHistory = () => {
     const dataStr = JSON.stringify(salesData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = `vendas_${new Date().toISOString().slice(0, 10)}.json`;
+    const exportFileDefaultName = `vendas_${new Date().toISOString().slice(0, 10)}.json';
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -151,7 +145,7 @@ const SalesHistory = () => {
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
-                      setCurrentPage(1); // Reset para a primeira página ao pesquisar
+                      setCurrentPage(1);
                     }}
                   />
                 </div>
@@ -222,16 +216,20 @@ const SalesHistory = () => {
                   <Pagination className="mt-4">
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationPrevious 
+                        <Button
                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          variant="ghost"
+                          className="gap-1 pl-2.5"
                           disabled={currentPage === 1}
-                        />
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          <span>Previous</span>
+                        </Button>
                       </PaginationItem>
                       
                       {[...Array(totalPages)].map((_, i) => {
                         const page = i + 1;
                         
-                        // Mostrar apenas algumas páginas para evitar sobrecarga na interface
                         if (
                           page === 1 || 
                           page === totalPages || 
@@ -262,10 +260,15 @@ const SalesHistory = () => {
                       })}
                       
                       <PaginationItem>
-                        <PaginationNext 
+                        <Button 
                           onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          variant="ghost"
+                          className="gap-1 pr-2.5"
                           disabled={currentPage === totalPages}
-                        />
+                        >
+                          <span>Next</span>
+                          <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+                        </Button>
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>

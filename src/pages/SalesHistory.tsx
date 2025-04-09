@@ -1,19 +1,14 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { getSalesData } from '@/lib/sales';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { downloadReceipt } from '@/lib/utils/receipt';
+import { toast } from 'sonner';
+import { Sale } from '@/lib/sales/types';
 import {
   Card,
   CardContent,
@@ -21,31 +16,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-} from '@/components/ui/pagination';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, FileDown, ChevronDown, Eye, ArrowLeft, Printer } from 'lucide-react';
-import { Sale } from '@/lib/sales/types';
-import { useNavigate } from 'react-router-dom';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { downloadReceipt } from '@/lib/utils/receipt';
-import { toast } from 'sonner';
+import { SalesTable } from '@/components/sales/SalesTable';
+import { SalesCardList } from '@/components/sales/SalesCardList';
+import { SalesSearch } from '@/components/sales/SalesSearch';
+import { SalesPagination } from '@/components/sales/SalesPagination';
+import { SalesHistorySkeleton } from '@/components/sales/SalesHistorySkeleton';
 
 const SalesHistory = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 10;
@@ -112,24 +92,8 @@ const SalesHistory = () => {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="container mx-auto py-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Skeleton className="h-8 w-64 mb-2" />
-                  <Skeleton className="h-4 w-48" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Array(5).fill(null).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="container mx-auto py-4 md:py-6">
+          <SalesHistorySkeleton />
         </div>
       </MainLayout>
     );
@@ -137,186 +101,45 @@ const SalesHistory = () => {
   
   return (
     <MainLayout>
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-4 md:py-6">
         <Card>
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col space-y-3">
               <div>
                 <CardTitle>Histórico de Vendas</CardTitle>
                 <CardDescription>
                   Visualize e gerencie o histórico de vendas da sua loja.
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Pesquisar vendas..."
-                    className="pl-8 w-full md:w-[250px]"
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  />
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      Exportar
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleExportSales}>
-                      <FileDown className="mr-2 h-4 w-4" />
-                      Exportar JSON
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <SalesSearch 
+                searchTerm={searchTerm} 
+                onSearchChange={(value) => {
+                  setSearchTerm(value);
+                  setCurrentPage(1);
+                }}
+                onExport={handleExportSales}
+              />
             </div>
           </CardHeader>
           <CardContent>
-            {paginatedSales.length > 0 ? (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>ID da Venda</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Itens</TableHead>
-                      <TableHead>Método de Pagamento</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedSales.map((sale) => (
-                      <TableRow 
-                        key={sale.id} 
-                        className="cursor-pointer"
-                        onClick={() => handleViewSaleDetails(sale)}
-                      >
-                        <TableCell>{formatDate(sale.date)}</TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {sale.id.slice(0, 8)}...
-                        </TableCell>
-                        <TableCell>
-                          {typeof sale.customer === 'string' 
-                            ? sale.customer 
-                            : 'Cliente não identificado'}
-                        </TableCell>
-                        <TableCell>
-                          {typeof sale.items === 'number' 
-                            ? sale.items 
-                            : Array.isArray(sale.items) 
-                              ? sale.items.length
-                              : 0}
-                        </TableCell>
-                        <TableCell>{sale.paymentMethod}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(sale.total)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewSaleDetails(sale);
-                              }}
-                              title="Ver detalhes"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={(e) => handlePrintReceipt(sale, e)}
-                              title="Gerar recibo PDF"
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                
-                {totalPages > 1 && (
-                  <Pagination className="mt-4">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <Button
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          variant="ghost"
-                          className="gap-1 pl-2.5"
-                          disabled={currentPage === 1}
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                          <span>Previous</span>
-                        </Button>
-                      </PaginationItem>
-                      
-                      {[...Array(totalPages)].map((_, i) => {
-                        const page = i + 1;
-                        
-                        if (
-                          page === 1 || 
-                          page === totalPages || 
-                          (page >= currentPage - 1 && page <= currentPage + 1)
-                        ) {
-                          return (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                isActive={page === currentPage}
-                                onClick={() => setCurrentPage(page)}
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        } else if (
-                          page === currentPage - 2 || 
-                          page === currentPage + 2
-                        ) {
-                          return (
-                            <PaginationItem key={page}>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          );
-                        }
-                        
-                        return null;
-                      })}
-                      
-                      <PaginationItem>
-                        <Button 
-                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                          variant="ghost"
-                          className="gap-1 pr-2.5"
-                          disabled={currentPage === totalPages}
-                        >
-                          <span>Next</span>
-                          <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
-                        </Button>
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                )}
-              </>
+            {isMobile ? (
+              <SalesCardList 
+                sales={paginatedSales} 
+                onViewSaleDetails={handleViewSaleDetails} 
+                onPrintReceipt={handlePrintReceipt}
+              />
             ) : (
-              <div className="py-8 text-center">
-                <p className="text-muted-foreground">
-                  {searchTerm ? 'Nenhuma venda encontrada para esta pesquisa.' : 'Nenhuma venda registrada ainda.'}
-                </p>
-              </div>
+              <SalesTable 
+                sales={paginatedSales} 
+                onViewSaleDetails={handleViewSaleDetails} 
+                onPrintReceipt={handlePrintReceipt}
+              />
             )}
+            <SalesPagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={setCurrentPage} 
+            />
           </CardContent>
         </Card>
       </div>

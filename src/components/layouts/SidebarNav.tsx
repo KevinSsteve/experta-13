@@ -1,113 +1,105 @@
-import {
-  BarChart,
-  History,
-  LayoutDashboard,
-  Package,
-  Receipt,
-  ShoppingBag,
-  Store,
-} from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { buttonVariants } from '@/components/ui/button';
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  BarChart4,
+  ShoppingCart,
+  Package,
+  Store,
+  Settings,
+  LogOut,
+  Home,
+  User,
+  Receipt
+} from "lucide-react";
+
+const navItems = [
+  {
+    title: "Início",
+    href: "/",
+    icon: Home,
+  },
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: BarChart4,
+  },
+  {
+    title: "Produtos",
+    href: "/products",
+    icon: Package,
+  },
+  {
+    title: "Checkout",
+    href: "/checkout",
+    icon: ShoppingCart,
+  },
+  {
+    title: "Inventário",
+    href: "/inventory",
+    icon: Store,
+  },
+  {
+    title: "Histórico de Vendas",
+    href: "/sales-history",
+    icon: Receipt,
+  },
+  {
+    title: "Perfil",
+    href: "/profile",
+    icon: User,
+  },
+  {
+    title: "Configurações",
+    href: "/settings",
+    icon: Settings,
+  },
+];
 
 export function SidebarNav() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
-  const isActive = (path: string) => location.pathname === path;
+  const { signOut } = useAuth();
 
   return (
-    <aside className="h-screen hidden md:block border-r w-[240px] p-4">
-      <nav className="space-y-2 flex flex-col h-full">
-        <Link
-          to="/dashboard"
-          className={cn(
-            buttonVariants({ variant: isActive('/dashboard') ? 'default' : 'outline' }),
-            'justify-start'
-          )}
-        >
-          <LayoutDashboard className="mr-2 h-4 w-4" />
-          Dashboard
-        </Link>
-        <Link
-          to="/products"
-          className={cn(
-            buttonVariants({ variant: isActive('/products') ? 'default' : 'outline' }),
-            'justify-start'
-          )}
-        >
-          <ShoppingBag className="mr-2 h-4 w-4" />
-          Produtos
-        </Link>
-        <Link
-          to="/inventory"
-          className={cn(
-            buttonVariants({ variant: isActive('/inventory') ? 'default' : 'outline' }),
-            'justify-start'
-          )}
-        >
-          <Package className="mr-2 h-4 w-4" />
-          Estoque
-        </Link>
-        <Link
-          to="/checkout"
-          className={cn(
-            buttonVariants({ variant: isActive('/checkout') ? 'default' : 'outline' }),
-            'justify-start'
-          )}
-        >
-          <Receipt className="mr-2 h-4 w-4" />
-          PDV
-        </Link>
-        <Link
-          to="/sales-history"
-          className={cn(
-            buttonVariants({ variant: isActive('/sales-history') ? 'default' : 'outline' }),
-            'justify-start'
-          )}
-        >
-          <History className="mr-2 h-4 w-4" />
-          Histórico
-        </Link>
-        <Link
-          to="/sales-reports"
-          className={cn(
-            buttonVariants({ variant: isActive('/sales-reports') ? 'default' : 'outline' }),
-            'justify-start'
-          )}
-        >
-          <BarChart className="mr-2 h-4 w-4" />
-          Relatórios
-        </Link>
-        <div className="mt-auto">
-          {user ? (
-            <Link
-              to="/profile"
-              className={cn(
-                buttonVariants({ variant: isActive('/profile') ? 'default' : 'outline' }),
-                'justify-start'
-              )}
-            >
-              <span className="mr-2 h-4 w-4">👤</span>
-              Profile
-            </Link>
-          ) : (
-            <Link
-              to="/auth"
-              className={cn(
-                buttonVariants({ variant: isActive('/auth') ? 'default' : 'outline' }),
-                'justify-start'
-              )}
-            >
-              <span className="mr-2 h-4 w-4">🔑</span>
-              Login
-            </Link>
-          )}
+    <div className="group flex h-screen w-full flex-col gap-4 bg-background p-2">
+      <div className="flex flex-1 flex-col gap-2">
+        <div className="flex h-14 items-center justify-center rounded-md bg-primary/10 px-4">
+          <span className="font-semibold">Moloja</span>
         </div>
-      </nav>
-    </aside>
+        
+        <nav className="grid gap-1 px-2">
+          {navItems.map((item, index) => {
+            const isActive = location.pathname === item.href;
+            
+            return (
+              <Link
+                key={index}
+                to={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-sm font-medium">{item.title}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+      
+      <Button
+        variant="outline"
+        className="flex w-full items-center justify-start gap-3"
+        onClick={signOut}
+      >
+        <LogOut className="h-5 w-5" />
+        <span className="text-sm font-medium">Sair</span>
+      </Button>
+    </div>
   );
 }

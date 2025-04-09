@@ -2,18 +2,15 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { format } from 'date-fns';
-import { Calendar as CalendarIcon, FileDown, Loader2 } from 'lucide-react';
+import { FileDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Sale } from '@/lib/sales/types';
-import { formatCurrency } from '@/lib/utils';
+import { format } from 'date-fns';
 import { adaptSupabaseSale } from '@/lib/sales/adapters';
-import { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { DateRangePicker } from './DateRangePicker';
+import { SalesChart } from './SalesChart';
+import { SalesSummary } from './SalesSummary';
 
 export const SalesReportCard = () => {
   const { user } = useAuth();
@@ -58,7 +55,7 @@ export const SalesReportCard = () => {
       // Agrupar vendas por dia
       const salesByDay: { [key: string]: { date: string; total: number; count: number } } = {};
       
-      salesArray.forEach((sale: Sale) => {
+      salesArray.forEach((sale) => {
         const dateStr = format(new Date(sale.date), 'yyyy-MM-dd');
         
         if (!salesByDay[dateStr]) {
@@ -114,31 +111,10 @@ export const SalesReportCard = () => {
           Relatório de Vendas
         </CardTitle>
         <div className="flex items-center space-x-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 border-dashed">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(dateRange.from, 'dd/MM/yyyy')} - {format(dateRange.to, 'dd/MM/yyyy')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={dateRange.from}
-                selected={{
-                  from: dateRange.from,
-                  to: dateRange.to,
-                }}
-                onSelect={(range) => {
-                  if (range?.from && range?.to) {
-                    setDateRange({ from: range.from, to: range.to });
-                  }
-                }}
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
+          <DateRangePicker 
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+          />
           
           <Button 
             variant="outline" 
@@ -154,67 +130,10 @@ export const SalesReportCard = () => {
       </CardHeader>
       <CardContent>
         <div className="h-80">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : salesData && salesData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
-                  tickFormatter={(date) => format(new Date(date), 'dd/MM')}
-                />
-                <YAxis 
-                  tickFormatter={(value) => formatCurrency(value).split(',')[0]}
-                />
-                <Tooltip 
-                  formatter={(value: number) => [formatCurrency(value), 'Total']}
-                  labelFormatter={(label) => format(new Date(label), 'dd/MM/yyyy')}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="total" 
-                  stroke="#4CAF50" 
-                  activeDot={{ r: 8 }} 
-                  name="Total de Vendas"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <p>Nenhum dado de venda encontrado para o período selecionado.</p>
-              <p className="text-sm">Tente selecionar um período diferente.</p>
-            </div>
-          )}
+          <SalesChart salesData={salesData} isLoading={isLoading} />
         </div>
         
-        {salesData && salesData.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-sm font-semibold mb-2">Sumário</h4>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <div className="bg-muted rounded-md p-3">
-                <p className="text-xs text-muted-foreground">Total de Vendas</p>
-                <p className="font-semibold">
-                  {formatCurrency(salesData.reduce((acc, day) => acc + day.total, 0))}
-                </p>
-              </div>
-              <div className="bg-muted rounded-md p-3">
-                <p className="text-xs text-muted-foreground">Qtd. Transações</p>
-                <p className="font-semibold">
-                  {salesData.reduce((acc, day) => acc + day.count, 0)}
-                </p>
-              </div>
-              <div className="bg-muted rounded-md p-3">
-                <p className="text-xs text-muted-foreground">Média Diária</p>
-                <p className="font-semibold">
-                  {formatCurrency(salesData.reduce((acc, day) => acc + day.total, 0) / salesData.length)}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <SalesSummary salesData={salesData} />
       </CardContent>
     </Card>
   );

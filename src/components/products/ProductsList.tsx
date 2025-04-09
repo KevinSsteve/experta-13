@@ -7,6 +7,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Pencil, Trash, PlusCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -52,12 +60,12 @@ export const ProductsList = ({
     return (
       <div className="grid gap-4">
         {products.map((product) => (
-          <Card key={product.id}>
+          <Card key={product.id} className="overflow-hidden">
             <CardContent className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{product.name}</h3>
-                  <div className="text-sm text-muted-foreground mb-2">
+              <div className="flex justify-between items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-medium truncate">{product.name}</h3>
+                  <div className="text-sm text-muted-foreground mb-2 truncate">
                     {product.code || "Sem código"} • {product.category}
                   </div>
                   <div className="font-medium">{formatCurrency(product.price)}</div>
@@ -77,18 +85,19 @@ export const ProductsList = ({
                   )}
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
                   {isStore ? (
                     <Button 
                       onClick={() => onAdd && onAdd(product)}
                       disabled={isSubmitting}
                       size="sm"
+                      className="whitespace-nowrap"
                     >
                       <PlusCircle className="h-4 w-4 mr-1" />
                       Adicionar
                     </Button>
                   ) : (
-                    <>
+                    <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -123,7 +132,7 @@ export const ProductsList = ({
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
@@ -136,92 +145,94 @@ export const ProductsList = ({
 
   // Versão desktop (tabela)
   return (
-    <table className="min-w-full divide-y divide-border">
-      <thead>
-        <tr className="border-b">
-          <th className="px-4 py-2 text-left">Nome</th>
-          <th className="px-4 py-2 text-left">Código</th>
-          <th className="px-4 py-2 text-left">Categoria</th>
-          <th className="px-4 py-2 text-left">Preço</th>
-          {!isStore && <th className="px-4 py-2 text-left">Estoque</th>}
-          <th className="px-4 py-2 text-right">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {products.map((product) => (
-          <tr key={product.id} className="border-b hover:bg-muted/50">
-            <td className="px-4 py-2">{product.name}</td>
-            <td className="px-4 py-2">{product.code || "-"}</td>
-            <td className="px-4 py-2">{product.category}</td>
-            <td className="px-4 py-2">{formatCurrency(product.price)}</td>
-            {!isStore && (
-              <td className="px-4 py-2">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    product.stock === 0
-                      ? "bg-red-100 text-red-700"
-                      : product.stock < 10
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-green-100 text-green-700"
-                  }`}
-                >
-                  {product.stock} un
-                </span>
-              </td>
-            )}
-            <td className="px-4 py-2 text-right">
-              {isStore ? (
-                <Button 
-                  onClick={() => onAdd && onAdd(product)}
-                  disabled={isSubmitting}
-                  size="sm"
-                  variant="secondary"
-                >
-                  <PlusCircle className="h-4 w-4 mr-1" />
-                  Adicionar ao estoque
-                </Button>
-              ) : (
-                <div className="flex justify-end gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onEdit && onEdit(product)}
+    <div className="rounded-md border overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[40%]">Nome</TableHead>
+            <TableHead className="w-[15%]">Código</TableHead>
+            <TableHead className="w-[15%]">Categoria</TableHead>
+            <TableHead className="w-[10%]">Preço</TableHead>
+            {!isStore && <TableHead className="w-[10%]">Estoque</TableHead>}
+            <TableHead className="w-[10%] text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {products.map((product) => (
+            <TableRow key={product.id}>
+              <TableCell className="font-medium">{product.name}</TableCell>
+              <TableCell>{product.code || "-"}</TableCell>
+              <TableCell>{product.category}</TableCell>
+              <TableCell>{formatCurrency(product.price)}</TableCell>
+              {!isStore && (
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      product.stock === 0
+                        ? "bg-red-100 text-red-700"
+                        : product.stock < 10
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
                   >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="destructive">
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Confirmar exclusão
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tem certeza que deseja excluir o produto "{product.name}"?
-                          Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => onDelete && onDelete(product.id)}
-                        >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                    {product.stock} un
+                  </span>
+                </TableCell>
               )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+              <TableCell className="text-right">
+                {isStore ? (
+                  <Button 
+                    onClick={() => onAdd && onAdd(product)}
+                    disabled={isSubmitting}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-1" />
+                    Adicionar
+                  </Button>
+                ) : (
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onEdit && onEdit(product)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="destructive">
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Confirmar exclusão
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja excluir o produto "{product.name}"?
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onDelete && onDelete(product.id)}
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };

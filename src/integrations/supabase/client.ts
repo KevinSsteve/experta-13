@@ -67,3 +67,44 @@ export const addProductToInventory = async (product, userId) => {
   if (error) throw error;
   return data;
 };
+
+// Add multiple products to the database as public products
+export const addMultiplePublicProducts = async (products, userId) => {
+  if (!userId) {
+    throw new Error("User ID is required to add public products");
+  }
+  
+  // Format products for insertion
+  const formattedProducts = products.map(product => ({
+    name: product.name,
+    price: product.price,
+    category: product.category || "Outros",
+    stock: product.stock || 50,
+    description: product.description || null,
+    code: product.code || null,
+    image: product.image || "/placeholder.svg",
+    user_id: userId,
+    is_public: true
+  }));
+  
+  // Insert products in chunks to avoid hitting limits
+  const chunkSize = 20;
+  const results = [];
+  
+  for (let i = 0; i < formattedProducts.length; i += chunkSize) {
+    const chunk = formattedProducts.slice(i, i + chunkSize);
+    const { data, error } = await supabase
+      .from('products')
+      .insert(chunk);
+      
+    if (error) {
+      console.error(`Error inserting chunk ${i / chunkSize + 1}:`, error);
+      throw error;
+    }
+    
+    console.log(`Successfully added chunk ${i / chunkSize + 1} of ${Math.ceil(formattedProducts.length / chunkSize)}`);
+    results.push(data);
+  }
+  
+  return results;
+};

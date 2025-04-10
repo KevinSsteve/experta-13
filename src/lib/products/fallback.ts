@@ -12,6 +12,7 @@ const hardcodedProducts: Product[] = [
     stock: 50,
     code: "ARR001",
     description: "Arroz tipo 1, grãos nobres e selecionados.",
+    purchase_price: 22.50,
   },
   {
     id: "2",
@@ -22,6 +23,7 @@ const hardcodedProducts: Product[] = [
     stock: 45,
     code: "FEI001",
     description: "Feijão carioca tipo 1, colheita recente.",
+    purchase_price: 6.25,
   },
   // ... Restante dos produtos hardcoded (mantidos para referência)
   {
@@ -33,6 +35,7 @@ const hardcodedProducts: Product[] = [
     stock: 45,
     code: "DES001",
     description: "Desodorante roll-on antitranspirante.",
+    purchase_price: 7.15,
   },
 ];
 

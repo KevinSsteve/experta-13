@@ -1,5 +1,5 @@
 
-import { Product } from '@/contexts/CartContext';
+import { Product } from '@/lib/products/types';
 import { ProductCard } from './ProductCard';
 
 interface ProductCardListProps {

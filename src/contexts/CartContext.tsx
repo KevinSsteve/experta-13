@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useReducer, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +14,8 @@ export interface Product {
   description?: string;
   user_id?: string;
   is_public?: boolean;
+  purchase_price?: number;
+  profit_margin?: number;
 }
 
 // Cart item interface

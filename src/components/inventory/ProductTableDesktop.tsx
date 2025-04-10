@@ -1,6 +1,6 @@
 
 import { formatCurrency } from '@/lib/utils';
-import { Product } from '@/contexts/CartContext';
+import { Product } from '@/lib/products/types';
 import { Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

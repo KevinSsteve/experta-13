@@ -1,5 +1,5 @@
 
-import { Product } from '@/contexts/CartContext';
+import { Product } from '@/lib/products/types';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProductCardList } from './ProductCardList';
 import { ProductTableDesktop } from './ProductTableDesktop';

@@ -1,60 +1,99 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Sale } from './types';
-import { Json } from '@/integrations/supabase/types';
 
-// Função para adaptar os dados de venda do Supabase para o tipo Sale
-export function adaptSupabaseSale(supabaseSale: any): Sale {
-  return {
-    id: supabaseSale.id,
-    date: supabaseSale.date,
-    customer: supabaseSale.customer || 'Cliente não identificado',
-    items: typeof supabaseSale.items === 'number' 
-      ? supabaseSale.items 
-      : (Array.isArray(supabaseSale.items) 
-          ? supabaseSale.items.length 
-          : 1),
-    total: supabaseSale.total,
-    paymentMethod: supabaseSale.payment_method || 'Dinheiro',
-    amountPaid: supabaseSale.amount_paid,
-    change: supabaseSale.change,
-    products: Array.isArray(supabaseSale.items) 
-      ? supabaseSale.items 
-      : (typeof supabaseSale.items === 'object' 
-          ? [supabaseSale.items] 
-          : []),
-    user_id: supabaseSale.user_id
-  };
-}
-
-// Função para buscar vendas do Supabase
-export async function fetchSalesFromSupabase(userId?: string): Promise<Sale[]> {
+export const adaptSupabaseSale = (sale: any): Sale => {
   try {
+    // Extrair cliente dos dados JSON, se disponível
+    let customer = 'Cliente não identificado';
+    if (sale.items && sale.items.customer) {
+      customer = sale.items.customer.name || 'Cliente não identificado';
+    }
+
+    // Extrair método de pagamento se disponível
+    let paymentMethod = 'Dinheiro';
+    if (sale.items && sale.items.paymentMethod) {
+      paymentMethod = sale.items.paymentMethod;
+    }
+
+    // Contar itens se disponível
+    let items = [];
+    if (sale.items && sale.items.products && Array.isArray(sale.items.products)) {
+      items = sale.items.products;
+    } else {
+      items = [];
+    }
+
+    // Converter para o formato Sale
+    return {
+      id: sale.id,
+      date: sale.date || new Date().toISOString(),
+      customer: customer,
+      total: sale.total,
+      items: items,
+      paymentMethod: paymentMethod,
+      amountPaid: sale.amount_paid || sale.total,
+      change: sale.change || 0,
+      userId: sale.user_id
+    };
+  } catch (error) {
+    console.error('Erro ao adaptar venda do Supabase:', error);
+    // Retornar objeto com valores padrão em caso de erro
+    return {
+      id: sale.id || 'unknown-id',
+      date: sale.date || new Date().toISOString(),
+      customer: 'Erro ao carregar cliente',
+      total: sale.total || 0,
+      items: [],
+      paymentMethod: 'Desconhecido',
+      amountPaid: sale.amount_paid || 0,
+      change: sale.change || 0,
+      userId: sale.user_id
+    };
+  }
+};
+
+export const fetchSalesFromSupabase = async (userId?: string): Promise<Sale[]> => {
+  try {
+    console.log(`Buscando vendas para o usuário: ${userId || 'anônimo'}`);
+
+    // Verificar se há um usuário logado para filtrar
+    if (!userId) {
+      console.warn('Tentativa de buscar vendas sem ID de usuário');
+      return [];
+    }
+
+    // Criar a consulta base
     let query = supabase
       .from('sales')
       .select('*')
       .order('date', { ascending: false });
-    
-    // Se um ID de usuário for fornecido, filtrar por esse usuário
+
+    // Adicionar filtro por usuário se fornecido
     if (userId) {
       query = query.eq('user_id', userId);
     }
-    
+
+    // Executar a consulta
     const { data, error } = await query;
-    
+
     if (error) {
       console.error('Erro ao buscar vendas do Supabase:', error);
       return [];
     }
-    
+
     if (!data || data.length === 0) {
+      console.log(`Nenhuma venda encontrada para o usuário ${userId}`);
       return [];
     }
+
+    console.log(`Encontradas ${data.length} vendas para o usuário ${userId}`);
     
-    // Converter os dados do Supabase para o tipo Sale
-    return data.map(sale => adaptSupabaseSale(sale));
+    // Converter os dados para o formato Sale
+    const sales = data.map(sale => adaptSupabaseSale(sale));
+    return sales;
   } catch (error) {
-    console.error('Erro ao buscar vendas:', error);
+    console.error('Erro ao buscar vendas do Supabase:', error);
     return [];
   }
-}
+};

@@ -87,7 +87,7 @@ const Checkout = () => {
         name: data.customerName,
         phone: data.customerPhone || '',
         email: data.customerEmail || '',
-        nif: data.customerNIF || '', // Adicionar NIF do cliente
+        nif: data.customerNIF || '',
       },
       total: getTotalPrice(),
       amountPaid: data.amountPaid,
@@ -101,6 +101,8 @@ const Checkout = () => {
       saveSaleToStorage(saleData);
       
       if (state.user) {
+        console.log('Salvando venda no Supabase para o usuário:', state.user.id);
+        
         const simplifiedItems = state.items.map(item => ({
           productId: item.product.id,
           productName: item.product.name,
@@ -119,7 +121,7 @@ const Checkout = () => {
               name: saleData.customer.name,
               phone: saleData.customer.phone,
               email: saleData.customer.email,
-              nif: saleData.customer.nif // Adicionar NIF no Supabase
+              nif: saleData.customer.nif
             },
             paymentMethod: saleData.paymentMethod,
             notes: saleData.notes,
@@ -132,9 +134,13 @@ const Checkout = () => {
           .insert(supabaseSaleData);
           
         if (error) {
-          console.error('Error saving sale to Supabase:', error);
-          throw error;
+          console.error('Erro ao salvar venda no Supabase:', error);
+          toast.error('Erro ao salvar venda. Os dados foram salvos localmente.');
+        } else {
+          console.log('Venda salva com sucesso no Supabase');
         }
+      } else {
+        console.warn('Usuário não autenticado, venda salva apenas localmente');
       }
       
       await updateProductStockAfterSale(state.items);
@@ -144,10 +150,9 @@ const Checkout = () => {
       // Armazena os dados da venda para uso nas funções de recibo
       setCompletedSale(saleData);
       
-      // Não limpe o carrinho ainda para permitir opções de impressão
     } catch (error) {
       toast.error('Erro ao finalizar a venda. Por favor, tente novamente.');
-      console.error('Error saving sale:', error);
+      console.error('Erro ao salvar venda:', error);
       setIsSubmitting(false);
     }
   };

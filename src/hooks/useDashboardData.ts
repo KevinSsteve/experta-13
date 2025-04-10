@@ -18,80 +18,97 @@ export const useDashboardData = (timeRange: string) => {
     // Log para depuração
     if (!userId) {
       console.warn('useDashboardData: Não há usuário logado, as consultas serão desativadas');
+    } else {
+      console.log('useDashboardData: Carregando dados para o usuário:', userId);
     }
   }, [userId]);
   
   const kpisQuery = useQuery({
     queryKey: ['salesKpis', days, userId],
-    queryFn: () => getSalesKPIs(days, userId),
-    enabled: !!userId, // Only execute if there's a userId
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    queryFn: () => {
+      console.log(`Buscando KPIs para ${days} dias e usuário ${userId}`);
+      return getSalesKPIs(days, userId);
+    },
+    enabled: !!userId, // Só execute se houver um userId
+    staleTime: 1000 * 60 * 5, // 5 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     retry: 2,
     meta: {
       onError: (error: any) => {
-        console.error('Error fetching KPIs:', error);
+        console.error('Erro ao buscar KPIs:', error);
       }
     }
   });
   
   const dailySalesQuery = useQuery({
     queryKey: ['dailySales', days, userId],
-    queryFn: () => fetchDailySales(days, userId),
+    queryFn: () => {
+      console.log(`Buscando vendas diárias para ${days} dias e usuário ${userId}`);
+      return fetchDailySales(days, userId);
+    },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     retry: 2,
     meta: {
       onError: (error: any) => {
-        console.error('Error fetching daily sales:', error);
+        console.error('Erro ao buscar vendas diárias:', error);
       }
     }
   });
   
   const recentSalesQuery = useQuery({
     queryKey: ['recentSales', userId],
-    queryFn: () => getRecentSales(5, userId),
+    queryFn: () => {
+      console.log(`Buscando vendas recentes para usuário ${userId}`);
+      return getRecentSales(5, userId);
+    },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     retry: 2,
     meta: {
       onError: (error: any) => {
-        console.error('Error fetching recent sales:', error);
+        console.error('Erro ao buscar vendas recentes:', error);
       }
     }
   });
   
   const topProductsQuery = useQuery({
     queryKey: ['topProducts', days, userId],
-    queryFn: () => getTopSellingProducts(5, userId),
+    queryFn: () => {
+      console.log(`Buscando produtos mais vendidos para usuário ${userId}`);
+      return getTopSellingProducts(5, userId);
+    },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     retry: 2,
     meta: {
       onError: (error: any) => {
-        console.error('Error fetching top products:', error);
+        console.error('Erro ao buscar produtos mais vendidos:', error);
       }
     }
   });
   
   const lowStockProductsQuery = useQuery({
     queryKey: ['lowStockProducts', userId],
-    queryFn: () => getLowStockProducts(10, userId),
+    queryFn: () => {
+      console.log(`Buscando produtos com estoque baixo para usuário ${userId}`);
+      return getLowStockProducts(10, userId);
+    },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     retry: 2,
     meta: {
       onError: (error: any) => {
-        console.error('Error fetching low stock products:', error);
+        console.error('Erro ao buscar produtos com estoque baixo:', error);
       }
     }
   });

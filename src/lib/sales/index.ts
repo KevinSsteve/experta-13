@@ -11,38 +11,49 @@ export * from './types';
 // Function to get sales data
 export async function getSalesData(userId?: string): Promise<Sale[]> {
   try {
-    // First, try to fetch from Supabase with user filter if provided
-    const supabaseSales = await fetchSalesFromSupabase(userId);
+    console.log(`Buscando dados de vendas para usuário: ${userId || 'anônimo'}`);
     
-    // If we have data from Supabase, return it
-    if (supabaseSales && supabaseSales.length > 0) {
-      console.log(`Found ${supabaseSales.length} sales in Supabase for user ${userId || 'anonymous'}`);
-      return supabaseSales;
-    }
-    
-    // If no data from Supabase, check local storage
-    // (This would be removed in a production environment)
-    const storedSales = getSalesFromStorage();
-    if (storedSales && storedSales.length > 0) {
-      console.log(`Found ${storedSales.length} sales in local storage`);
+    // Verifique se temos um ID de usuário
+    if (!userId) {
+      console.warn('getSalesData: Nenhum ID de usuário fornecido, retornando dados locais');
+      const storedSales = getSalesFromStorage();
       return storedSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
     
-    // Should only reach here during development or if there are no sales
-    console.log('No sales found in Supabase or local storage');
+    // Primeiro, tente buscar do Supabase com filtro de usuário
+    const supabaseSales = await fetchSalesFromSupabase(userId);
+    
+    // Se temos dados do Supabase, retorne-os
+    if (supabaseSales && supabaseSales.length > 0) {
+      console.log(`Encontradas ${supabaseSales.length} vendas no Supabase para usuário ${userId}`);
+      return supabaseSales;
+    }
+    
+    console.log(`Nenhuma venda encontrada no Supabase para usuário ${userId}, verificando localStorage`);
+    
+    // Se não há dados do Supabase, verifique o localStorage
+    // (Isso seria removido em um ambiente de produção)
+    const storedSales = getSalesFromStorage();
+    if (storedSales && storedSales.length > 0) {
+      console.log(`Encontradas ${storedSales.length} vendas no localStorage`);
+      return storedSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+    
+    // Só deve chegar aqui durante o desenvolvimento ou se não houver vendas
+    console.log('Nenhuma venda encontrada no Supabase ou localStorage');
     return [];
   } catch (error) {
-    console.error('Error getting sales data:', error);
+    console.error('Erro ao obter dados de vendas:', error);
     
-    // Try local storage as a fallback in case of Supabase error
+    // Tente localStorage como fallback em caso de erro do Supabase
     try {
       const storedSales = getSalesFromStorage();
       if (storedSales && storedSales.length > 0) {
-        console.log('Using local storage sales data as fallback due to error');
+        console.log('Usando dados de vendas do localStorage como fallback devido a erro');
         return storedSales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       }
     } catch (localError) {
-      console.error('Error getting local storage sales:', localError);
+      console.error('Erro ao obter vendas do localStorage:', localError);
     }
     
     return [];

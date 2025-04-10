@@ -86,3 +86,20 @@ export const importProductsToSupabase = async (productText: string): Promise<voi
     throw error;
   }
 };
+
+// Global function for easy console access
+export const exposeImportFunction = () => {
+  // @ts-ignore - Attaching to window for easy access
+  window.importProducts = async (productsText: string) => {
+    try {
+      await importProductsToSupabase(productsText);
+      console.log("Products imported successfully!");
+      return true;
+    } catch (error) {
+      console.error("Failed to import products:", error);
+      return false;
+    }
+  };
+  
+  console.log("Products import function available as window.importProducts(productsText)");
+};

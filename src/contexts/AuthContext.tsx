@@ -66,8 +66,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Função para atualizar o perfil no estado do contexto
   const refreshProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      console.warn("Tentativa de atualizar perfil sem usuário autenticado");
+      
+      // Verificar se há uma sessão ativa
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session?.user) {
+        setUser(sessionData.session.user);
+        setSession(sessionData.session);
+        const profileData = await fetchProfile(sessionData.session.user.id);
+        if (profileData) {
+          setProfile(profileData);
+        }
+        return;
+      }
+      
+      return;
+    }
     
+    console.log("Atualizando perfil para usuário:", user.id);
     const profileData = await fetchProfile(user.id);
     if (profileData) {
       setProfile(profileData);
@@ -75,24 +92,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    console.log("[AuthContext] Inicializando contexto de autenticação");
+    
     // Define a função que será chamada quando o estado de autenticação mudar
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("[AuthContext] Evento de autenticação:", event);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
         
         // Busca o perfil quando o usuário faz login
         if (session?.user) {
+          console.log("[AuthContext] Usuário autenticado:", session.user.id);
           // Usando setTimeout(0) para evitar problemas de deadlock com o Supabase
           setTimeout(() => {
             fetchProfile(session.user.id).then(profileData => {
               if (profileData) {
                 setProfile(profileData);
+                console.log("[AuthContext] Perfil carregado com sucesso");
+              } else {
+                console.warn("[AuthContext] Não foi possível carregar o perfil");
               }
             });
           }, 0);
         } else {
+          console.log("[AuthContext] Usuário desconectado ou não autenticado");
           setProfile(null);
         }
       }
@@ -100,14 +125,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Verifica se já existe uma sessão ativa
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("[AuthContext] Verificando sessão existente:", session ? "Encontrada" : "Não encontrada");
       setSession(session);
       setUser(session?.user ?? null);
       
       // Busca o perfil se houver um usuário na sessão
       if (session?.user) {
+        console.log("[AuthContext] Carregando perfil para sessão existente:", session.user.id);
         fetchProfile(session.user.id).then(profileData => {
           if (profileData) {
             setProfile(profileData);
+            console.log("[AuthContext] Perfil carregado para sessão existente");
+          } else {
+            console.warn("[AuthContext] Não foi possível carregar o perfil para sessão existente");
           }
           setIsLoading(false);
         });
@@ -116,12 +146,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log("[AuthContext] Limpando inscrição de eventos de autenticação");
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
+    console.log("[AuthContext] Iniciando logout");
     await supabase.auth.signOut();
     setProfile(null);
+    console.log("[AuthContext] Logout concluído");
   };
 
   return (

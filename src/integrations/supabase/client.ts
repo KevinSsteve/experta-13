@@ -9,7 +9,13 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    storage: localStorage
+  }
+});
 
 // Helper for debugging - logs the current user
 export const logCurrentUser = async () => {
@@ -135,22 +141,38 @@ export const getProductImageUrl = (path: string) => {
 // Função de diagnóstico para verificar permissões do usuário
 export const testPermissions = async () => {
   try {
+    // Verificar autenticação atual
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.warn("Nenhum usuário autenticado encontrado");
+      return {
+        success: false,
+        error: "Nenhum usuário autenticado encontrado",
+        authStatus: "não autenticado"
+      };
+    }
+    
+    console.log("Testando permissões para usuário:", user.id);
+    
     // Testa leitura na tabela de produtos
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('*')
+      .eq('user_id', user.id)
       .limit(1);
     
     // Testa leitura na tabela de vendas
     const { data: sales, error: salesError } = await supabase
       .from('sales')
       .select('*')
+      .eq('user_id', user.id)
       .limit(1);
     
     // Testa perfil do usuário atual
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
+      .eq('id', user.id)
       .single();
     
     // Testa acesso ao storage
@@ -159,6 +181,11 @@ export const testPermissions = async () => {
       .listBuckets();
     
     return {
+      auth: {
+        success: !!user,
+        userId: user.id,
+        email: user.email
+      },
       products: {
         success: !productsError,
         data: products,
@@ -182,6 +209,57 @@ export const testPermissions = async () => {
     };
   } catch (error) {
     console.error("Erro ao testar permissões:", error);
+    return {
+      success: false,
+      error
+    };
+  }
+};
+
+// Verificar se as políticas de RLS estão funcionando corretamente
+export const verifyRlsPolicies = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.log("Nenhum usuário autenticado encontrado para verificar RLS");
+      return {
+        success: false,
+        message: "Nenhum usuário autenticado"
+      };
+    }
+    
+    // Teste para verificar se o usuário pode acessar seus próprios produtos
+    const { data: userProducts, error: userProductsError } = await supabase
+      .from('products')
+      .select('id, name, user_id')
+      .eq('user_id', user.id)
+      .limit(5);
+    
+    // Teste para verificar se o usuário pode acessar suas próprias vendas
+    const { data: userSales, error: userSalesError } = await supabase
+      .from('sales')
+      .select('id, date, total, user_id')
+      .eq('user_id', user.id)
+      .limit(5);
+    
+    return {
+      success: true,
+      userId: user.id,
+      products: {
+        success: !userProductsError,
+        count: userProducts?.length || 0,
+        sample: userProducts?.slice(0, 2) || [],
+        error: userProductsError
+      },
+      sales: {
+        success: !userSalesError,
+        count: userSales?.length || 0,
+        sample: userSales?.slice(0, 2) || [],
+        error: userSalesError
+      }
+    };
+  } catch (error) {
+    console.error("Erro ao verificar políticas RLS:", error);
     return {
       success: false,
       error

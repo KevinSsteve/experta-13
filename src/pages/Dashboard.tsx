@@ -12,23 +12,63 @@ import { SalesReportCard } from '@/components/dashboard/SalesReportCard';
 import { StockAlertsBanner } from '@/components/dashboard/StockAlertsBanner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
-import { testPermissions } from '@/integrations/supabase/client';
+import { testPermissions, verifyRlsPolicies } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { user, profile, session, refreshProfile } = useAuth();
   const [isTesting, setIsTesting] = useState(false);
+  const [testResults, setTestResults] = useState<any>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const {
     kpis,
     dailySales,
     topProducts,
     recentSales,
-    lowStockProducts
+    lowStockProducts,
+    authStatus
   } = useDashboardData(timeRange);
+
+  useEffect(() => {
+    // Verificar estado de autenticação ao carregar o dashboard
+    const checkAuthStatus = async () => {
+      const { data } = await supabase.auth.getUser();
+      console.log("[Dashboard] Estado de autenticação:", data.user ? "Autenticado" : "Não autenticado");
+      if (data.user) {
+        console.log("[Dashboard] ID do usuário:", data.user.id);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      // Verificar autenticação
+      await refreshProfile();
+      
+      // Invalidar queries para forçar recarga
+      const queryClient = (window as any).__TANSTACK_QUERY_CLIENT__;
+      if (queryClient) {
+        await queryClient.invalidateQueries();
+        toast.success("Dados atualizados com sucesso");
+      } else {
+        toast.error("Não foi possível acessar o cliente de consultas");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar dados:", error);
+      toast.error("Erro ao atualizar os dados");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleTestPermissions = async () => {
     if (!user) {
@@ -40,11 +80,22 @@ const Dashboard = () => {
     try {
       const results = await testPermissions();
       console.log("Resultados do teste de permissões:", results);
+      setTestResults(results);
       
       if (results.products.success && results.sales.success && results.profile.success) {
         toast.success("Permissões OK! Verifique o console para detalhes.");
       } else {
         toast.error("Algumas permissões falharam. Verifique o console.");
+      }
+      
+      // Verificar políticas RLS
+      const rlsResults = await verifyRlsPolicies();
+      console.log("Resultados da verificação de RLS:", rlsResults);
+      
+      if (rlsResults.success) {
+        if (rlsResults.products.count === 0 && rlsResults.sales.count === 0) {
+          toast.warning("Permissões OK, mas não há dados encontrados para este usuário");
+        }
       }
     } catch (error) {
       console.error("Erro ao testar permissões:", error);
@@ -62,9 +113,28 @@ const Dashboard = () => {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
               <p className="text-muted-foreground">Visão geral das suas vendas e desempenho.</p>
+              {user && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Usuário: {user.email} (ID: {user.id.slice(0, 8)}...)
+                </p>
+              )}
             </div>
             
             <div className="flex flex-col md:flex-row gap-2 items-start mt-4 md:mt-0">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefreshData}
+                disabled={isRefreshing || !user}
+                className="mr-2"
+              >
+                {isRefreshing ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Atualizando</>
+                ) : (
+                  <><RefreshCw className="mr-2 h-4 w-4" /> Atualizar Dados</>
+                )}
+              </Button>
+              
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -90,6 +160,25 @@ const Dashboard = () => {
               </Tabs>
             </div>
           </div>
+          
+          {/* Status de autenticação */}
+          {(!user || !authStatus.userId) && (
+            <div className="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-4 text-yellow-800 dark:text-yellow-200">
+              <h3 className="font-semibold">Atenção: Problema de Autenticação</h3>
+              <p className="text-sm">
+                Você precisa estar autenticado para visualizar seus dados. 
+                {!user ? " Parece que não há usuário logado." : " Seu ID de usuário não está sendo reconhecido corretamente."}
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefreshData} 
+                className="mt-2"
+              >
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
           
           {/* Alertas de estoque baixo */}
           <StockAlertsBanner />
@@ -127,6 +216,16 @@ const Dashboard = () => {
               isLoading={lowStockProducts.isLoading} 
             />
           </div>
+          
+          {/* Resultados de teste */}
+          {testResults && (
+            <div className="mt-6 p-4 border rounded-md">
+              <h3 className="font-semibold mb-2">Resultados do Teste de Permissões</h3>
+              <div className="text-xs font-mono overflow-x-auto">
+                <pre>{JSON.stringify(testResults, null, 2)}</pre>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </MainLayout>

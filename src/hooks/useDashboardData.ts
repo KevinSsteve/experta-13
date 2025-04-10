@@ -6,13 +6,21 @@ import {
   getSalesKPIs, 
   getRecentSales
 } from '@/lib/sales';
-import { getTopSellingProducts, getLowStockProducts } from '@/lib/products-data';
+import { getTopSellingProducts, getLowStockProducts } from '@/lib/products/analytics';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
 
 export const useDashboardData = (timeRange: string) => {
   const days = parseInt(timeRange);
   const { user } = useAuth();
   const userId = user?.id;
+  
+  useEffect(() => {
+    // Log para depuração
+    if (!userId) {
+      console.warn('useDashboardData: Não há usuário logado, as consultas serão desativadas');
+    }
+  }, [userId]);
   
   const kpisQuery = useQuery({
     queryKey: ['salesKpis', days, userId],

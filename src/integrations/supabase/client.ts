@@ -102,3 +102,50 @@ export const addMultiplePublicProducts = async (products: any[], userId: string)
   
   return results;
 };
+
+// Função de diagnóstico para verificar permissões do usuário
+export const testPermissions = async () => {
+  try {
+    // Testa leitura na tabela de produtos
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('*')
+      .limit(1);
+    
+    // Testa leitura na tabela de vendas
+    const { data: sales, error: salesError } = await supabase
+      .from('sales')
+      .select('*')
+      .limit(1);
+    
+    // Testa perfil do usuário atual
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .single();
+    
+    return {
+      products: {
+        success: !productsError,
+        data: products,
+        error: productsError
+      },
+      sales: {
+        success: !salesError,
+        data: sales,
+        error: salesError
+      },
+      profile: {
+        success: !profileError,
+        data: profile,
+        error: profileError
+      }
+    };
+  } catch (error) {
+    console.error("Erro ao testar permissões:", error);
+    return {
+      success: false,
+      error
+    };
+  }
+};

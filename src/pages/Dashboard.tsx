@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -12,10 +12,17 @@ import { LowStockProductsList } from '@/components/dashboard/LowStockProductsLis
 import { SalesReportCard } from '@/components/dashboard/SalesReportCard';
 import { StockAlertsBanner } from '@/components/dashboard/StockAlertsBanner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
+import { testPermissions } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const [isTesting, setIsTesting] = useState(false);
   const {
     kpis,
     dailySales,
@@ -24,6 +31,30 @@ const Dashboard = () => {
     topProducts,
     lowStockProducts
   } = useDashboardData(timeRange);
+
+  const handleTestPermissions = async () => {
+    if (!user) {
+      toast.error("Você precisa estar logado para testar permissões");
+      return;
+    }
+    
+    setIsTesting(true);
+    try {
+      const results = await testPermissions();
+      console.log("Resultados do teste de permissões:", results);
+      
+      if (results.products.success && results.sales.success && results.profile.success) {
+        toast.success("Permissões OK! Verifique o console para detalhes.");
+      } else {
+        toast.error("Algumas permissões falharam. Verifique o console.");
+      }
+    } catch (error) {
+      console.error("Erro ao testar permissões:", error);
+      toast.error("Erro ao testar permissões");
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   return (
     <MainLayout>
@@ -35,17 +66,31 @@ const Dashboard = () => {
               <p className="text-muted-foreground">Visão geral das suas vendas e desempenho.</p>
             </div>
             
-            <Tabs 
-              value={timeRange} 
-              onValueChange={setTimeRange} 
-              className="mt-4 md:mt-0"
-            >
-              <TabsList>
-                <TabsTrigger value="7">7 dias</TabsTrigger>
-                <TabsTrigger value="30">30 dias</TabsTrigger>
-                <TabsTrigger value="90">90 dias</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex flex-col md:flex-row gap-2 items-start mt-4 md:mt-0">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleTestPermissions}
+                disabled={isTesting || !user}
+              >
+                {isTesting ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testando</>
+                ) : (
+                  'Testar Permissões'
+                )}
+              </Button>
+              
+              <Tabs 
+                value={timeRange} 
+                onValueChange={setTimeRange} 
+              >
+                <TabsList>
+                  <TabsTrigger value="7">7 dias</TabsTrigger>
+                  <TabsTrigger value="30">30 dias</TabsTrigger>
+                  <TabsTrigger value="90">90 dias</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
           
           {/* Alertas de estoque baixo */}

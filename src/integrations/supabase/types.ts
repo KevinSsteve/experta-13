@@ -20,6 +20,8 @@ export type Database = {
           is_public: boolean | null
           name: string
           price: number
+          profit_margin: number | null
+          purchase_price: number
           stock: number
           updated_at: string | null
           user_id: string
@@ -34,6 +36,8 @@ export type Database = {
           is_public?: boolean | null
           name: string
           price: number
+          profit_margin?: number | null
+          purchase_price?: number
           stock?: number
           updated_at?: string | null
           user_id: string
@@ -48,6 +52,8 @@ export type Database = {
           is_public?: boolean | null
           name?: string
           price?: number
+          profit_margin?: number | null
+          purchase_price?: number
           stock?: number
           updated_at?: string | null
           user_id?: string

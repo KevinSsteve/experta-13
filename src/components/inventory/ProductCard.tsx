@@ -24,6 +24,22 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
+  // Calcular a margem de lucro se os preços estiverem disponíveis
+  const getProfitInfo = () => {
+    const purchasePrice = (product as any).purchase_price;
+    const profitMargin = (product as any).profit_margin;
+    
+    if (profitMargin !== null && profitMargin !== undefined) {
+      return `${profitMargin.toFixed(2)}%`;
+    } else if (purchasePrice && purchasePrice > 0) {
+      const margin = ((product.price - purchasePrice) / purchasePrice) * 100;
+      return `${margin.toFixed(2)}%`;
+    }
+    return null;
+  };
+
+  const profitInfo = getProfitInfo();
+
   return (
     <Card key={product.id} className="mb-4">
       <CardContent className="p-4">
@@ -39,6 +55,9 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
           
           <div className="text-right ml-2">
             <div className="font-medium">{formatCurrency(product.price)}</div>
+            {profitInfo && (
+              <p className="text-xs text-green-600">Margem: {profitInfo}</p>
+            )}
           </div>
         </div>
         

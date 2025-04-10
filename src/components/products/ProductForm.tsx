@@ -28,6 +28,7 @@ import { Product } from "@/contexts/CartContext";
 const productSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
   price: z.coerce.number().positive("O preço deve ser positivo"),
+  purchase_price: z.coerce.number().min(0, "O preço de compra não pode ser negativo"),
   category: z.string().min(1, "Selecione uma categoria"),
   stock: z.coerce.number().int("A quantidade deve ser um número inteiro").min(0, "Não pode ser negativo"),
   description: z.string().optional(),
@@ -61,11 +62,19 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
     fetchCategories();
   }, []);
 
+  // Calcular a margem de lucro (apenas para exibição)
+  const calculateProfitMargin = (price: number, purchasePrice: number): string => {
+    if (!purchasePrice || purchasePrice <= 0) return "N/A";
+    const margin = ((price - purchasePrice) / purchasePrice) * 100;
+    return `${margin.toFixed(2)}%`;
+  };
+
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: defaultValues?.name || "",
       price: defaultValues?.price || 0,
+      purchase_price: (defaultValues as any)?.purchase_price || 0,
       category: defaultValues?.category || "",
       stock: defaultValues?.stock || 0,
       description: defaultValues?.description || "",
@@ -73,6 +82,15 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
       image: defaultValues?.image || "/placeholder.svg",
     },
   });
+
+  // Observar alterações nos campos de preço e preço de compra para mostrar a margem de lucro
+  const [profitMargin, setProfitMargin] = useState<string>("N/A");
+  const price = form.watch("price");
+  const purchasePrice = form.watch("purchase_price");
+
+  useEffect(() => {
+    setProfitMargin(calculateProfitMargin(price, purchasePrice));
+  }, [price, purchasePrice]);
 
   function handleSubmit(data: ProductFormValues) {
     onSubmit(data);
@@ -90,20 +108,6 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
                 <FormLabel>Nome do Produto</FormLabel>
                 <FormControl>
                   <Input placeholder="Digite o nome do produto" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Preço (Kz)</FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.01" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -134,6 +138,37 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
                   </SelectContent>
                 </Select>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="purchase_price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Preço de Compra (Kz)</FormLabel>
+                <FormControl>
+                  <Input type="number" step="0.01" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Preço de Venda (Kz)</FormLabel>
+                <FormControl>
+                  <Input type="number" step="0.01" {...field} />
+                </FormControl>
+                <FormMessage />
+                <p className="text-xs text-muted-foreground">
+                  Margem de lucro: {profitMargin}
+                </p>
               </FormItem>
             )}
           />
@@ -177,6 +212,23 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
                 <Textarea placeholder="Digite uma descrição para o produto" {...field} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="image"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>URL da Imagem</FormLabel>
+              <FormControl>
+                <Input placeholder="URL da imagem (recomendado: imagem leve)" {...field} />
+              </FormControl>
+              <FormMessage />
+              <p className="text-xs text-muted-foreground">
+                Use imagens leves para melhor desempenho. Se não fornecer uma URL, será usada uma imagem padrão.
+              </p>
             </FormItem>
           )}
         />

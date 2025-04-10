@@ -75,6 +75,7 @@ export const useInventory = (userId?: string) => {
       const newProduct = {
         name: data.name,
         price: data.price,
+        purchase_price: data.purchase_price || 0,
         category: data.category,
         stock: data.stock,
         description: data.description || null,
@@ -113,6 +114,7 @@ export const useInventory = (userId?: string) => {
         .update({
           name: data.name,
           price: data.price,
+          purchase_price: data.purchase_price || 0,
           category: data.category,
           stock: data.stock,
           description: data.description || null,

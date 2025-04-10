@@ -22,7 +22,12 @@ export async function fetchProductsFromSupabase(userId?: string): Promise<Produc
       return [];
     }
     
-    return data as Product[];
+    // Converter os dados para incluir os novos campos purchase_price e profit_margin
+    return data.map(product => ({
+      ...product,
+      purchase_price: product.purchase_price || 0,
+      profit_margin: product.profit_margin,
+    })) as Product[];
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
     return [];

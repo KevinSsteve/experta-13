@@ -1,6 +1,5 @@
-
 import { formatCurrency } from '@/lib/utils';
-import { Product } from '@/contexts/CartContext';
+import { Product } from '@/lib/products/types';
 import { Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,8 +25,8 @@ interface ProductCardProps {
 export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
   // Calcular a margem de lucro se os preços estiverem disponíveis
   const getProfitInfo = () => {
-    const purchasePrice = (product as any).purchase_price;
-    const profitMargin = (product as any).profit_margin;
+    const purchasePrice = product.purchase_price;
+    const profitMargin = product.profit_margin;
     
     if (profitMargin !== null && profitMargin !== undefined) {
       return `${profitMargin.toFixed(2)}%`;

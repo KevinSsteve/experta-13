@@ -1,10 +1,11 @@
 
 import * as React from "react"
 
+// Define o breakpoint para dispositivos móveis em 768px
 const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {
-  // Inicialize com um valor baseado na largura atual da janela, se disponível
+  // Inicializa com um valor baseado na largura atual da janela, se disponível
   const [isMobile, setIsMobile] = React.useState<boolean>(() => {
     // Verificação se window está disponível (para SSR)
     if (typeof window !== "undefined") {
@@ -15,21 +16,22 @@ export function useIsMobile() {
   })
 
   React.useEffect(() => {
+    // Cria o media query listener
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
     
-    // Função para atualizar o estado
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    // Função para atualizar o estado baseado na media query
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(e.matches)
     }
     
-    // Adiciona o listener
-    mql.addEventListener("change", onChange)
+    // Adiciona o listener para mudanças na media query
+    mql.addEventListener("change", handleChange)
     
-    // Garantir que o valor está correto após o primeiro render
-    onChange()
+    // Garante que o valor está correto após o primeiro render
+    handleChange(mql)
     
-    // Limpeza
-    return () => mql.removeEventListener("change", onChange)
+    // Limpeza ao desmontar o componente
+    return () => mql.removeEventListener("change", handleChange)
   }, [])
 
   return isMobile

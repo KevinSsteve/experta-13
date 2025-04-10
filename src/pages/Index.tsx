@@ -130,25 +130,6 @@ const Index = () => {
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
         <div className="flex flex-col space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Meu Estoque</h1>
-              <p className="text-muted-foreground">Gerencie os produtos do seu estoque.</p>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
-              <Link to="/products" className="w-full sm:w-auto">
-                <Button variant="outline" className="w-full sm:w-auto">
-                  Adicionar produtos ao estoque
-                </Button>
-              </Link>
-              <Link to="/dashboard" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto">
-                  Ver dashboard
-                </Button>
-              </Link>
-            </div>
-          </div>
-          
           {/* Search section */}
           <section className="mt-4 mb-6">
             <div className="relative max-w-xl mx-auto">

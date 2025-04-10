@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { StockStatusIndicator } from './StockStatusIndicator';
+import { getProductImageUrl } from '@/integrations/supabase/client';
 
 interface ProductCardProps {
   product: Product;
@@ -39,7 +40,8 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
   };
 
   const profitInfo = getProfitInfo();
-  const hasImage = product.image && product.image !== "/placeholder.svg";
+  const imageUrl = getProductImageUrl(product.image);
+  const hasImage = imageUrl && imageUrl !== "/placeholder.svg";
 
   return (
     <Card key={product.id} className="mb-4">
@@ -49,7 +51,7 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
           <div className="h-16 w-16 rounded-md overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
             {hasImage ? (
               <img 
-                src={product.image} 
+                src={imageUrl} 
                 alt={product.name} 
                 className="h-full w-full object-cover"
                 onError={(e) => {

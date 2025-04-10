@@ -103,6 +103,30 @@ export const addMultiplePublicProducts = async (products: any[], userId: string)
   return results;
 };
 
+// Helper to get the public URL for an image in the products bucket
+export const getProductImageUrl = (path: string) => {
+  if (!path || path === "/placeholder.svg") {
+    return "/placeholder.svg";
+  }
+  
+  // If the path is already a full URL, return it
+  if (path.startsWith("http")) {
+    return path;
+  }
+  
+  // Get public URL from storage
+  try {
+    const { data } = supabase.storage
+      .from("products")
+      .getPublicUrl(path);
+      
+    return data.publicUrl;
+  } catch (error) {
+    console.error("Error getting public URL for image:", error);
+    return "/placeholder.svg";
+  }
+};
+
 // Função de diagnóstico para verificar permissões do usuário
 export const testPermissions = async () => {
   try {
@@ -124,6 +148,11 @@ export const testPermissions = async () => {
       .select('*')
       .single();
     
+    // Testa acesso ao storage
+    const { data: buckets, error: bucketsError } = await supabase
+      .storage
+      .listBuckets();
+    
     return {
       products: {
         success: !productsError,
@@ -139,6 +168,11 @@ export const testPermissions = async () => {
         success: !profileError,
         data: profile,
         error: profileError
+      },
+      storage: {
+        success: !bucketsError,
+        data: buckets,
+        error: bucketsError
       }
     };
   } catch (error) {

@@ -1,228 +1,22 @@
 
-import { useState } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { 
-  AlertCircle, 
-  Package, 
-  Search, 
-  Plus,
-  AlertTriangle,
-  RefreshCw
-} from 'lucide-react';
-import { 
-  debounce 
-} from '@/lib/utils';
-import { ProductForm, ProductFormValues } from '@/components/products/ProductForm';
-import { toast } from "sonner";
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Product } from '@/contexts/CartContext';
-import { supabase } from '@/integrations/supabase/client';
+import { RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getProducts, getCategories } from '@/lib/products/queries';
-import { useQuery } from '@tanstack/react-query';
-import { ProductTable } from '@/components/inventory/ProductTable';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useInventory } from '@/hooks/useInventory';
+import { InventoryStats } from '@/components/inventory/InventoryStats';
+import { InventoryFilters } from '@/components/inventory/InventoryFilters';
+import { InventoryTabs } from '@/components/inventory/InventoryTabs';
+import { ProductDialog } from '@/components/inventory/ProductDialog';
+import { Card, CardContent } from '@/components/ui/card';
 
 const Inventory = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('all');
-  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const isMobile = useIsMobile();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const inventory = useInventory(user?.id);
   
-  // Use React Query to fetch products data
-  const { 
-    data: products = [], 
-    isLoading: isLoadingProducts, 
-    error: productsError,
-    refetch: refetchProducts
-  } = useQuery({
-    queryKey: ['products', user?.id],
-    queryFn: async () => getProducts(searchQuery, category !== 'all' ? category : '', 0, Infinity, false, user?.id),
-    enabled: !!user
-  });
-
-  // Use React Query to fetch categories
-  const { 
-    data: categories = [], 
-    isLoading: isLoadingCategories 
-  } = useQuery({
-    queryKey: ['categories', user?.id],
-    queryFn: async () => getCategories(user?.id),
-    enabled: !!user
-  });
-
-  // Get low stock products (stock < 10)
-  const lowStockProducts = products.filter(product => product.stock > 0 && product.stock < 10);
-  
-  // Get out of stock products
-  const outOfStockProducts = products.filter(product => product.stock === 0);
-
-  // Debounced search function
-  const debouncedSearch = debounce(() => {
-    refetchProducts();
-  }, 300);
-
-  // Handle search input
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    debouncedSearch();
-  };
-
-  // Handle category selection
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    refetchProducts();
-  };
-
-  // Add product
-  const handleAddProduct = async (data: ProductFormValues) => {
-    if (!user) {
-      toast.error("Você precisa estar logado para adicionar produtos");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const newProduct = {
-        name: data.name,
-        price: data.price,
-        category: data.category,
-        stock: data.stock,
-        description: data.description || null,
-        code: data.code || null,
-        image: data.image || "/placeholder.svg",
-        user_id: user.id
-      };
-      
-      const { data: insertedProduct, error } = await supabase
-        .from('products')
-        .insert([newProduct])
-        .select();
-      
-      if (error) throw error;
-      
-      setIsAddDialogOpen(false);
-      toast.success("Produto adicionado com sucesso!");
-      refetchProducts();
-    } catch (error: any) {
-      console.error('Erro ao adicionar produto:', error);
-      toast.error(`Erro ao adicionar produto: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Edit product
-  const handleEditProduct = async (data: ProductFormValues) => {
-    if (!currentProduct || !user) return;
-    
-    setIsSubmitting(true);
-
-    try {
-      const { error } = await supabase
-        .from('products')
-        .update({
-          name: data.name,
-          price: data.price,
-          category: data.category,
-          stock: data.stock,
-          description: data.description || null,
-          code: data.code || null,
-          image: data.image || "/placeholder.svg",
-        })
-        .eq('id', currentProduct.id);
-      
-      if (error) throw error;
-      
-      setIsEditDialogOpen(false);
-      setCurrentProduct(null);
-      toast.success("Produto atualizado com sucesso!");
-      refetchProducts();
-    } catch (error: any) {
-      console.error('Erro ao atualizar produto:', error);
-      toast.error(`Erro ao atualizar produto: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Delete product
-  const handleDeleteProduct = async (id: string) => {
-    if (!user) return;
-    
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      toast.success("Produto excluído com sucesso!");
-      refetchProducts();
-    } catch (error: any) {
-      console.error('Erro ao excluir produto:', error);
-      toast.error(`Erro ao excluir produto: ${error.message}`);
-    }
-  };
-
-  // Open edit dialog
-  const openEditDialog = (product: Product) => {
-    setCurrentProduct(product);
-    setIsEditDialogOpen(true);
-  };
-
-  // Get current products based on active tab
-  const getCurrentProducts = () => {
-    switch (activeTab) {
-      case 'low':
-        return lowStockProducts;
-      case 'out':
-        return outOfStockProducts;
-      case 'all':
-      default:
-        return products;
-    }
-  };
-
-  if (isLoadingProducts) {
+  if (inventory.isLoadingProducts) {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -239,7 +33,7 @@ const Inventory = () => {
     );
   }
 
-  if (productsError) {
+  if (inventory.productsError) {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -250,9 +44,9 @@ const Inventory = () => {
             <Card className="bg-red-50">
               <CardContent className="pt-6">
                 <p className="text-red-600 mb-4">Erro ao carregar produtos:</p>
-                <p className="text-sm text-red-600">{(productsError as Error).message}</p>
+                <p className="text-sm text-red-600">{(inventory.productsError as Error).message}</p>
                 <Button 
-                  onClick={() => refetchProducts()} 
+                  onClick={() => inventory.refetchProducts()} 
                   className="mt-4"
                   variant="outline"
                 >
@@ -276,140 +70,64 @@ const Inventory = () => {
               <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
               <p className="text-muted-foreground">Controle e atualize o estoque de produtos.</p>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full md:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {!isMobile && "Adicionar Produto"}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>Adicionar Novo Produto</DialogTitle>
-                  <DialogDescription>
-                    Preencha as informações do produto e clique em salvar.
-                  </DialogDescription>
-                </DialogHeader>
-                <ProductForm onSubmit={handleAddProduct} isSubmitting={isSubmitting} />
-              </DialogContent>
-            </Dialog>
+            
+            <Button 
+              className="w-full md:w-auto"
+              onClick={() => inventory.setIsAddDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {!isMobile && "Adicionar Produto"}
+            </Button>
           </div>
 
           {/* Inventory stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Total de Produtos</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{products.length}</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Baixo Estoque</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{lowStockProducts.length}</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="col-span-1 sm:col-span-2 md:col-span-1">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Sem Estoque</CardTitle>
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{outOfStockProducts.length}</p>
-              </CardContent>
-            </Card>
-          </div>
+          <InventoryStats 
+            products={inventory.products} 
+            lowStockProducts={inventory.lowStockProducts}
+            outOfStockProducts={inventory.outOfStockProducts}
+          />
 
           {/* Search and filters */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Pesquisar por nome ou código..."
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={handleSearch}
-                  />
-                </div>
-                
-                <Select value={category} onValueChange={handleCategoryChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+          <InventoryFilters 
+            searchQuery={inventory.searchQuery}
+            onSearch={inventory.handleSearch}
+            category={inventory.category}
+            onCategoryChange={inventory.handleCategoryChange}
+            categories={inventory.categories}
+          />
 
           {/* Inventory tabs and table */}
-          <Card>
-            <CardHeader className="pb-0">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full md:w-auto overflow-x-auto">
-                  <TabsTrigger value="all">
-                    Todos os Produtos
-                  </TabsTrigger>
-                  <TabsTrigger value="low">
-                    Baixo Estoque
-                  </TabsTrigger>
-                  <TabsTrigger value="out">
-                    Sem Estoque
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </CardHeader>
-            <CardContent>
-              <ProductTable 
-                products={getCurrentProducts()}
-                onEdit={openEditDialog}
-                onDelete={handleDeleteProduct}
-              />
-            </CardContent>
-          </Card>
+          <InventoryTabs 
+            activeTab={inventory.activeTab}
+            setActiveTab={inventory.setActiveTab}
+            products={inventory.products}
+            lowStockProducts={inventory.lowStockProducts}
+            outOfStockProducts={inventory.outOfStockProducts}
+            onEdit={inventory.openEditDialog}
+            onDelete={inventory.handleDeleteProduct}
+          />
         </div>
       </div>
 
-      {/* Dialog para edição de produtos */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Editar Produto</DialogTitle>
-            <DialogDescription>
-              Atualize as informações do produto e clique em salvar.
-            </DialogDescription>
-          </DialogHeader>
-          {currentProduct && (
-            <ProductForm
-              onSubmit={handleEditProduct}
-              defaultValues={currentProduct}
-              isSubmitting={isSubmitting}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Dialog for adding products */}
+      <ProductDialog
+        isOpen={inventory.isAddDialogOpen}
+        onOpenChange={inventory.setIsAddDialogOpen}
+        product={null}
+        onSubmit={inventory.handleAddProduct}
+        isSubmitting={inventory.isSubmitting}
+        mode="add"
+      />
+
+      {/* Dialog for editing products */}
+      <ProductDialog
+        isOpen={inventory.isEditDialogOpen}
+        onOpenChange={inventory.setIsEditDialogOpen}
+        product={inventory.currentProduct}
+        onSubmit={inventory.handleEditProduct}
+        isSubmitting={inventory.isSubmitting}
+        mode="edit"
+      />
     </MainLayout>
   );
 };

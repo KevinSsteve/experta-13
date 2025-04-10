@@ -22,7 +22,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   };
   
   return (
-    <div className={`${theme} flex min-h-screen w-full`}>
+    <div className={`${theme} flex min-h-screen w-full overflow-x-hidden`}>
       {/* Sidebar para desktop */}
       <aside 
         className={`fixed top-0 left-0 z-30 h-full w-64 transform bg-sidebar border-r border-sidebar-border transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
@@ -51,10 +51,10 @@ export function MainLayout({ children }: MainLayoutProps) {
       )}
       
       {/* Conteúdo principal */}
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 overflow-x-hidden">
         <TopBar toggleSidebar={toggleSidebar} />
         
-        <main className="flex-1 p-3 md:p-4 lg:p-6 overflow-y-auto pb-20 lg:pb-6">
+        <main className="flex-1 p-3 md:p-4 lg:p-6 overflow-y-auto overflow-x-hidden pb-20 lg:pb-6">
           {children}
         </main>
         

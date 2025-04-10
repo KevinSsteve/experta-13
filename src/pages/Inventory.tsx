@@ -19,7 +19,7 @@ const Inventory = () => {
   if (inventory.isLoadingProducts) {
     return (
       <MainLayout>
-        <div className="container mx-auto px-2 py-4 max-w-full">
+        <div className="w-full px-2 py-4">
           <div className="flex flex-col space-y-4">
             <div className="flex items-center justify-between">
               <h1 className="text-xl sm:text-2xl font-bold">Gerenciamento de Estoque</h1>
@@ -36,7 +36,7 @@ const Inventory = () => {
   if (inventory.productsError) {
     return (
       <MainLayout>
-        <div className="container mx-auto px-2 py-4 max-w-full">
+        <div className="w-full px-2 py-4">
           <div className="flex flex-col space-y-4">
             <div className="flex items-center justify-between">
               <h1 className="text-xl sm:text-2xl font-bold">Gerenciamento de Estoque</h1>
@@ -63,7 +63,7 @@ const Inventory = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-2 pb-6 max-w-full">
+      <div className="w-full px-2 pb-6">
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>

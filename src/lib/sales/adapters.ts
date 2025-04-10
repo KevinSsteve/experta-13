@@ -34,7 +34,7 @@ export const adaptSupabaseSale = (sale: any): Sale => {
       paymentMethod: paymentMethod,
       amountPaid: sale.amount_paid || sale.total,
       change: sale.change || 0,
-      userId: sale.user_id
+      user_id: sale.user_id  // Changed from userId to user_id to match the Sale type
     };
   } catch (error) {
     console.error('Erro ao adaptar venda do Supabase:', error);
@@ -48,7 +48,7 @@ export const adaptSupabaseSale = (sale: any): Sale => {
       paymentMethod: 'Desconhecido',
       amountPaid: sale.amount_paid || 0,
       change: sale.change || 0,
-      userId: sale.user_id
+      user_id: sale.user_id  // Changed from userId to user_id to match the Sale type
     };
   }
 };

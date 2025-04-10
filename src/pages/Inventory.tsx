@@ -10,6 +10,7 @@ import { InventoryFilters } from '@/components/inventory/InventoryFilters';
 import { InventoryTabs } from '@/components/inventory/InventoryTabs';
 import { ProductDialog } from '@/components/inventory/ProductDialog';
 import { Card, CardContent } from '@/components/ui/card';
+import { Product } from '@/lib/products/types';
 
 const Inventory = () => {
   const { user } = useAuth();
@@ -123,7 +124,7 @@ const Inventory = () => {
       <ProductDialog
         isOpen={inventory.isEditDialogOpen}
         onOpenChange={inventory.setIsEditDialogOpen}
-        product={inventory.currentProduct}
+        product={inventory.currentProduct as Product | null}
         onSubmit={inventory.handleEditProduct}
         isSubmitting={inventory.isSubmitting}
         mode="edit"

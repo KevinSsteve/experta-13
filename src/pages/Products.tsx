@@ -9,19 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Product } from "@/contexts/CartContext";
-import { ProductForm, ProductFormValues } from "@/components/products/ProductForm";
 import { toast } from "sonner";
 import { Search, Plus, Database } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -30,6 +21,8 @@ import { supabase, logCurrentUser } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { importProductsToSupabase } from "@/utils/product-importer";
 import { ProductsList } from "@/components/products/ProductsList";
+import { ProductDialog } from '@/components/inventory/ProductDialog';
+import { ProductFormValues } from "@/components/products/ProductForm";
 
 const productsData = `Açucar (200,00 AOA); Açucar (1 200,00 AOA); Açúcar meio kilo (600,00 AOA); Afia lapis (50,00 AOA); Agrafador (2 000,00 AOA); Água e Sal Bolacha (150,00 AOA); Água e Sal Serranitas Arcor (300,00 AOA); Água Tónica Welwitschia (600,00 AOA); Alimo Margarina 200mg (500,00 AOA); Alimo para barrar Margarina (350,00 AOA)`;
 
@@ -341,16 +334,20 @@ const Products = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto px-2 sm:px-4">
         <div className="flex flex-col space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h1 className="text-2xl font-bold">Produtos</h1>
+          {/* Header and action buttons */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">Produtos</h1>
+              <p className="text-sm text-muted-foreground">Adicione ou gerencie produtos no seu estoque</p>
+            </div>
             
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {showImportButton && (
                 <Button 
                   variant="outline" 
-                  className="mr-2"
+                  className="w-full sm:w-auto"
                   onClick={handleImportProducts}
                   disabled={isImporting}
                 >
@@ -359,57 +356,48 @@ const Products = () => {
                 </Button>
               )}
               
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="w-full sm:w-auto">
-                    <Plus className="mr-2 h-4 w-4" />
-                    {!isMobile && "Adicionar Produto"}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
-                  <DialogHeader>
-                    <DialogTitle>Adicionar Novo Produto</DialogTitle>
-                    <DialogDescription>
-                      Preencha as informações do produto e clique em salvar.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <ProductForm onSubmit={handleAddProduct} isSubmitting={isSubmitting} />
-                </DialogContent>
-              </Dialog>
+              <Button 
+                className="w-full sm:w-auto" 
+                onClick={() => setIsAddDialogOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {!isMobile ? "Adicionar Produto" : "Adicionar"}
+              </Button>
             </div>
           </div>
 
-          <Card>
-            <CardHeader>
+          {/* Main content card */}
+          <Card className="overflow-hidden">
+            <CardHeader className="p-3 sm:p-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="mb-4 w-full sm:w-auto overflow-auto">
-                  <TabsTrigger value="store">Loja de Produtos</TabsTrigger>
-                  <TabsTrigger value="my-products">Meus Produtos</TabsTrigger>
+                <TabsList className="mb-3 w-full grid grid-cols-2 h-auto">
+                  <TabsTrigger value="store" className="py-1.5 text-xs sm:text-sm">Loja de Produtos</TabsTrigger>
+                  <TabsTrigger value="my-products" className="py-1.5 text-xs sm:text-sm">Meus Produtos</TabsTrigger>
                 </TabsList>
 
-                <CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
                   {activeTab === "store" ? "Loja de Produtos" : "Meus Produtos"}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   {activeTab === "store" 
                     ? "Adicione produtos da loja ao seu estoque." 
                     : "Gerencie os produtos disponíveis no seu estoque."}
                 </CardDescription>
                 <div className="relative mt-2">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar por nome, código ou categoria..."
-                    className="pl-10"
+                    className="pl-10 h-9 text-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
               </Tabs>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[60vh] w-full">
+            <CardContent className="p-0 sm:p-3">
+              <ScrollArea className="h-[calc(100vh-280px)] sm:h-[60vh] w-full">
                 <Tabs value={activeTab} className="w-full">
-                  <TabsContent value="store" className="mt-0">
+                  <TabsContent value="store" className="mt-0 px-2 sm:px-0">
                     <ProductsList 
                       products={filteredProducts}
                       isStore={true}
@@ -418,7 +406,7 @@ const Products = () => {
                     />
                   </TabsContent>
                   
-                  <TabsContent value="my-products" className="mt-0">
+                  <TabsContent value="my-products" className="mt-0 px-2 sm:px-0">
                     <ProductsList 
                       products={filteredProducts}
                       isStore={false}
@@ -433,24 +421,25 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Dialog para edição de produtos */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Editar Produto</DialogTitle>
-            <DialogDescription>
-              Atualize as informações do produto e clique em salvar.
-            </DialogDescription>
-          </DialogHeader>
-          {editingProduct && (
-            <ProductForm
-              onSubmit={handleEditProduct}
-              defaultValues={editingProduct}
-              isSubmitting={isSubmitting}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Add Product Dialog */}
+      <ProductDialog 
+        isOpen={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        product={null}
+        onSubmit={handleAddProduct}
+        isSubmitting={isSubmitting}
+        mode="add"
+      />
+
+      {/* Edit Product Dialog */}
+      <ProductDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        product={editingProduct}
+        onSubmit={handleEditProduct}
+        isSubmitting={isSubmitting}
+        mode="edit"
+      />
     </MainLayout>
   );
 };

@@ -28,12 +28,12 @@ export const ProductDialog = ({
 }: ProductDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-[600px] p-4 sm:p-6">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[600px] p-3 sm:p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader className="space-y-2">
-          <DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">
             {mode === 'add' ? 'Adicionar Novo Produto' : 'Editar Produto'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {mode === 'add' 
               ? 'Preencha as informações do produto e clique em salvar.'
               : 'Atualize as informações do produto e clique em salvar.'

@@ -28,8 +28,8 @@ export const ProductDialog = ({
 }: ProductDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[600px] p-4 sm:p-6">
+        <DialogHeader className="space-y-2">
           <DialogTitle>
             {mode === 'add' ? 'Adicionar Novo Produto' : 'Editar Produto'}
           </DialogTitle>

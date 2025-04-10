@@ -19,10 +19,10 @@ const Inventory = () => {
   if (inventory.isLoadingProducts) {
     return (
       <MainLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col space-y-6">
+        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+          <div className="flex flex-col space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
             </div>
             <div className="h-40 flex items-center justify-center">
               <p className="text-muted-foreground">Carregando produtos...</p>
@@ -36,10 +36,10 @@ const Inventory = () => {
   if (inventory.productsError) {
     return (
       <MainLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col space-y-6">
+        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+          <div className="flex flex-col space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
             </div>
             <Card className="bg-red-50">
               <CardContent className="pt-6">
@@ -63,12 +63,12 @@ const Inventory = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 pb-20">
-        <div className="flex flex-col space-y-6">
+      <div className="container mx-auto px-2 sm:px-4 pb-6 sm:pb-20">
+        <div className="flex flex-col space-y-4 sm:space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
-              <p className="text-muted-foreground">Controle e atualize o estoque de produtos.</p>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Gerenciamento de Estoque</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm">Controle e atualize o estoque de produtos.</p>
             </div>
             
             <Button 
@@ -77,6 +77,7 @@ const Inventory = () => {
             >
               <Plus className="h-4 w-4 mr-2" />
               {!isMobile && "Adicionar Produto"}
+              {isMobile && "Novo Produto"}
             </Button>
           </div>
 

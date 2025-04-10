@@ -48,22 +48,22 @@ export const InventoryTabs = ({
 
   return (
     <Card>
-      <CardHeader className="pb-0">
+      <CardHeader className="pb-0 overflow-x-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full md:w-auto overflow-x-auto">
-            <TabsTrigger value="all">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="all" className="text-xs sm:text-sm">
               Todos os Produtos
             </TabsTrigger>
-            <TabsTrigger value="low">
+            <TabsTrigger value="low" className="text-xs sm:text-sm">
               Baixo Estoque
             </TabsTrigger>
-            <TabsTrigger value="out">
+            <TabsTrigger value="out" className="text-xs sm:text-sm">
               Sem Estoque
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 sm:p-6">
         <ProductTable 
           products={getCurrentProducts()}
           onEdit={onEdit}

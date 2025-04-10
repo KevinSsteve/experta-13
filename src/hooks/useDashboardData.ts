@@ -2,7 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { 
   fetchDailySales, 
-  fetchSalesByCategory, 
   getSalesKPIs, 
   getRecentSales
 } from '@/lib/sales';
@@ -48,21 +47,6 @@ export const useDashboardData = (timeRange: string) => {
     meta: {
       onError: (error: any) => {
         console.error('Error fetching daily sales:', error);
-      }
-    }
-  });
-  
-  const salesByCategoryQuery = useQuery({
-    queryKey: ['salesByCategory', days, userId],
-    queryFn: () => fetchSalesByCategory(userId),
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    retry: 2,
-    meta: {
-      onError: (error: any) => {
-        console.error('Error fetching sales by category:', error);
       }
     }
   });
@@ -122,11 +106,6 @@ export const useDashboardData = (timeRange: string) => {
       data: dailySalesQuery.data,
       isLoading: dailySalesQuery.isLoading,
       error: dailySalesQuery.error
-    },
-    salesByCategory: {
-      data: salesByCategoryQuery.data,
-      isLoading: salesByCategoryQuery.isLoading,
-      error: salesByCategoryQuery.error
     },
     recentSales: {
       data: recentSalesQuery.data,

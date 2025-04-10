@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { DashboardKPIs } from '@/components/dashboard/DashboardKPIs';
 import { SalesByTimeChart } from '@/components/dashboard/SalesByTimeChart';
-import { SalesByCategoryChart } from '@/components/dashboard/SalesByCategoryChart';
 import { TopProductsChart } from '@/components/dashboard/TopProductsChart';
 import { RecentSalesList } from '@/components/dashboard/RecentSalesList';
 import { LowStockProductsList } from '@/components/dashboard/LowStockProductsList';
@@ -26,9 +25,8 @@ const Dashboard = () => {
   const {
     kpis,
     dailySales,
-    salesByCategory,
-    recentSales,
     topProducts,
+    recentSales,
     lowStockProducts
   } = useDashboardData(timeRange);
 
@@ -107,11 +105,6 @@ const Dashboard = () => {
             <SalesByTimeChart 
               data={dailySales.data} 
               isLoading={dailySales.isLoading} 
-            />
-            
-            <SalesByCategoryChart 
-              data={salesByCategory.data} 
-              isLoading={salesByCategory.isLoading} 
             />
             
             <TopProductsChart 

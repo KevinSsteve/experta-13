@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,6 +23,9 @@ import {
 } from "@/components/ui/select";
 import { getCategories } from "@/lib/products-data";
 import { Product } from "@/contexts/CartContext";
+import { Image, Upload } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Esquema de validação para o formulário de produto
 const productSchema = z.object({
@@ -46,6 +49,9 @@ interface ProductFormProps {
 
 export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: ProductFormProps) {
   const [categories, setCategories] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch categories when component mounts
   useEffect(() => {
@@ -61,6 +67,13 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
     
     fetchCategories();
   }, []);
+
+  // Inicializa a pré-visualização da imagem quando houver um valor padrão
+  useEffect(() => {
+    if (defaultValues?.image && defaultValues.image !== "/placeholder.svg") {
+      setPreviewImage(defaultValues.image);
+    }
+  }, [defaultValues?.image]);
 
   // Calcular a margem de lucro (apenas para exibição)
   const calculateProfitMargin = (price: number, purchasePrice: number): string => {
@@ -87,10 +100,75 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
   const [profitMargin, setProfitMargin] = useState<string>("N/A");
   const price = form.watch("price");
   const purchasePrice = form.watch("purchase_price");
+  const currentImage = form.watch("image");
 
   useEffect(() => {
     setProfitMargin(calculateProfitMargin(price, purchasePrice));
   }, [price, purchasePrice]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Verifica o tamanho do arquivo (máximo 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem é muito grande. Tamanho máximo: 2MB");
+      return;
+    }
+
+    // Verifica o tipo de arquivo
+    if (!file.type.startsWith("image/")) {
+      toast.error("Por favor, selecione um arquivo de imagem válido");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      
+      // Cria um URL de pré-visualização
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewImage(objectUrl);
+      
+      // Nome único para o arquivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `product-images/${fileName}`;
+      
+      // Faz o upload para o Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Obtém a URL pública
+      const { data } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      // Atualiza o campo de imagem no formulário
+      form.setValue("image", data.publicUrl);
+      toast.success("Imagem carregada com sucesso");
+      
+    } catch (error: any) {
+      console.error("Erro ao fazer upload da imagem:", error);
+      toast.error(`Falha ao carregar imagem: ${error.message || "Erro desconhecido"}`);
+      
+      // Volta para a imagem anterior ou placeholder
+      setPreviewImage(currentImage !== "/placeholder.svg" ? currentImage : null);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
 
   function handleSubmit(data: ProductFormValues) {
     onSubmit(data);
@@ -221,19 +299,71 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
           name="image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>URL da Imagem</FormLabel>
-              <FormControl>
-                <Input placeholder="URL da imagem (recomendado: imagem leve)" {...field} />
-              </FormControl>
-              <FormMessage />
-              <p className="text-xs text-muted-foreground">
-                Use imagens leves para melhor desempenho. Se não fornecer uma URL, será usada uma imagem padrão.
-              </p>
+              <FormLabel>Imagem do Produto</FormLabel>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <input
+                    type="hidden"
+                    {...field}
+                  />
+                  <div className="border rounded-md p-2">
+                    <div className="flex items-center justify-center h-[150px] bg-muted/30 rounded-md overflow-hidden">
+                      {previewImage || field.value !== "/placeholder.svg" ? (
+                        <img 
+                          src={previewImage || field.value} 
+                          alt="Preview" 
+                          className="object-contain h-full w-full"
+                        />
+                      ) : (
+                        <Image className="h-12 w-12 text-muted-foreground" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 justify-center">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={triggerFileInput}
+                    disabled={isUploading}
+                    className="w-full"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {isUploading ? "Carregando..." : "Carregar da Galeria"}
+                  </Button>
+
+                  <FormControl>
+                    <Input 
+                      placeholder="Ou insira uma URL de imagem" 
+                      value={field.value === "/placeholder.svg" ? "" : field.value}
+                      onChange={(e) => {
+                        field.onChange(e.target.value || "/placeholder.svg");
+                        if (e.target.value) {
+                          setPreviewImage(e.target.value);
+                        } else {
+                          setPreviewImage(null);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">
+                    Formatos aceitos: JPG, PNG, GIF (máx. 2MB)
+                  </p>
+                </div>
+              </div>
             </FormItem>
           )}
         />
 
-        <Button type="submit" disabled={isSubmitting} className="mt-4">
+        <Button type="submit" disabled={isSubmitting || isUploading} className="mt-4">
           {isSubmitting ? "Salvando..." : defaultValues?.id ? "Atualizar Produto" : "Adicionar Produto"}
         </Button>
       </form>

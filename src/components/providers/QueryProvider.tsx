@@ -1,23 +1,23 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 interface QueryProviderProps {
   children: React.ReactNode;
 }
 
-export function QueryProvider({ children }: QueryProviderProps) {
-  // Create a client instance that is preserved during component lifecycle
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: 1,
-        staleTime: 30000,
-        refetchOnWindowFocus: false,
-      },
+// Create a client instance outside of the component to avoid React hook issues
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30000,
+      refetchOnWindowFocus: false,
     },
-  }));
+  },
+});
 
+export function QueryProvider({ children }: QueryProviderProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}

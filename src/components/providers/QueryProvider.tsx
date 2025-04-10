@@ -1,14 +1,14 @@
 
-import React, { ReactNode, useState } from 'react';
+import * as React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 interface QueryProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export function QueryProvider({ children }: QueryProviderProps) {
   // Create a client instance that is preserved during component lifecycle
-  const [queryClient] = useState(() => new QueryClient({
+  const [queryClient] = React.useState(() => new QueryClient({
     defaultOptions: {
       queries: {
         retry: 1,

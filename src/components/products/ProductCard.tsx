@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ShoppingCart, Image as ImageIcon } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { getProductImageUrl } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 interface ProductCardProps {
   product: Product;
@@ -13,28 +14,32 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
-  const imageUrl = getProductImageUrl(product.image);
-  const hasImage = imageUrl && imageUrl !== "/placeholder.svg";
+  const [imageUrl, setImageUrl] = useState<string>("/placeholder.svg");
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    // Get the image URL from the product
+    if (product.image) {
+      const url = getProductImageUrl(product.image);
+      setImageUrl(url);
+      console.log(`Product ${product.name}, image path: ${product.image}, resolved URL: ${url}`);
+    }
+  }, [product.image]);
+
+  const handleImageError = () => {
+    console.error(`Failed to load image for product: ${product.name}, URL: ${imageUrl}`);
+    setImageError(true);
+  };
 
   return (
     <Card className="overflow-hidden group h-full flex flex-col">
       <AspectRatio ratio={1} className="bg-muted relative overflow-hidden">
-        {hasImage ? (
+        {!imageError && imageUrl !== "/placeholder.svg" ? (
           <img
             src={imageUrl}
             alt={product.name}
             className="h-full w-full object-cover transition-transform group-hover:scale-105"
-            onError={(e) => {
-              // Fallback to placeholder
-              e.currentTarget.style.display = 'none';
-              const parent = e.currentTarget.parentElement;
-              if (parent) {
-                const iconElement = document.createElement('div');
-                iconElement.className = "h-full w-full flex items-center justify-center bg-muted";
-                iconElement.innerHTML = '<svg class="h-10 w-10 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                parent.appendChild(iconElement);
-              }
-            }}
+            onError={handleImageError}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center">

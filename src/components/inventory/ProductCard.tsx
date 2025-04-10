@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { StockStatusIndicator } from './StockStatusIndicator';
 import { getProductImageUrl } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 interface ProductCardProps {
   product: Product;
@@ -25,6 +26,23 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
+  const [imageUrl, setImageUrl] = useState<string>("/placeholder.svg");
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    // Get the image URL from the product
+    if (product.image) {
+      const url = getProductImageUrl(product.image);
+      setImageUrl(url);
+      console.log(`Inventory product ${product.name}, image path: ${product.image}, resolved URL: ${url}`);
+    }
+  }, [product.image]);
+
+  const handleImageError = () => {
+    console.error(`Failed to load image for inventory product: ${product.name}, URL: ${imageUrl}`);
+    setImageError(true);
+  };
+
   // Calcular a margem de lucro se os preços estiverem disponíveis
   const getProfitInfo = () => {
     const purchasePrice = product.purchase_price;
@@ -40,8 +58,7 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
   };
 
   const profitInfo = getProfitInfo();
-  const imageUrl = getProductImageUrl(product.image);
-  const hasImage = imageUrl && imageUrl !== "/placeholder.svg";
+  const hasImage = !imageError && imageUrl !== "/placeholder.svg";
 
   return (
     <Card key={product.id} className="mb-4">
@@ -54,16 +71,7 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
                 src={imageUrl} 
                 alt={product.name} 
                 className="h-full w-full object-cover"
-                onError={(e) => {
-                  // Se a imagem falhar, mostrar ícone de imagem em vez disso
-                  e.currentTarget.style.display = 'none';
-                  const parentElement = e.currentTarget.parentElement;
-                  if (parentElement) {
-                    const iconElement = document.createElement('div');
-                    iconElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                    parentElement.appendChild(iconElement);
-                  }
-                }}
+                onError={handleImageError}
               />
             ) : (
               <Image className="h-6 w-6 text-muted-foreground" />

@@ -114,12 +114,17 @@ export const getProductImageUrl = (path: string) => {
     return path;
   }
   
+  // If path starts with a slash and is not just "/", remove the leading slash
+  const cleanPath = path.startsWith("/") && path !== "/" ? path.substring(1) : path;
+  
   // Get public URL from storage
   try {
+    console.log("Getting public URL for image path:", cleanPath);
     const { data } = supabase.storage
       .from("products")
-      .getPublicUrl(path);
-      
+      .getPublicUrl(cleanPath);
+    
+    console.log("Generated public URL:", data.publicUrl);
     return data.publicUrl;
   } catch (error) {
     console.error("Error getting public URL for image:", error);

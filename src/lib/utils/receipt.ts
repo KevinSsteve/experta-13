@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -16,10 +15,10 @@ const THERMAL_CONFIG = {
     left: 5
   },
   fontSize: {
-    header: 10,
-    title: 8,
-    body: 7,
-    small: 6
+    header: 13,    // Aumentado de 10
+    title: 11,     // Aumentado de 8
+    body: 10,      // Aumentado de 7
+    small: 8       // Aumentado de 6
   }
 };
 

@@ -7,14 +7,14 @@ export const adaptSupabaseSale = (sale: any): Sale => {
     console.log('[adaptSupabaseSale] Convertendo venda do Supabase:', sale);
     
     // Extrair cliente dos dados JSON, se disponível
-    let customer = 'Cliente não identificado';
-    if (sale.items && sale.items.customer) {
+    let customer = sale.customer || 'Cliente não identificado';
+    if (typeof customer !== 'string' && sale.items && sale.items.customer) {
       customer = sale.items.customer.name || 'Cliente não identificado';
     }
 
     // Extrair método de pagamento se disponível
-    let paymentMethod = 'Dinheiro';
-    if (sale.items && sale.items.paymentMethod) {
+    let paymentMethod = sale.payment_method || 'Dinheiro';
+    if (!paymentMethod && sale.items && sale.items.paymentMethod) {
       paymentMethod = sale.items.paymentMethod;
     }
 

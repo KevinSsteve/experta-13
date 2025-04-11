@@ -154,6 +154,10 @@ const Checkout = () => {
           total: saleData.total,
           amount_paid: saleData.amountPaid,
           change: saleData.change,
+          date: new Date().toISOString(),
+          customer: data.customerName,
+          payment_method: saleData.paymentMethod,
+          notes: saleData.notes,
           items: {
             customer: {
               name: saleData.customer.name,
@@ -167,15 +171,19 @@ const Checkout = () => {
           }
         };
         
-        const { error } = await supabase
+        console.log('Dados da venda a serem enviados para o Supabase:', supabaseSaleData);
+        
+        const { data: insertedData, error } = await supabase
           .from('sales')
-          .insert(supabaseSaleData);
+          .insert(supabaseSaleData)
+          .select();
           
         if (error) {
           console.error('Erro ao salvar venda no Supabase:', error);
           toast.error('Erro ao salvar venda. Os dados foram salvos localmente.');
         } else {
-          console.log('Venda salva com sucesso no Supabase');
+          console.log('Venda salva com sucesso no Supabase:', insertedData);
+          toast.success('Venda salva com sucesso no banco de dados!');
           
           try {
             await generateSalesReport(state.user.id, 30);
@@ -186,6 +194,7 @@ const Checkout = () => {
         }
       } else {
         console.warn('Usuário não autenticado, venda salva apenas localmente');
+        toast.warning('Usuário não autenticado. Venda salva apenas localmente.');
       }
       
       await updateProductStockAfterSale(state.items);
@@ -195,8 +204,8 @@ const Checkout = () => {
       setCompletedSale(saleData);
       
     } catch (error) {
+      console.error('Erro ao finalizar a venda:', error);
       toast.error('Erro ao finalizar a venda. Por favor, tente novamente.');
-      console.error('Erro ao salvar venda:', error);
       setIsSubmitting(false);
     }
   };

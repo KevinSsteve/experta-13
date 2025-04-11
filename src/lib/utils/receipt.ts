@@ -30,7 +30,7 @@ const COMPANY_INFO = {
   phone: "+244 922 123 456",
   website: "www.moloja.ao",
   taxRegime: "Normal", // Regime de tributação
-  currency: "AOA" // Moeda local
+  currency: "AKZ" // Moeda local (atualizado de AOA para AKZ)
 };
 
 export const generateReceiptPDF = (sale: Sale): jsPDF => {

@@ -1,4 +1,3 @@
-
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Sale } from "./sales-data";
@@ -14,7 +13,8 @@ export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('pt-AO', {
     style: 'currency',
     currency: 'AOA',
-  }).format(amount);
+    currencyDisplay: 'narrowSymbol',
+  }).format(amount).replace('AOA', 'AKZ');
 };
 
 export const calculateChange = (total: number, amountPaid: number) => {
@@ -23,20 +23,13 @@ export const calculateChange = (total: number, amountPaid: number) => {
 
 export const saveSaleToStorage = (sale: any) => {
   try {
-    // Get existing sales from localStorage
     const existingSales = localStorage.getItem('sales');
-    
-    // Parse existing sales or initialize an empty array
     const salesArray = existingSales ? JSON.parse(existingSales) : [];
-    
-    // Add the new sale to the array
     salesArray.push({
       ...sale,
-      id: `sale-${Date.now()}`, // Generate a unique ID
-      date: new Date().toISOString(), // Add current date
+      id: `sale-${Date.now()}`,
+      date: new Date().toISOString(),
     });
-    
-    // Save the updated array back to localStorage
     localStorage.setItem('sales', JSON.stringify(salesArray));
   } catch (error) {
     console.error('Error saving sale to localStorage:', error);
@@ -53,7 +46,6 @@ export const getSalesFromStorage = (): Sale[] => {
   }
 };
 
-// Format date to a more readable format
 export const formatDate = (dateString: string) => {
   try {
     return format(parseISO(dateString), 'dd/MM/yyyy HH:mm');
@@ -62,7 +54,6 @@ export const formatDate = (dateString: string) => {
   }
 };
 
-// Format date to a shorter format for charts
 export const formatShortDate = (dateString: string) => {
   try {
     return format(parseISO(dateString), 'dd/MM');
@@ -71,7 +62,6 @@ export const formatShortDate = (dateString: string) => {
   }
 };
 
-// Debounce function to limit how often a function is called
 export const debounce = (func: Function, delay: number) => {
   let timeoutId: ReturnType<typeof setTimeout>;
   return function(...args: any[]) {
@@ -82,7 +72,6 @@ export const debounce = (func: Function, delay: number) => {
   };
 };
 
-// Get products from localStorage
 export const getProductsFromStorage = (): Product[] => {
   try {
     const products = localStorage.getItem('products');
@@ -93,7 +82,6 @@ export const getProductsFromStorage = (): Product[] => {
   }
 };
 
-// Save products to localStorage
 export const saveProductsToStorage = (products: Product[]) => {
   try {
     localStorage.setItem('products', JSON.stringify(products));
@@ -102,18 +90,15 @@ export const saveProductsToStorage = (products: Product[]) => {
   }
 };
 
-// Get unique categories from a list of products
 export const getCategoriesFromProducts = (products: Product[]): string[] => {
   const categoriesSet = new Set(products.map(product => product.category));
   return Array.from(categoriesSet);
 };
 
-// Get products with low stock (less than specified threshold)
 export const getLowStockProducts = (products: Product[], threshold: number = 5): Product[] => {
   return products.filter(product => product.stock > 0 && product.stock <= threshold);
 };
 
-// Get products that are out of stock
 export const getOutOfStockProducts = (products: Product[]): Product[] => {
   return products.filter(product => product.stock === 0);
 };
@@ -132,22 +117,17 @@ export const filterProducts = (products: Product[], query: string) => {
   });
 };
 
-// Update product stock after a sale
 export async function updateProductStockAfterSale(items: any[]): Promise<void> {
   if (!items || items.length === 0) return;
   
   try {
-    // For each item in the cart, update its stock in Supabase
     for (const item of items) {
       const { product, quantity } = item;
       
-      // Skip if product has no id
       if (!product.id) continue;
       
-      // Calculate new stock value
       const newStock = Math.max(0, product.stock - quantity);
       
-      // Update the product stock in Supabase
       const { error } = await supabase
         .from('products')
         .update({ stock: newStock })

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -50,7 +49,7 @@ const checkoutSchema = z.object({
   amountPaid: z.coerce.number().min(0, { 
     message: "O valor pago deve ser positivo" 
   }),
-  currency: z.enum(['AOA', 'USD', 'EUR']).default('AOA')
+  currency: z.enum(['AKZ', 'USD', 'EUR']).default('AKZ')
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -65,7 +64,7 @@ const Checkout = () => {
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      currency: 'AOA',
+      currency: 'AKZ',
       customerName: '',
       customerPhone: '',
       customerEmail: '',

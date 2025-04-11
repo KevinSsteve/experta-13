@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   BarChart4,
   ShoppingCart,
@@ -61,12 +62,17 @@ const navItems = [
 export function SidebarNav() {
   const location = useLocation();
   const { signOut } = useAuth();
+  const { theme } = useTheme();
 
   return (
     <div className="group flex h-screen w-full flex-col gap-4 bg-background p-2">
       <div className="flex flex-1 flex-col gap-2">
         <div className="flex h-14 items-center justify-center rounded-md bg-primary/10 px-4">
-          <span className="font-semibold">Conta Comigo</span>
+          <img 
+            src="/logo.png" 
+            alt="Conta Comigo" 
+            className={`h-8 ${theme === 'dark' ? 'invert' : ''} transition-all`}
+          />
         </div>
         
         <nav className="grid gap-1 px-2">

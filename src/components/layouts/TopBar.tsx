@@ -27,7 +27,11 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="lg:hidden flex items-center">
-            <span className="text-lg font-medium">Conta Comigo</span>
+            <img 
+              src="/logo.png" 
+              alt="Conta Comigo" 
+              className={`h-8 ${theme === 'dark' ? 'invert' : ''} transition-all`}
+            />
           </div>
         </div>
 

@@ -146,11 +146,14 @@ export const updateFinancialReport = async (
     // Now add metrics if provided
     if (reportData.metrics && data.id) {
       for (const [key, value] of Object.entries(reportData.metrics)) {
+        // Ensure the value is a number for numeric metrics
+        const metricValue = typeof value === 'number' ? value : 0;
+        
         const metricData = {
           report_id: data.id,
           metric_name: key,
           metric_type: typeof value === 'number' ? 'numeric' : 'text',
-          value: value
+          value: metricValue // Ensure this is always a number
         };
         
         const { error: metricError } = await supabase

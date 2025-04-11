@@ -25,7 +25,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn, UserPlus, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -43,6 +44,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
@@ -61,8 +63,13 @@ export default function Auth() {
     },
   });
 
+  const clearError = () => {
+    if (authError) setAuthError(null);
+  };
+
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
+      clearError();
       setIsLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
@@ -70,6 +77,8 @@ export default function Auth() {
       });
 
       if (error) {
+        console.error("Login error:", error.message);
+        setAuthError(error.message);
         toast({
           title: "Erro ao fazer login",
           description: error.message,
@@ -84,8 +93,9 @@ export default function Auth() {
       });
       
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro de login:", error);
+      setAuthError(error?.message || "Ocorreu um erro inesperado. Por favor, tente novamente.");
       toast({
         title: "Erro ao fazer login",
         description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
@@ -98,8 +108,9 @@ export default function Auth() {
 
   const handleSignup = async (values: z.infer<typeof signupSchema>) => {
     try {
+      clearError();
       setIsLoading(true);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -111,6 +122,8 @@ export default function Auth() {
       });
 
       if (error) {
+        console.error("Signup error:", error.message);
+        setAuthError(error.message);
         toast({
           title: "Erro ao criar conta",
           description: error.message,
@@ -119,15 +132,18 @@ export default function Auth() {
         return;
       }
 
+      console.log("Signup successful:", data);
       toast({
         title: "Conta criada com sucesso",
-        description: "Verifique seu email para validar sua conta.",
+        description: "Você já pode fazer login com suas credenciais.",
       });
 
       // Muda para a aba de login após registro bem-sucedido
+      loginForm.setValue("email", values.email);
       setActiveTab("login");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro de cadastro:", error);
+      setAuthError(error?.message || "Ocorreu um erro inesperado. Por favor, tente novamente.");
       toast({
         title: "Erro ao criar conta",
         description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
@@ -146,9 +162,20 @@ export default function Auth() {
           <CardDescription>Sistema de Gerenciamento de Loja</CardDescription>
         </CardHeader>
         <CardContent>
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erro</AlertTitle>
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
+        
           <Tabs 
             value={activeTab} 
-            onValueChange={(value) => setActiveTab(value as "login" | "signup")}
+            onValueChange={(value) => {
+              clearError();
+              setActiveTab(value as "login" | "signup");
+            }}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2">
@@ -208,7 +235,7 @@ export default function Auth() {
                     disabled={isLoading}
                   >
                     <LogIn className="mr-2 h-4 w-4" />
-                    Entrar
+                    {isLoading ? "Entrando..." : "Entrar"}
                   </Button>
                 </form>
               </Form>
@@ -282,7 +309,7 @@ export default function Auth() {
                     disabled={isLoading}
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Cadastrar
+                    {isLoading ? "Cadastrando..." : "Cadastrar"}
                   </Button>
                 </form>
               </Form>

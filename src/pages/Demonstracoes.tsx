@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, DollarSign, ShoppingBag, TrendingUp } from 'lucide-react';
+import { Json } from '@/integrations/supabase/types';
 
 interface SaleItem {
   id?: string;
@@ -69,17 +70,22 @@ const Demonstracoes = () => {
       if (sales && sales.length > 0) {
         sales.forEach(sale => {
           // Parse items carefully handling the JSON format from Supabase
-          let itemsArray: SaleItem[] = [];
+          let itemsArray: any[] = [];
           
           try {
             // Check if items is a JSON string that needs parsing or already an array
             if (typeof sale.items === 'string') {
               itemsArray = JSON.parse(sale.items);
             } else if (Array.isArray(sale.items)) {
-              itemsArray = sale.items;
-            } else if (sale.items && typeof sale.items === 'object' && sale.items.products) {
+              itemsArray = sale.items as any[];
+            } else if (sale.items && typeof sale.items === 'object') {
               // If items is an object with products property
-              itemsArray = Array.isArray(sale.items.products) ? sale.items.products : [];
+              if ('products' in sale.items && Array.isArray(sale.items.products)) {
+                itemsArray = sale.items.products as any[];
+              } else {
+                // Tenta usar o próprio objeto como array de um item
+                itemsArray = [sale.items];
+              }
             }
           } catch (e) {
             console.error('Error parsing sale items:', e);
@@ -91,16 +97,17 @@ const Demonstracoes = () => {
             if (!item) return;
             
             // Safely access properties with type checking
-            const productId = item.product?.id || (typeof item === 'object' && 'id' in item ? item.id : undefined);
-            const quantity = item.quantity || 1;
+            const productId = item.product?.id || 
+                             (typeof item === 'object' && 'id' in item ? item.id : undefined);
+            const quantity = Number(item.quantity || 1);
             
             if (!productId) return;
             
             const productInfo = productMap[productId];
             
             if (productInfo) {
-              const precoVenda = item.price || (item.product?.price) || productInfo.price;
-              const precoCusto = productInfo.purchase_price;
+              const precoVenda = Number(item.price || (item.product?.price) || productInfo.price);
+              const precoCusto = Number(productInfo.purchase_price);
               const lucroItem = (precoVenda - precoCusto) * quantity;
               lucroTotal += lucroItem;
             }

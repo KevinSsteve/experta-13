@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -7,7 +8,7 @@ import {
   saveSaleToStorage, 
   updateProductStockAfterSale 
 } from '@/lib/utils';
-import { downloadReceipt } from '@/lib/utils/receipt';
+import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
 import { 
   Card, 
   CardContent,
@@ -30,7 +31,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Check, Trash2, Calculator } from 'lucide-react';
+import { Check, Trash2, Calculator, Printer, Download, Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,8 +47,8 @@ const checkoutSchema = z.object({
     .max(14, { message: "NIF não pode exceder 14 dígitos" })
     .optional(),
   notes: z.string().optional(),
-  amountPaid: z.coerce.number().min(getTotalPrice(), { 
-    message: `O valor pago deve ser no mínimo ${formatCurrency(getTotalPrice())}` 
+  amountPaid: z.coerce.number().min(0, { 
+    message: "O valor pago deve ser positivo" 
   }),
   currency: z.enum(['AOA', 'USD', 'EUR']).default('AOA')
 });
@@ -73,6 +74,14 @@ const Checkout = () => {
       amountPaid: 0,
     },
   });
+  
+  // Update validation schema when total price changes
+  useEffect(() => {
+    form.clearErrors('amountPaid');
+    const total = getTotalPrice();
+    form.setValue('amountPaid', total);
+    setChange(0);
+  }, [state.items, getTotalPrice, form]);
   
   const handleAmountPaidChange = (value: string) => {
     const amountPaid = parseFloat(value) || 0;

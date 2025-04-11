@@ -121,6 +121,32 @@ export const getSalesReportData = async (
         date: firstItem.date,
         total: firstItem.total
       });
+    } else {
+      // Log adicional para ajudar no diagnóstico
+      console.log('Nenhum dado encontrado. Verificando se existem vendas para este usuário sem filtro de data...');
+      
+      // Verificar se há alguma venda para este usuário (sem filtro de data)
+      const { data: allSales, error: allSalesError } = await supabase
+        .from('sales')
+        .select('count')
+        .eq('user_id', userId);
+        
+      if (allSalesError) {
+        console.error('Erro ao verificar todas as vendas do usuário:', allSalesError);
+      } else {
+        console.log(`Total de vendas para o usuário ${userId}: ${allSales.length}`);
+      }
+      
+      // Verificar se há vendas na tabela (para qualquer usuário)
+      const { count, error: countError } = await supabase
+        .from('sales')
+        .select('*', { count: 'exact', head: true });
+        
+      if (countError) {
+        console.error('Erro ao contar vendas:', countError);
+      } else {
+        console.log(`Total de vendas na tabela sales: ${count}`);
+      }
     }
     
     return data || [];
@@ -179,7 +205,7 @@ export const updateFinancialReport = async (
           report_id: data.id,
           metric_name: key,
           metric_type: typeof value === 'number' ? 'numeric' : 'text',
-          value: metricValue // Garantir que isso é sempre um número
+          value: metricValue // Isso agora é sempre um número
         };
         
         const { error: metricError } = await supabase

@@ -24,6 +24,68 @@ export const SalesReportCard = () => {
     to: new Date(),
   });
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [diagnosticInfo, setDiagnosticInfo] = useState<{
+    hasSalesData: boolean;
+    salesCount: number;
+    lastChecked: Date;
+    message: string;
+  } | null>(null);
+
+  const checkSalesData = async () => {
+    if (!user?.id) {
+      toast.error('Você precisa estar logado para verificar os dados de venda');
+      return;
+    }
+    
+    try {
+      console.log('Verificando se existem dados de venda para o usuário:', user.id);
+      
+      const { data, error, count } = await supabase
+        .from('sales')
+        .select('*', { count: 'exact' })
+        .eq('user_id', user.id)
+        .limit(1);
+      
+      if (error) {
+        console.error('Erro ao verificar dados de venda:', error);
+        setDiagnosticInfo({
+          hasSalesData: false,
+          salesCount: 0,
+          lastChecked: new Date(),
+          message: `Erro ao verificar dados: ${error.message}`
+        });
+        toast.error('Erro ao verificar os dados de venda');
+        return;
+      }
+      
+      const hasData = !!count && count > 0;
+      console.log(`Resultado da verificação: ${hasData ? 'Existem vendas' : 'Não existem vendas'}, total: ${count}`);
+      
+      setDiagnosticInfo({
+        hasSalesData: hasData,
+        salesCount: count || 0,
+        lastChecked: new Date(),
+        message: hasData 
+          ? `Encontradas ${count} vendas para o usuário ${user.id}` 
+          : 'Nenhuma venda encontrada para o usuário atual'
+      });
+      
+      toast.info(hasData 
+        ? `Encontradas ${count} vendas no banco de dados` 
+        : 'Nenhuma venda encontrada no banco de dados', 
+        { duration: 5000 });
+      
+    } catch (e) {
+      console.error('Erro na função de diagnóstico:', e);
+      setDiagnosticInfo({
+        hasSalesData: false,
+        salesCount: 0,
+        lastChecked: new Date(),
+        message: `Erro no diagnóstico: ${e instanceof Error ? e.message : String(e)}`
+      });
+      toast.error('Erro ao realizar diagnóstico de dados');
+    }
+  };
 
   const { data: salesData, isLoading, error } = useQuery({
     queryKey: ['salesReport', dateRange.from.toISOString(), dateRange.to.toISOString(), user?.id],
@@ -37,21 +99,17 @@ export const SalesReportCard = () => {
         console.log('Buscando dados de relatório de vendas para usuário:', user.id);
         console.log('Intervalo de datas:', dateRange.from, 'até', dateRange.to);
         
-        // Use a função do cliente para obter dados de vendas
         const data = await getSalesReportData(user.id, dateRange.from, dateRange.to);
         console.log('Dados de relatório de vendas recebidos:', data?.length || 0, 'registros');
 
-        // Se não tivermos dados, retorne uma matriz vazia
         if (!data || data.length === 0) {
           console.log('Nenhum dado de vendas encontrado para o período selecionado');
           return [];
         }
 
-        // Converter dados do Supabase para o tipo Sale antes do processamento
         const salesArray = data.map(sale => adaptSupabaseSale(sale));
         console.log('Dados de vendas adaptados:', salesArray.length, 'registros');
         
-        // Agrupar vendas por dia
         const salesByDay: { [key: string]: { date: string; total: number; count: number } } = {};
         
         salesArray.forEach((sale) => {
@@ -78,12 +136,11 @@ export const SalesReportCard = () => {
         throw error;
       }
     },
-    enabled: !!user?.id, // Só execute a consulta se houver um usuário autenticado
+    enabled: !!user?.id,
     retry: 2,
     refetchOnWindowFocus: false
   });
 
-  // Função para mostrar um aviso quando não houver dados ou quando o usuário não estiver autenticado
   const renderAuthWarning = () => {
     if (!user) {
       return (
@@ -115,7 +172,6 @@ export const SalesReportCard = () => {
   const exportToCSV = () => {
     if (!salesData || salesData.length === 0) return;
 
-    // Create header and rows for CSV
     const headers = ['Data', 'Total de Vendas', 'Quantidade de Vendas'];
     const rows = salesData.map(day => [
       day.date,
@@ -123,13 +179,11 @@ export const SalesReportCard = () => {
       day.count.toString()
     ]);
 
-    // Combine header and rows
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
 
-    // Create blob and link for download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -141,7 +195,6 @@ export const SalesReportCard = () => {
     document.body.removeChild(link);
   };
 
-  // Função para gerar relatório financeiro
   const generateFinancialReport = async () => {
     if (!user?.id) {
       toast.error('Usuário não autenticado');
@@ -160,7 +213,6 @@ export const SalesReportCard = () => {
       if (report) {
         console.log('Financial report generated successfully:', report);
         toast.success('Relatório financeiro gerado com sucesso');
-        // Navigate to resultados page
         navigate('/resultados');
       } else {
         console.error('Failed to generate report - no data returned');
@@ -198,6 +250,17 @@ export const SalesReportCard = () => {
           </Button>
           
           <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8" 
+            onClick={checkSalesData}
+            title="Verificar se existem dados de venda no banco de dados"
+          >
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Diagnosticar
+          </Button>
+          
+          <Button 
             variant="default" 
             size="sm" 
             className="h-8" 
@@ -224,6 +287,30 @@ export const SalesReportCard = () => {
                 <p className="text-xs text-red-600 mt-1">
                   Detalhes do erro: {String(error)}
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {diagnosticInfo && (
+          <div className={`p-4 ${diagnosticInfo.hasSalesData ? 'bg-green-50 border-green-100' : 'bg-yellow-50 border-yellow-100'} border rounded-md mb-4`}>
+            <div className="flex items-start">
+              <AlertCircle className={`h-5 w-5 ${diagnosticInfo.hasSalesData ? 'text-green-500' : 'text-yellow-500'} mr-2 mt-0.5`} />
+              <div>
+                <h3 className={`font-medium ${diagnosticInfo.hasSalesData ? 'text-green-800' : 'text-yellow-800'}`}>
+                  Diagnóstico de Dados
+                </h3>
+                <p className={`text-sm ${diagnosticInfo.hasSalesData ? 'text-green-700' : 'text-yellow-700'} mt-1`}>
+                  {diagnosticInfo.message}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Verificado em: {diagnosticInfo.lastChecked.toLocaleTimeString()}
+                </p>
+                {!diagnosticInfo.hasSalesData && (
+                  <p className="text-sm text-yellow-700 mt-2">
+                    Para resolver este problema, você precisa registrar vendas antes de poder visualizá-las no relatório.
+                  </p>
+                )}
               </div>
             </div>
           </div>

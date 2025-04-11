@@ -31,23 +31,43 @@ export const SalesChart = ({ salesData, isLoading }: SalesChartProps) => {
     );
   }
 
-  // Make sure we have the data in the right format
-  console.log('Dados do gráfico:', salesData);
+  // Log para depuração
+  console.log('Dados para o gráfico (SalesChart):', salesData);
+
+  // Garantir que temos os dados no formato correto antes de renderizar
+  const formattedData = salesData.map(item => ({
+    date: item.date,
+    total: typeof item.total === 'number' ? item.total : 0,
+  }));
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={salesData}>
+      <LineChart data={formattedData}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis 
           dataKey="date" 
-          tickFormatter={(date) => format(new Date(date), 'dd/MM')}
+          tickFormatter={(date) => {
+            try {
+              return format(new Date(date), 'dd/MM');
+            } catch (e) {
+              console.error('Erro ao formatar data:', date, e);
+              return 'Data inválida';
+            }
+          }}
         />
         <YAxis 
           tickFormatter={(value) => formatCurrency(value).split(',')[0]}
         />
         <Tooltip 
           formatter={(value: number) => [formatCurrency(value), 'Total']}
-          labelFormatter={(label) => format(new Date(label), 'dd/MM/yyyy')}
+          labelFormatter={(label) => {
+            try {
+              return format(new Date(label), 'dd/MM/yyyy');
+            } catch (e) {
+              console.error('Erro no formato da data no tooltip:', label, e);
+              return String(label);
+            }
+          }}
         />
         <Line 
           type="monotone" 

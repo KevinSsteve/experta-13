@@ -68,13 +68,34 @@ const Demonstracoes = () => {
       
       if (sales && sales.length > 0) {
         sales.forEach(sale => {
-          // Garantir que items é um array e não um campo de string JSON
-          const items: SaleItem[] = Array.isArray(sale.items) ? sale.items : [];
+          // Parse items carefully handling the JSON format from Supabase
+          let itemsArray: SaleItem[] = [];
           
-          items.forEach(item => {
-            // Acessar os campos com verificação de tipos
-            const productId = item.product?.id || (item as any).id;
+          try {
+            // Check if items is a JSON string that needs parsing or already an array
+            if (typeof sale.items === 'string') {
+              itemsArray = JSON.parse(sale.items);
+            } else if (Array.isArray(sale.items)) {
+              itemsArray = sale.items;
+            } else if (sale.items && typeof sale.items === 'object' && sale.items.products) {
+              // If items is an object with products property
+              itemsArray = Array.isArray(sale.items.products) ? sale.items.products : [];
+            }
+          } catch (e) {
+            console.error('Error parsing sale items:', e);
+            itemsArray = [];
+          }
+          
+          // Process each item to calculate profit
+          itemsArray.forEach(item => {
+            if (!item) return;
+            
+            // Safely access properties with type checking
+            const productId = item.product?.id || (typeof item === 'object' && 'id' in item ? item.id : undefined);
             const quantity = item.quantity || 1;
+            
+            if (!productId) return;
+            
             const productInfo = productMap[productId];
             
             if (productInfo) {

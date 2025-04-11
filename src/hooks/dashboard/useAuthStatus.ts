@@ -8,7 +8,6 @@ export const useAuthStatus = () => {
   const [isAuthReady, setIsAuthReady] = useState(false);
   
   useEffect(() => {
-    // Se temos um usuário, consideramos a autenticação pronta
     if (user) {
       console.log('[useAuthStatus] Usuário autenticado:', userId);
       setIsAuthReady(true);
@@ -18,5 +17,6 @@ export const useAuthStatus = () => {
     }
   }, [user, userId]);
 
+  console.log('[useAuthStatus] Estado atual:', { userId, isAuthReady });
   return { userId, isAuthReady };
 };

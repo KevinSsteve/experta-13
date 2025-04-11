@@ -6,9 +6,12 @@ export const useLowStockProducts = (userId?: string, isAuthReady = false) => {
   return useQuery({
     queryKey: ['lowStock', userId],
     queryFn: async () => {
-      if (!userId) throw new Error('Usuário não autenticado');
+      if (!userId) {
+        console.log('[useLowStockProducts] Sem userId, não é possível buscar produtos');
+        throw new Error('Usuário não autenticado');
+      }
       
-      console.log(`[useLowStockProducts] Buscando produtos com estoque baixo`);
+      console.log(`[useLowStockProducts] Buscando produtos com estoque baixo para usuário ${userId}`);
       
       const { data, error } = await supabase
         .from('products')
@@ -21,6 +24,12 @@ export const useLowStockProducts = (userId?: string, isAuthReady = false) => {
       if (error) {
         console.error('[useLowStockProducts] Erro:', error);
         throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('[useLowStockProducts] Nenhum produto com estoque baixo encontrado');
+      } else {
+        console.log(`[useLowStockProducts] Encontrados ${data.length} produtos com estoque baixo`);
       }
       
       return data;

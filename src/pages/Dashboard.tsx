@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { AlertTriangle, CreditCard, DollarSign, ShoppingBag, Info } from 'lucide-react';
+import { useEffect } from 'react';
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
@@ -23,6 +24,17 @@ const Dashboard = () => {
   } = useDashboardData(timeRange);
 
   const { isLoading, hasError, noData, userId } = dashboardState;
+
+  // Log the dashboard state for debugging
+  useEffect(() => {
+    console.log('[Dashboard] Estado atual:', { 
+      user: user?.id, 
+      userId,
+      salesData: recentSales.data?.length || 0,
+      isLoading,
+      hasError
+    });
+  }, [user, userId, recentSales.data, isLoading, hasError]);
 
   return (
     <MainLayout>
@@ -64,6 +76,9 @@ const Dashboard = () => {
                   <p className="text-sm mt-1">
                     Você precisa estar autenticado para visualizar seus dados. 
                     {!user ? " Parece que não há usuário logado." : " Seu ID de usuário não está sendo reconhecido corretamente."}
+                  </p>
+                  <p className="text-sm mt-1">
+                    Por favor, faça login novamente e tente acessar o dashboard.
                   </p>
                 </div>
               </div>

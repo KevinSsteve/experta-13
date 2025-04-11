@@ -3,7 +3,6 @@ import { useAuthStatus } from './dashboard/useAuthStatus';
 import { useSalesSummary } from './dashboard/useSalesSummary';
 import { useRecentSales } from './dashboard/useRecentSales';
 import { useLowStockProducts } from './dashboard/useLowStockProducts';
-import { refreshAllData } from './dashboard/useDashboardUtils';
 import { useEffect } from 'react';
 
 export const useDashboardData = (timeRange: string) => {
@@ -19,22 +18,16 @@ export const useDashboardData = (timeRange: string) => {
   // Buscar produtos com baixo estoque
   const lowStockQuery = useLowStockProducts(userId, isAuthReady);
   
-  // Função para forçar atualização de todos os dados
-  const refreshAllDataFn = async () => {
-    return await refreshAllData([
-      salesSummaryQuery.refetch,
-      recentSalesQuery.refetch,
-      lowStockQuery.refetch
-    ]);
-  };
-  
   // Atualizar dados automaticamente quando a autenticação estiver pronta
   useEffect(() => {
     if (isAuthReady && userId) {
       console.log('[useDashboardData] Autenticação pronta, atualizando dados...');
-      refreshAllDataFn();
+      // Atualizar dados imediatamente quando o componente montar
+      salesSummaryQuery.refetch();
+      recentSalesQuery.refetch();
+      lowStockQuery.refetch();
     }
-  }, [isAuthReady, userId]);
+  }, [isAuthReady, userId, salesSummaryQuery, recentSalesQuery, lowStockQuery]);
   
   // Combinando todos os estados de carregamento
   const isLoading = salesSummaryQuery.isLoading || recentSalesQuery.isLoading || lowStockQuery.isLoading;
@@ -67,7 +60,6 @@ export const useDashboardData = (timeRange: string) => {
       noData,
       isAuthReady,
       userId
-    },
-    refreshAllData: refreshAllDataFn
+    }
   };
 };

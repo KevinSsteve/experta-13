@@ -6,13 +6,16 @@ export const useSalesSummary = (days: number, userId?: string, isAuthReady = fal
   return useQuery({
     queryKey: ['salesSummary', days, userId],
     queryFn: async () => {
-      if (!userId) throw new Error('Usuário não autenticado');
+      if (!userId) {
+        console.log('[useSalesSummary] Sem userId, não é possível buscar resumo de vendas');
+        throw new Error('Usuário não autenticado');
+      }
       
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
       
-      console.log(`[useSalesSummary] Buscando resumo de vendas de ${startDate.toISOString()} até ${endDate.toISOString()}`);
+      console.log(`[useSalesSummary] Buscando resumo de vendas de ${startDate.toISOString()} até ${endDate.toISOString()} para usuário ${userId}`);
       
       const { data, error } = await supabase
         .from('sales')
@@ -22,9 +25,20 @@ export const useSalesSummary = (days: number, userId?: string, isAuthReady = fal
         .eq('user_id', userId);
       
       if (error) {
-        console.error('[useSalesSummary] Erro:', error);
+        console.error('[useSalesSummary] Erro ao buscar resumo de vendas:', error);
         throw error;
       }
+      
+      if (!data || data.length === 0) {
+        console.log('[useSalesSummary] Nenhuma venda encontrada para o período');
+        return {
+          totalSales: 0,
+          totalRevenue: 0,
+          averageTicket: 0
+        };
+      }
+      
+      console.log(`[useSalesSummary] Encontradas ${data.length} vendas para o período`);
       
       // Calcular totais
       const totalSales = data.length;

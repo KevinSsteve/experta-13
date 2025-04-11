@@ -4,6 +4,8 @@ import { Sale } from './types';
 
 export const adaptSupabaseSale = (sale: any): Sale => {
   try {
+    console.log('[adaptSupabaseSale] Convertendo venda do Supabase:', sale);
+    
     // Extrair cliente dos dados JSON, se disponível
     let customer = 'Cliente não identificado';
     if (sale.items && sale.items.customer) {
@@ -34,7 +36,7 @@ export const adaptSupabaseSale = (sale: any): Sale => {
       paymentMethod: paymentMethod,
       amountPaid: sale.amount_paid || sale.total,
       change: sale.change || 0,
-      user_id: sale.user_id  // Changed from userId to user_id to match the Sale type
+      user_id: sale.user_id
     };
   } catch (error) {
     console.error('Erro ao adaptar venda do Supabase:', error);
@@ -48,18 +50,18 @@ export const adaptSupabaseSale = (sale: any): Sale => {
       paymentMethod: 'Desconhecido',
       amountPaid: sale.amount_paid || 0,
       change: sale.change || 0,
-      user_id: sale.user_id  // Changed from userId to user_id to match the Sale type
+      user_id: sale.user_id
     };
   }
 };
 
 export const fetchSalesFromSupabase = async (userId?: string): Promise<Sale[]> => {
   try {
-    console.log(`Buscando vendas para o usuário: ${userId || 'anônimo'}`);
+    console.log(`[fetchSalesFromSupabase] Buscando vendas para o usuário: ${userId || 'anônimo'}`);
 
     // Verificar se há um usuário logado para filtrar
     if (!userId) {
-      console.warn('Tentativa de buscar vendas sem ID de usuário');
+      console.warn('[fetchSalesFromSupabase] Tentativa de buscar vendas sem ID de usuário');
       return [];
     }
 
@@ -78,22 +80,22 @@ export const fetchSalesFromSupabase = async (userId?: string): Promise<Sale[]> =
     const { data, error } = await query;
 
     if (error) {
-      console.error('Erro ao buscar vendas do Supabase:', error);
-      return [];
+      console.error('[fetchSalesFromSupabase] Erro ao buscar vendas:', error);
+      throw error;
     }
 
     if (!data || data.length === 0) {
-      console.log(`Nenhuma venda encontrada para o usuário ${userId}`);
+      console.log(`[fetchSalesFromSupabase] Nenhuma venda encontrada para o usuário ${userId}`);
       return [];
     }
 
-    console.log(`Encontradas ${data.length} vendas para o usuário ${userId}`);
+    console.log(`[fetchSalesFromSupabase] Encontradas ${data.length} vendas para o usuário ${userId}:`, data);
     
     // Converter os dados para o formato Sale
     const sales = data.map(sale => adaptSupabaseSale(sale));
     return sales;
   } catch (error) {
-    console.error('Erro ao buscar vendas do Supabase:', error);
+    console.error('[fetchSalesFromSupabase] Erro ao buscar vendas:', error);
     return [];
   }
 };

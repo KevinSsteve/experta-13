@@ -22,10 +22,13 @@ export const SalesChart = ({ salesData, isLoading }: SalesChartProps) => {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
         <p>Nenhum dado de venda encontrado para o período selecionado.</p>
-        <p className="text-sm">Tente selecionar um período diferente.</p>
+        <p className="text-sm">Tente selecionar um período diferente ou cadastrar vendas.</p>
       </div>
     );
   }
+
+  // Make sure we have the data in the right format
+  console.log('Chart data:', salesData);
 
   return (
     <ResponsiveContainer width="100%" height="100%">

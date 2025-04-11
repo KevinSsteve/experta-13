@@ -7,7 +7,11 @@ interface SalesSummaryProps {
 
 export const SalesSummary = ({ salesData }: SalesSummaryProps) => {
   if (!salesData || salesData.length === 0) {
-    return null;
+    return (
+      <div className="mt-4 p-3 bg-muted rounded-md text-center">
+        <p className="text-muted-foreground">Nenhum dado de venda para resumir neste período.</p>
+      </div>
+    );
   }
 
   const totalSales = salesData.reduce((acc, day) => acc + day.total, 0);

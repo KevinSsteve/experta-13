@@ -142,6 +142,27 @@ export const updateFinancialReport = async (
     }
     
     console.log('Financial report saved successfully:', data);
+    
+    // Now add metrics if provided
+    if (reportData.metrics && data.id) {
+      for (const [key, value] of Object.entries(reportData.metrics)) {
+        const metricData = {
+          report_id: data.id,
+          metric_name: key,
+          metric_type: typeof value === 'number' ? 'numeric' : 'text',
+          value: value
+        };
+        
+        const { error: metricError } = await supabase
+          .from('financial_metrics')
+          .insert(metricData);
+          
+        if (metricError) {
+          console.error(`Error saving metric ${key}:`, metricError);
+        }
+      }
+    }
+    
     return data;
   } catch (error) {
     console.error('Error in updateFinancialReport:', error);
@@ -157,6 +178,8 @@ export const generateSalesReport = async (userId: string, days: number = 30) => 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     
+    console.log(`Generating sales report for user ${userId} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+    
     // Get sales data
     const salesData = await getSalesReportData(userId, startDate, endDate);
     
@@ -164,6 +187,8 @@ export const generateSalesReport = async (userId: string, days: number = 30) => 
       console.log('No sales data available for report generation');
       return null;
     }
+    
+    console.log(`Found ${salesData.length} sales records for report generation`);
     
     // Calculate financial metrics
     const totalRevenue = salesData.reduce((sum, sale) => sum + Number(sale.total), 0);
@@ -173,6 +198,8 @@ export const generateSalesReport = async (userId: string, days: number = 30) => 
     const estimatedCostPercentage = 0.4;
     const totalCost = totalRevenue * estimatedCostPercentage;
     const totalProfit = totalRevenue - totalCost;
+    
+    console.log('Calculated metrics:', { totalRevenue, totalCost, totalProfit });
     
     // Create report title and description
     const reportTitle = `Relatório de Vendas: ${startDate.toLocaleDateString()} a ${endDate.toLocaleDateString()}`;
@@ -200,3 +227,5 @@ export const generateSalesReport = async (userId: string, days: number = 30) => 
     return null;
   }
 };
+
+// Export other functions that might be needed

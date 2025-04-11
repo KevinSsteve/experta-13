@@ -35,18 +35,24 @@ export const SalesReportCard = () => {
           return [];
         }
         
-        // Use the new client function to get sales data
+        console.log('Fetching sales report data for user:', user.id);
+        console.log('Date range:', dateRange.from, 'to', dateRange.to);
+        
+        // Use the client function to get sales data
         const data = await getSalesReportData(user.id, dateRange.from, dateRange.to);
+        console.log('Sales report data received:', data?.length || 0, 'records');
 
-        // Se não temos dados, retornar array vazio
+        // If we don't have data, return empty array
         if (!data || data.length === 0) {
+          console.log('No sales data found for the selected period');
           return [];
         }
 
         // Convert Supabase data to Sale type before processing
         const salesArray = data.map(sale => adaptSupabaseSale(sale));
+        console.log('Adapted sales data:', salesArray.length, 'records');
         
-        // Agrupar vendas por dia
+        // Group sales by day
         const salesByDay: { [key: string]: { date: string; total: number; count: number } } = {};
         
         salesArray.forEach((sale) => {
@@ -64,20 +70,24 @@ export const SalesReportCard = () => {
           salesByDay[dateStr].count += 1;
         });
         
-        return Object.values(salesByDay);
+        const result = Object.values(salesByDay);
+        console.log('Processed sales data by day:', result.length, 'days');
+        return result;
       } catch (error) {
         console.error('Error in sales report query:', error);
+        toast.error('Erro ao carregar dados de vendas');
         return [];
       }
     },
-    enabled: !!user?.id, // Só executa a query se houver um usuário autenticado
-    retry: false
+    enabled: !!user?.id, // Only run query if there's an authenticated user
+    retry: 2,
+    refetchOnWindowFocus: false
   });
 
   const exportToCSV = () => {
     if (!salesData || salesData.length === 0) return;
 
-    // Criar cabeçalho e linhas para o CSV
+    // Create header and rows for CSV
     const headers = ['Data', 'Total de Vendas', 'Quantidade de Vendas'];
     const rows = salesData.map(day => [
       day.date,
@@ -85,13 +95,13 @@ export const SalesReportCard = () => {
       day.count.toString()
     ]);
 
-    // Combinar cabeçalho e linhas
+    // Combine header and rows
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
 
-    // Criar blob e link para download
+    // Create blob and link for download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -103,7 +113,7 @@ export const SalesReportCard = () => {
     document.body.removeChild(link);
   };
 
-  // New function to generate financial report and navigate to results
+  // Function to generate financial report and navigate to results
   const generateFinancialReport = async () => {
     if (!user?.id) {
       toast.error('Usuário não autenticado');
@@ -113,14 +123,19 @@ export const SalesReportCard = () => {
     setIsGeneratingReport(true);
     
     try {
+      console.log('Generating financial report for user:', user.id);
       const days = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+      console.log('Report period:', days, 'days');
+      
       const report = await generateSalesReport(user.id, days);
       
       if (report) {
+        console.log('Financial report generated successfully:', report);
         toast.success('Relatório financeiro gerado com sucesso');
         // Navigate to resultados page
         navigate('/resultados');
       } else {
+        console.error('Failed to generate report - no data returned');
         toast.error('Não foi possível gerar o relatório. Verifique se há dados suficientes.');
       }
     } catch (error) {

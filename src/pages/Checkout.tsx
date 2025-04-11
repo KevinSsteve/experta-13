@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -35,6 +36,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { ExtendedProfile } from '@/types/profile';
 
 // Schema de validação para Angola
 const checkoutSchema = z.object({
@@ -59,6 +61,7 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [change, setChange] = useState(0);
   const [completedSale, setCompletedSale] = useState<any>(null);
+  const [companyProfile, setCompanyProfile] = useState<ExtendedProfile | undefined>(undefined);
   const navigate = useNavigate();
   
   const form = useForm<CheckoutFormValues>({
@@ -73,6 +76,25 @@ const Checkout = () => {
       amountPaid: 0,
     },
   });
+  
+  // Buscar perfil da empresa quando o componente é carregado
+  useEffect(() => {
+    const fetchCompanyProfile = async () => {
+      if (state.user?.id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', state.user.id)
+          .single();
+          
+        if (data && !error) {
+          setCompanyProfile(data as ExtendedProfile);
+        }
+      }
+    };
+    
+    fetchCompanyProfile();
+  }, [state.user]);
   
   // Update validation schema when total price changes
   useEffect(() => {
@@ -181,7 +203,7 @@ const Checkout = () => {
     if (!completedSale) return;
     
     try {
-      printReceipt(completedSale);
+      printReceipt(completedSale, companyProfile);
       toast.success('Recibo enviado para impressão');
     } catch (error) {
       console.error('Erro ao imprimir recibo:', error);
@@ -193,7 +215,7 @@ const Checkout = () => {
     if (!completedSale) return;
     
     try {
-      downloadReceipt(completedSale);
+      downloadReceipt(completedSale, companyProfile);
       toast.success('Recibo baixado com sucesso');
     } catch (error) {
       console.error('Erro ao baixar recibo:', error);
@@ -205,7 +227,7 @@ const Checkout = () => {
     if (!completedSale) return;
     
     try {
-      const shared = await shareReceipt(completedSale);
+      const shared = await shareReceipt(completedSale, companyProfile);
       if (shared) {
         toast.success('Recibo compartilhado com sucesso');
       } else {

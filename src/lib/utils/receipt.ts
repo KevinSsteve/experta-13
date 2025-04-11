@@ -1,8 +1,10 @@
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Sale, CustomerInfo } from '@/lib/sales/types';
 import { CartItem } from '@/contexts/CartContext';
+import { ExtendedProfile } from '@/types/profile';
 
 // Configuração das dimensões para impressora térmica móvel (geralmente 80mm de largura)
 const THERMAL_CONFIG = {
@@ -22,18 +24,30 @@ const THERMAL_CONFIG = {
   }
 };
 
-// Informações da empresa para SAFT de Angola
-const COMPANY_INFO = {
+// Informações padrão da empresa para SAFT de Angola
+const DEFAULT_COMPANY_INFO = {
   name: "Moloja Supermercados",
   nif: "5417623490", // NIF da empresa
   address: "Luanda, Angola",
   phone: "+244 922 123 456",
   website: "www.moloja.ao",
   taxRegime: "Normal", // Regime de tributação
-  currency: "AKZ" // Moeda local (atualizado de AOA para AKZ)
+  currency: "AKZ" // Moeda local
 };
 
-export const generateReceiptPDF = (sale: Sale): jsPDF => {
+export const generateReceiptPDF = (sale: Sale, companyProfile?: ExtendedProfile): jsPDF => {
+  // Usar informações customizadas da empresa se fornecidas, senão usar as padrões
+  const COMPANY_INFO = {
+    name: companyProfile?.name || DEFAULT_COMPANY_INFO.name,
+    nif: companyProfile?.taxId || DEFAULT_COMPANY_INFO.nif,
+    address: companyProfile?.address || DEFAULT_COMPANY_INFO.address,
+    phone: companyProfile?.phone || DEFAULT_COMPANY_INFO.phone,
+    website: DEFAULT_COMPANY_INFO.website, // Manter site padrão se não existir no perfil
+    taxRegime: DEFAULT_COMPANY_INFO.taxRegime, // Manter regime padrão
+    currency: companyProfile?.currency || DEFAULT_COMPANY_INFO.currency,
+    receiptMessage: companyProfile?.receiptMessage || "Obrigado pela sua preferência!" // Mensagem customizada
+  };
+  
   // Criar uma nova instância de PDF no tamanho para impressora térmica
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -122,91 +136,44 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   yPos += centerText('ITENS', yPos, THERMAL_CONFIG.fontSize.title);
   yPos += 2;
   
-  // Cabeçalho da tabela
-  doc.setFontSize(THERMAL_CONFIG.fontSize.small);
-  doc.text("Item", margin.left, yPos);
-  doc.text("Qtd", pageWidth - 30, yPos, { align: 'right' });
-  doc.text("Preço", pageWidth - 20, yPos, { align: 'right' });
-  doc.text("Total", pageWidth - margin.right, yPos, { align: 'right' });
-  yPos += 2;
+  // Cabeçalho da tabela (removido para evitar sobreposição)
   
-  yPos += addSeparator(yPos);
-  yPos += 2;
-  
-  // Itens da venda
+  // Itens da venda - novo formato com informações em linhas separadas
   if (Array.isArray(sale.items)) {
     // Se for um array, verificamos se são CartItems ou outro tipo de item
     (sale.items as Array<any>).forEach((item: any) => {
-      const maxWidth = 25; // Largura máxima para o nome do produto
-      
       // Verifica se o item tem estrutura de CartItem
       if (item && typeof item === 'object' && 'product' in item && 'quantity' in item) {
         const cartItem = item as CartItem;
-        const name = cartItem.product.name.length > maxWidth 
-          ? cartItem.product.name.slice(0, maxWidth) + '...' 
-          : cartItem.product.name;
         
-        yPos += addLine(name, yPos, THERMAL_CONFIG.fontSize.small);
+        // Adiciona o nome do produto com quebra de linha se necessário
+        yPos += addWrappedText(cartItem.product.name, yPos, THERMAL_CONFIG.fontSize.body);
         
-        // Quantidade, preço e total na mesma linha
-        doc.text(
-          cartItem.quantity.toString(), 
-          pageWidth - 30, 
-          yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-          { align: 'right' }
-        );
+        // Informações de preço e quantidade na linha abaixo do nome
+        const priceInfo = `${cartItem.quantity} x ${formatCurrency(cartItem.product.price)} = ${formatCurrency(cartItem.product.price * cartItem.quantity)}`;
+        yPos += addLine(priceInfo, yPos, THERMAL_CONFIG.fontSize.small);
         
-        doc.text(
-          formatCurrency(cartItem.product.price), 
-          pageWidth - 20, 
-          yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-          { align: 'right' }
-        );
-        
-        doc.text(
-          formatCurrency(cartItem.product.price * cartItem.quantity), 
-          pageWidth - margin.right, 
-          yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-          { align: 'right' }
-        );
+        // Adiciona um pequeno espaço entre os itens
+        yPos += 2;
       }
     });
   } else if (typeof sale.products !== 'undefined' && Array.isArray(sale.products)) {
     // Se tivermos products array, usamos ele
     sale.products.forEach((product: any) => {
-      const maxWidth = 25; // Largura máxima para o nome do produto
-      const name = product.name.length > maxWidth 
-        ? product.name.slice(0, maxWidth) + '...' 
-        : product.name;
+      // Adiciona o nome do produto com quebra de linha se necessário
+      yPos += addWrappedText(product.name, yPos, THERMAL_CONFIG.fontSize.body);
       
-      yPos += addLine(name, yPos, THERMAL_CONFIG.fontSize.small);
-      
-      // Quantidade, preço e total na mesma linha
+      // Quantidade, preço unitário e subtotal na linha abaixo
       const quantity = product.quantity?.toString() || "1";
-      doc.text(
-        quantity, 
-        pageWidth - 30, 
-        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-        { align: 'right' }
-      );
+      const priceInfo = `${quantity} x ${formatCurrency(product.price)} = ${formatCurrency(product.price * (product.quantity || 1))}`;
+      yPos += addLine(priceInfo, yPos, THERMAL_CONFIG.fontSize.small);
       
-      doc.text(
-        formatCurrency(product.price), 
-        pageWidth - 20, 
-        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-        { align: 'right' }
-      );
-      
-      doc.text(
-        formatCurrency(product.price * (product.quantity || 1)), 
-        pageWidth - margin.right, 
-        yPos - THERMAL_CONFIG.fontSize.small * 0.35, 
-        { align: 'right' }
-      );
+      // Adiciona um pequeno espaço entre os itens
+      yPos += 2;
     });
   }
   
-  yPos += 3;
+  yPos += 1;
   yPos += addSeparator(yPos);
   yPos += 3;
   
@@ -251,15 +218,16 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   // Rodapé
   yPos += addSeparator(yPos);
   yPos += 3;
-  yPos += centerText('Obrigado pela sua preferência!', yPos, THERMAL_CONFIG.fontSize.small);
+  yPos += centerText(COMPANY_INFO.receiptMessage, yPos, THERMAL_CONFIG.fontSize.small);
   yPos += 3;
   yPos += centerText('www.moloja.co.ao', yPos, THERMAL_CONFIG.fontSize.small);
   
   return doc;
 };
 
-export const downloadReceipt = (sale: Sale) => {
-  const doc = generateReceiptPDF(sale);
+// Atualizado para aceitar o perfil da empresa como parâmetro opcional
+export const downloadReceipt = (sale: Sale, companyProfile?: ExtendedProfile) => {
+  const doc = generateReceiptPDF(sale, companyProfile);
   
   // Nome do arquivo: recibo-ID-DATA.pdf
   const saleId = sale.id ? sale.id.slice(0, 8) : 'sem-id';
@@ -269,15 +237,17 @@ export const downloadReceipt = (sale: Sale) => {
   doc.save(filename);
 };
 
-export const printReceipt = (sale: Sale) => {
-  const doc = generateReceiptPDF(sale);
+// Atualizado para aceitar o perfil da empresa como parâmetro opcional
+export const printReceipt = (sale: Sale, companyProfile?: ExtendedProfile) => {
+  const doc = generateReceiptPDF(sale, companyProfile);
   doc.autoPrint();
   doc.output('dataurlnewwindow');
 };
 
-export const shareReceipt = async (sale: Sale) => {
+// Atualizado para aceitar o perfil da empresa como parâmetro opcional
+export const shareReceipt = async (sale: Sale, companyProfile?: ExtendedProfile) => {
   try {
-    const doc = generateReceiptPDF(sale);
+    const doc = generateReceiptPDF(sale, companyProfile);
     const blob = doc.output('blob');
     
     // Nome do arquivo: recibo-ID-DATA.pdf
@@ -296,7 +266,7 @@ export const shareReceipt = async (sale: Sale) => {
       return true;
     } else {
       // Fallback para download se o compartilhamento não estiver disponível
-      downloadReceipt(sale);
+      downloadReceipt(sale, companyProfile);
       return false;
     }
   } catch (error) {

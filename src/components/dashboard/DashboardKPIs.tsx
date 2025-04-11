@@ -4,6 +4,7 @@ import { formatCurrency } from '@/lib/utils';
 import { KPICard } from './KPICard';
 import { KPICardSkeleton } from './KPICardSkeleton';
 import { DollarSign, ShoppingBag, CreditCard } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DashboardKPIsProps {
   data: SalesKPIs | undefined;
@@ -11,6 +12,8 @@ interface DashboardKPIsProps {
 }
 
 export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
+  const isMobile = useIsMobile();
+  
   if (isLoading) {
     return (
       <>
@@ -24,7 +27,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
   if (!data) {
     return (
       <div className="col-span-3 text-center py-6 text-muted-foreground">
-        Não foi possível carregar os dados de KPIs
+        <p className="text-xs sm:text-sm">Não foi possível carregar os dados de KPIs</p>
       </div>
     );
   }
@@ -34,7 +37,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
       <KPICard
         title="Receita Total"
         value={formatCurrency(data.totalRevenue)}
-        icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+        icon={<DollarSign className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} text-muted-foreground`} />}
         change={data.revenueChange}
         subtitle="Comparado ao período anterior"
       />
@@ -42,7 +45,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
       <KPICard
         title="Número de Vendas"
         value={data.totalSales}
-        icon={<ShoppingBag className="h-4 w-4 text-muted-foreground" />}
+        icon={<ShoppingBag className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} text-muted-foreground`} />}
         change={data.salesChange}
         subtitle="Comparado ao período anterior"
       />
@@ -50,7 +53,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
       <KPICard
         title="Ticket Médio"
         value={formatCurrency(data.averageTicket)}
-        icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
+        icon={<CreditCard className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} text-muted-foreground`} />}
         change={data.ticketChange}
         subtitle="Comparado ao período anterior"
       />

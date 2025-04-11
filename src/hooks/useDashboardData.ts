@@ -18,14 +18,16 @@ export const useDashboardData = (timeRange: string) => {
   // Buscar produtos com baixo estoque
   const lowStockQuery = useLowStockProducts(userId, isAuthReady);
   
-  // Atualizar dados automaticamente quando a autenticação estiver pronta
+  // Atualizar dados quando a autenticação estiver pronta
   useEffect(() => {
     if (isAuthReady && userId) {
-      console.log('[useDashboardData] Autenticação pronta, atualizando dados...');
-      // Atualizar dados imediatamente quando o componente montar
+      console.log('[useDashboardData] Autenticação pronta, atualizando dados...', { userId });
+      // Forçar atualização dos dados quando o componente montar e a autenticação estiver pronta
       salesSummaryQuery.refetch();
       recentSalesQuery.refetch();
       lowStockQuery.refetch();
+    } else {
+      console.log('[useDashboardData] Aguardando autenticação ou userId...', { isAuthReady, userId });
     }
   }, [isAuthReady, userId, salesSummaryQuery, recentSalesQuery, lowStockQuery]);
   

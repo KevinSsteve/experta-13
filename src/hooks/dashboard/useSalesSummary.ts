@@ -11,11 +11,11 @@ export const useSalesSummary = (days: number, userId?: string, isAuthReady = fal
         throw new Error('Usuário não autenticado');
       }
       
+      console.log(`[useSalesSummary] Buscando resumo de vendas dos últimos ${days} dias para usuário ${userId}`);
+      
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      
-      console.log(`[useSalesSummary] Buscando resumo de vendas de ${startDate.toISOString()} até ${endDate.toISOString()} para usuário ${userId}`);
       
       const { data, error } = await supabase
         .from('sales')
@@ -29,6 +29,8 @@ export const useSalesSummary = (days: number, userId?: string, isAuthReady = fal
         throw error;
       }
       
+      console.log(`[useSalesSummary] Dados recebidos:`, data ? data.length : 0, 'vendas');
+      
       if (!data || data.length === 0) {
         console.log('[useSalesSummary] Nenhuma venda encontrada para o período');
         return {
@@ -38,12 +40,12 @@ export const useSalesSummary = (days: number, userId?: string, isAuthReady = fal
         };
       }
       
-      console.log(`[useSalesSummary] Encontradas ${data.length} vendas para o período`);
-      
       // Calcular totais
       const totalSales = data.length;
       const totalRevenue = data.reduce((sum, sale) => sum + Number(sale.total), 0);
       const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
+      
+      console.log(`[useSalesSummary] Calculado: ${totalSales} vendas, R$${totalRevenue.toFixed(2)} em receita`);
       
       return {
         totalSales,
@@ -53,6 +55,6 @@ export const useSalesSummary = (days: number, userId?: string, isAuthReady = fal
     },
     enabled: !!userId && isAuthReady,
     staleTime: 1000 * 60 * 5, // 5 minutos
-    refetchOnWindowFocus: true, // Atualiza quando a janela recebe foco
+    refetchOnWindowFocus: true,
   });
 };

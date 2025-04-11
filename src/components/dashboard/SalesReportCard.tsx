@@ -2,17 +2,20 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileDown } from 'lucide-react';
+import { FileDown, ChartBar } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getSalesReportData, generateSalesReport } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { adaptSupabaseSale } from '@/lib/sales/adapters';
 import { useAuth } from '@/contexts/AuthContext';
 import { DateRangePicker } from './DateRangePicker';
 import { SalesChart } from './SalesChart';
 import { SalesSummary } from './SalesSummary';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export const SalesReportCard = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<{
     from: Date;
@@ -21,29 +24,19 @@ export const SalesReportCard = () => {
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
     to: new Date(),
   });
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const { data: salesData, isLoading } = useQuery({
     queryKey: ['salesReport', dateRange.from.toISOString(), dateRange.to.toISOString(), user?.id],
     queryFn: async () => {
       try {
-        let query = supabase
-          .from('sales')
-          .select('*')
-          .gte('date', dateRange.from.toISOString())
-          .lte('date', dateRange.to.toISOString())
-          .order('date', { ascending: true });
-        
-        // Filtrar por usuário se estiver autenticado
-        if (user) {
-          query = query.eq('user_id', user.id);
-        }
-        
-        const { data, error } = await query;
-
-        if (error) {
-          console.error('Erro ao buscar dados de vendas:', error);
+        if (!user?.id) {
+          console.error('No user ID available for sales report query');
           return [];
         }
+        
+        // Use the new client function to get sales data
+        const data = await getSalesReportData(user.id, dateRange.from, dateRange.to);
 
         // Se não temos dados, retornar array vazio
         if (!data || data.length === 0) {
@@ -77,7 +70,7 @@ export const SalesReportCard = () => {
         return [];
       }
     },
-    enabled: !!user, // Só executa a query se houver um usuário autenticado
+    enabled: !!user?.id, // Só executa a query se houver um usuário autenticado
     retry: false
   });
 
@@ -110,6 +103,34 @@ export const SalesReportCard = () => {
     document.body.removeChild(link);
   };
 
+  // New function to generate financial report and navigate to results
+  const generateFinancialReport = async () => {
+    if (!user?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+    
+    setIsGeneratingReport(true);
+    
+    try {
+      const days = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+      const report = await generateSalesReport(user.id, days);
+      
+      if (report) {
+        toast.success('Relatório financeiro gerado com sucesso');
+        // Navigate to resultados page
+        navigate('/resultados');
+      } else {
+        toast.error('Não foi possível gerar o relatório. Verifique se há dados suficientes.');
+      }
+    } catch (error) {
+      console.error('Error generating financial report:', error);
+      toast.error('Erro ao gerar relatório financeiro');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -131,6 +152,17 @@ export const SalesReportCard = () => {
           >
             <FileDown className="h-4 w-4 mr-2" />
             Exportar
+          </Button>
+          
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="h-8" 
+            onClick={generateFinancialReport}
+            disabled={isLoading || isGeneratingReport || !salesData || salesData.length === 0}
+          >
+            <ChartBar className="h-4 w-4 mr-2" />
+            {isGeneratingReport ? 'Gerando...' : 'Resultados'}
           </Button>
         </div>
       </CardHeader>

@@ -73,3 +73,130 @@ export const addMultiplePublicProducts = async (products: any[], userId: string)
     throw error;
   }
 };
+
+// Sales data functions for Dashboard and Resultados
+export const getSalesReportData = async (
+  userId: string,
+  startDate: Date,
+  endDate: Date
+) => {
+  try {
+    console.log(`Fetching sales report data for user ${userId} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+    
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate.toISOString())
+      .lte('date', endDate.toISOString())
+      .order('date', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching sales report data:', error);
+      throw error;
+    }
+    
+    console.log(`Retrieved ${data?.length || 0} sales records`);
+    return data || [];
+  } catch (error) {
+    console.error('Error in getSalesReportData:', error);
+    throw error;
+  }
+};
+
+// Function to update or create a financial report
+export const updateFinancialReport = async (
+  userId: string,
+  reportData: {
+    title: string;
+    description?: string;
+    report_type: string;
+    period_start: Date;
+    period_end: Date;
+    total_revenue: number;
+    total_cost: number;
+    total_profit: number;
+    metrics?: any;
+  }
+) => {
+  try {
+    // Format dates properly for PostgreSQL
+    const formattedData = {
+      ...reportData,
+      user_id: userId,
+      period_start: reportData.period_start.toISOString().split('T')[0],
+      period_end: reportData.period_end.toISOString().split('T')[0],
+    };
+    
+    console.log('Saving financial report:', formattedData);
+    
+    const { data, error } = await supabase
+      .from('financial_reports')
+      .insert(formattedData)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating financial report:', error);
+      throw error;
+    }
+    
+    console.log('Financial report saved successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error in updateFinancialReport:', error);
+    throw error;
+  }
+};
+
+// Function to automatically generate financial reports after sales
+export const generateSalesReport = async (userId: string, days: number = 30) => {
+  try {
+    // Calculate date range
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    // Get sales data
+    const salesData = await getSalesReportData(userId, startDate, endDate);
+    
+    if (!salesData || salesData.length === 0) {
+      console.log('No sales data available for report generation');
+      return null;
+    }
+    
+    // Calculate financial metrics
+    const totalRevenue = salesData.reduce((sum, sale) => sum + Number(sale.total), 0);
+    
+    // Estimate costs (in a real app, you would have actual cost data)
+    // Here we're using a simplified approach with 60% profit margin
+    const estimatedCostPercentage = 0.4;
+    const totalCost = totalRevenue * estimatedCostPercentage;
+    const totalProfit = totalRevenue - totalCost;
+    
+    // Create report title and description
+    const reportTitle = `Relatório de Vendas: ${startDate.toLocaleDateString()} a ${endDate.toLocaleDateString()}`;
+    const reportDescription = `Relatório automático de vendas para o período de ${days} dias`;
+    
+    // Create the report
+    const report = await updateFinancialReport(userId, {
+      title: reportTitle,
+      description: reportDescription,
+      report_type: 'sales',
+      period_start: startDate,
+      period_end: endDate,
+      total_revenue: totalRevenue,
+      total_cost: totalCost,
+      total_profit: totalProfit,
+      metrics: {
+        total_sales: salesData.length,
+        average_sale: salesData.length > 0 ? totalRevenue / salesData.length : 0
+      }
+    });
+    
+    return report;
+  } catch (error) {
+    console.error('Error generating sales report:', error);
+    return null;
+  }
+};

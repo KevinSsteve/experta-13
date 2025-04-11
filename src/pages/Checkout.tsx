@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -31,14 +30,13 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Check, Trash2, Calculator, Printer, Download, Share2 } from 'lucide-react';
+import { Check, Trash2, Calculator, Printer, Download, Share2, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, generateSalesReport } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ExtendedProfile } from '@/types/profile';
 
-// Schema de validação para Angola
 const checkoutSchema = z.object({
   customerName: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }),
   customerPhone: z.string().optional(),
@@ -77,7 +75,6 @@ const Checkout = () => {
     },
   });
   
-  // Buscar perfil da empresa quando o componente é carregado
   useEffect(() => {
     const fetchCompanyProfile = async () => {
       if (state.user?.id) {
@@ -96,7 +93,6 @@ const Checkout = () => {
     fetchCompanyProfile();
   }, [state.user]);
   
-  // Update validation schema when total price changes
   useEffect(() => {
     form.clearErrors('amountPaid');
     const total = getTotalPrice();
@@ -180,6 +176,13 @@ const Checkout = () => {
           toast.error('Erro ao salvar venda. Os dados foram salvos localmente.');
         } else {
           console.log('Venda salva com sucesso no Supabase');
+          
+          try {
+            await generateSalesReport(state.user.id, 30);
+            console.log('Relatório financeiro atualizado após a venda');
+          } catch (reportError) {
+            console.error('Erro ao gerar relatório financeiro:', reportError);
+          }
         }
       } else {
         console.warn('Usuário não autenticado, venda salva apenas localmente');
@@ -189,7 +192,6 @@ const Checkout = () => {
       
       toast.success('Venda finalizada com sucesso!');
       
-      // Armazena os dados da venda para uso nas funções de recibo
       setCompletedSale(saleData);
       
     } catch (error) {
@@ -239,10 +241,10 @@ const Checkout = () => {
     }
   };
   
-  const finishAndNavigate = () => {
+  const finishAndNavigate = (to: string = '/dashboard') => {
     clearCart();
     form.reset();
-    navigate('/dashboard');
+    navigate(to);
   };
   
   return (
@@ -302,9 +304,20 @@ const Checkout = () => {
                     </div>
                   </div>
                   
-                  <div className="flex justify-end">
-                    <Button onClick={finishAndNavigate}>
-                      Continuar
+                  <div className="flex flex-col sm:flex-row justify-between gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => finishAndNavigate('/dashboard')}
+                      className="flex-1"
+                    >
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      Ver Dashboard
+                    </Button>
+                    <Button 
+                      onClick={() => finishAndNavigate('/resultados')}
+                      className="flex-1"
+                    >
+                      Ver Resultados
                     </Button>
                   </div>
                 </div>

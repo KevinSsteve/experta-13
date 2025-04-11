@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import SalesHistory from "./pages/SalesHistory";
 import SaleDetails from "./pages/SaleDetails";
+import Resultados from "./pages/Resultados";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -46,6 +47,7 @@ const App = () => (
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/sales-history" element={<SalesHistory />} />
                   <Route path="/sales-history/:id" element={<SaleDetails />} />
+                  <Route path="/resultados" element={<Resultados />} />
                 </Route>
                 
                 {/* Rota para página não encontrada */}

@@ -9,6 +9,101 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      financial_metrics: {
+        Row: {
+          comparison_value: number | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          percentage_change: number | null
+          report_id: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          comparison_value?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type: string
+          percentage_change?: number | null
+          report_id: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          comparison_value?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          percentage_change?: number | null
+          report_id?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_metrics_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "financial_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_reports: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          metrics: Json | null
+          period_end: string
+          period_start: string
+          report_type: string
+          title: string
+          total_cost: number
+          total_profit: number
+          total_revenue: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metrics?: Json | null
+          period_end: string
+          period_start: string
+          report_type: string
+          title: string
+          total_cost?: number
+          total_profit?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metrics?: Json | null
+          period_end?: string
+          period_start?: string
+          report_type?: string
+          title?: string
+          total_cost?: number
+          total_profit?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string

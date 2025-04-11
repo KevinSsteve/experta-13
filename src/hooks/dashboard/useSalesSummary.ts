@@ -1,7 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect } from 'react';
 
 export const useSalesSummary = (days: number, userId?: string, isAuthReady = false) => {
   return useQuery({
@@ -22,7 +21,10 @@ export const useSalesSummary = (days: number, userId?: string, isAuthReady = fal
         .lte('date', endDate.toISOString())
         .eq('user_id', userId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[useSalesSummary] Erro:', error);
+        throw error;
+      }
       
       // Calcular totais
       const totalSales = data.length;
@@ -37,6 +39,6 @@ export const useSalesSummary = (days: number, userId?: string, isAuthReady = fal
     },
     enabled: !!userId && isAuthReady,
     staleTime: 1000 * 60 * 5, // 5 minutos
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Atualiza quando a janela recebe foco
   });
 };

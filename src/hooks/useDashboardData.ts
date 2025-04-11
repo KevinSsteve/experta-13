@@ -1,11 +1,10 @@
 
-import { useState } from 'react';
-import { toast } from 'sonner';
 import { useAuthStatus } from './dashboard/useAuthStatus';
 import { useSalesSummary } from './dashboard/useSalesSummary';
 import { useRecentSales } from './dashboard/useRecentSales';
 import { useLowStockProducts } from './dashboard/useLowStockProducts';
 import { refreshAllData } from './dashboard/useDashboardUtils';
+import { useEffect } from 'react';
 
 export const useDashboardData = (timeRange: string) => {
   const days = parseInt(timeRange);
@@ -28,6 +27,14 @@ export const useDashboardData = (timeRange: string) => {
       lowStockQuery.refetch
     ]);
   };
+  
+  // Atualizar dados automaticamente quando a autenticação estiver pronta
+  useEffect(() => {
+    if (isAuthReady && userId) {
+      console.log('[useDashboardData] Autenticação pronta, atualizando dados...');
+      refreshAllDataFn();
+    }
+  }, [isAuthReady, userId]);
   
   // Combinando todos os estados de carregamento
   const isLoading = salesSummaryQuery.isLoading || recentSalesQuery.isLoading || lowStockQuery.isLoading;

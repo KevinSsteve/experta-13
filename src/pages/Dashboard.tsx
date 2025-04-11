@@ -5,43 +5,30 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { SimpleDashboardKPI } from '@/components/dashboard/SimpleDashboardKPI';
 import { SimpleRecentSales } from '@/components/dashboard/SimpleRecentSales';
 import { SimpleLowStockProducts } from '@/components/dashboard/SimpleLowStockProducts';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
-import { RefreshCw, Loader2, AlertTriangle, CreditCard, DollarSign, ShoppingBag, Info } from 'lucide-react';
+import { AlertTriangle, CreditCard, DollarSign, ShoppingBag, Info } from 'lucide-react';
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
-  const { user, refreshProfile } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { user } = useAuth();
   
   const {
     salesSummary,
     recentSales,
     lowStock,
-    dashboardState,
-    refreshAllData
+    dashboardState
   } = useDashboardData(timeRange);
 
   const { isLoading, hasError, noData, userId } = dashboardState;
-
-  const handleRefreshData = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshProfile();
-      await refreshAllData();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
         <div className="flex flex-col space-y-6">
-          {/* Header with time range selector */}
+          {/* Header com seletor de período */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
@@ -54,19 +41,6 @@ const Dashboard = () => {
             </div>
             
             <div className="flex flex-col md:flex-row gap-2 items-start mt-4 md:mt-0">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRefreshData}
-                disabled={isRefreshing || !user}
-              >
-                {isRefreshing ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Atualizando</>
-                ) : (
-                  <><RefreshCw className="mr-2 h-4 w-4" /> Atualizar Dados</>
-                )}
-              </Button>
-              
               <Tabs 
                 value={timeRange} 
                 onValueChange={setTimeRange} 
@@ -91,14 +65,6 @@ const Dashboard = () => {
                     Você precisa estar autenticado para visualizar seus dados. 
                     {!user ? " Parece que não há usuário logado." : " Seu ID de usuário não está sendo reconhecido corretamente."}
                   </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleRefreshData} 
-                    className="mt-2"
-                  >
-                    Tentar Novamente
-                  </Button>
                 </div>
               </div>
             </div>

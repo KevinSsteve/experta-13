@@ -17,12 +17,15 @@ export const useRecentSales = (userId?: string, isAuthReady = false) => {
         .order('date', { ascending: false })
         .limit(5);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[useRecentSales] Erro:', error);
+        throw error;
+      }
       
       return data;
     },
     enabled: !!userId && isAuthReady,
     staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Atualiza quando a janela recebe foco
   });
 };

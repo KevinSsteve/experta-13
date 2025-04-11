@@ -6,10 +6,9 @@ export type RefreshFunction = () => Promise<QueryObserverResult>;
 
 export const refreshAllData = async (refreshFunctions: RefreshFunction[]) => {
   try {
-    console.log('[useDashboardUtils] Forçando atualização de todos os dados...');
+    console.log('[useDashboardUtils] Atualizando todos os dados...');
     await Promise.all(refreshFunctions.map(fn => fn()));
     console.log('[useDashboardUtils] Todos os dados foram atualizados');
-    toast.success('Dados atualizados com sucesso');
     return true;
   } catch (error) {
     console.error('[useDashboardUtils] Erro ao atualizar dados:', error);

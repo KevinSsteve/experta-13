@@ -18,12 +18,15 @@ export const useLowStockProducts = (userId?: string, isAuthReady = false) => {
         .order('stock', { ascending: true })
         .limit(10);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[useLowStockProducts] Erro:', error);
+        throw error;
+      }
       
       return data;
     },
     enabled: !!userId && isAuthReady,
     staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Atualiza quando a janela recebe foco
   });
 };

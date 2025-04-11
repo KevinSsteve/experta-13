@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         // External dependencies that should not be bundled
-        external: []
+        external: ['jspdf']
       },
       // Create redirect file for SPA routing in Netlify
       outDir: 'dist',

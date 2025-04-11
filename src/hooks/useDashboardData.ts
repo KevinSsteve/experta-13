@@ -41,21 +41,9 @@ export const useDashboardData = (timeRange: string) => {
   const noData = !salesSummaryQuery.data && !recentSalesQuery.data && !lowStockQuery.data;
 
   return {
-    salesSummary: {
-      data: salesSummaryQuery.data,
-      isLoading: salesSummaryQuery.isLoading,
-      error: salesSummaryQuery.error
-    },
-    recentSales: {
-      data: recentSalesQuery.data,
-      isLoading: recentSalesQuery.isLoading,
-      error: recentSalesQuery.error
-    },
-    lowStock: {
-      data: lowStockQuery.data,
-      isLoading: lowStockQuery.isLoading,
-      error: lowStockQuery.error
-    },
+    salesSummary: salesSummaryQuery,
+    recentSales: recentSalesQuery,
+    lowStock: lowStockQuery,
     dashboardState: {
       isLoading,
       hasError,

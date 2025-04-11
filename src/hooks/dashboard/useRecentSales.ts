@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useRecentSales = (userId?: string, isAuthReady = false) => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['recentSales', userId],
     queryFn: async () => {
       if (!userId) {
@@ -37,4 +37,6 @@ export const useRecentSales = (userId?: string, isAuthReady = false) => {
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: true,
   });
+
+  return query;
 };

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { SimpleDashboardKPI } from '@/components/dashboard/SimpleDashboardKPI';
@@ -9,61 +9,46 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
-import { AlertTriangle, CreditCard, DollarSign, ShoppingBag, Info, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { AlertTriangle, CreditCard, DollarSign, Info, Loader2, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
-  const { user, session } = useAuth();
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [sessionDetails, setSessionDetails] = useState<any>(null);
+  const { user } = useAuth();
   
   const {
     salesSummary,
     recentSales,
     lowStock,
+    refreshData,
+    isRefreshing,
     dashboardState
   } = useDashboardData(timeRange);
 
   const { isLoading, hasError, noData, userId, isAuthReady } = dashboardState;
 
-  // Verificar detalhes de autenticação para debugging
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      setSessionDetails(data?.session);
-      setCheckingAuth(false);
-      
-      if (error) {
-        console.error("[Dashboard] Erro ao verificar sessão:", error);
-      } else {
-        console.log("[Dashboard] Status da sessão:", data?.session ? "Ativa" : "Inativa");
-      }
-    };
-    
-    checkAuthStatus();
-  }, []);
-
   // Log do estado do dashboard para debugging
-  useEffect(() => {
-    console.log('[Dashboard] Estado atual:', { 
-      user: user?.id, 
-      session: !!session,
-      sessionDetails: !!sessionDetails,
-      userId,
-      isAuthReady,
-      salesData: recentSales.data?.length || 0,
-      isLoading,
-      hasError
-    });
-  }, [user, session, sessionDetails, userId, recentSales.data, isLoading, hasError, isAuthReady]);
+  console.log('[Dashboard] Estado atual:', { 
+    user: user?.id, 
+    userId,
+    isAuthReady,
+    salesSummaryData: salesSummary.data,
+    recentSalesData: recentSales.data?.length || 0,
+    lowStockData: lowStock.data?.length || 0,
+    isLoading,
+    hasError
+  });
 
   // Função para forçar a atualização dos dados
   const handleRefresh = () => {
-    if (salesSummary.refetch) salesSummary.refetch();
-    if (recentSales.refetch) recentSales.refetch();
-    if (lowStock.refetch) lowStock.refetch();
+    toast.info("Atualizando dados do dashboard...");
+    refreshData().then(() => {
+      toast.success("Dados atualizados com sucesso!");
+    }).catch((error) => {
+      toast.error("Erro ao atualizar dados");
+      console.error("Erro:", error);
+    });
   };
 
   return (
@@ -94,22 +79,24 @@ const Dashboard = () => {
                 </TabsList>
               </Tabs>
               
-              <Button variant="outline" size="sm" onClick={handleRefresh}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh}
+                disabled={isLoading}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
                 Atualizar Dados
               </Button>
             </div>
           </div>
           
-          {/* Verificação de autenticação */}
-          {checkingAuth && (
-            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-4 my-4 flex items-center space-x-3">
-              <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-              <p className="text-blue-600 dark:text-blue-300">Verificando estado de autenticação...</p>
-            </div>
-          )}
-          
           {/* Status de autenticação */}
-          {!userId && !checkingAuth && (
+          {!userId && (
             <div className="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-4 my-4 text-yellow-800 dark:text-yellow-200">
               <div className="flex items-start">
                 <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
@@ -124,10 +111,7 @@ const Dashboard = () => {
                   </p>
                   <ul className="list-disc pl-6 text-sm mt-1">
                     <li>Usuário: {user ? `${user.email} (${user.id.slice(0, 8)}...)` : "Não detectado"}</li>
-                    <li>Sessão: {session ? "Ativa" : "Inativa"}</li>
-                    <li>Sessão no Storage: {sessionDetails ? "Presente" : "Ausente"}</li>
                     <li>UserId para consultas: {userId ? userId.slice(0, 8) + "..." : "Não definido"}</li>
-                    <li>isAuthReady: {isAuthReady ? "Sim" : "Não"}</li>
                   </ul>
                   <p className="text-sm mt-2">
                     Por favor, <a href="/auth" className="font-medium underline">faça login novamente</a> para resolver este problema.
@@ -147,6 +131,15 @@ const Dashboard = () => {
                   <p className="text-sm mt-1">
                     Ocorreu um erro ao tentar carregar os dados do dashboard. Por favor, verifique sua conexão e tente novamente.
                   </p>
+                  <Button 
+                    onClick={handleRefresh}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Tentar novamente
+                  </Button>
                 </div>
               </div>
             </div>
@@ -183,23 +176,23 @@ const Dashboard = () => {
           )}
           
           {/* KPIs */}
-          {!isLoading && userId && isAuthReady && (
+          {!isLoading && userId && isAuthReady && salesSummary.data && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <SimpleDashboardKPI 
                 title="Receita Total" 
-                value={salesSummary.data ? formatCurrency(salesSummary.data.totalRevenue) : "R$ 0,00"} 
+                value={formatCurrency(salesSummary.data.totalRevenue)} 
                 icon={<DollarSign className="h-5 w-5 text-primary" />}
                 isLoading={salesSummary.isLoading}
               />
               <SimpleDashboardKPI 
                 title="Número de Vendas" 
-                value={salesSummary.data ? salesSummary.data.totalSales : "0"} 
+                value={salesSummary.data.totalSales.toString()} 
                 icon={<ShoppingBag className="h-5 w-5 text-primary" />}
                 isLoading={salesSummary.isLoading}
               />
               <SimpleDashboardKPI 
                 title="Ticket Médio" 
-                value={salesSummary.data ? formatCurrency(salesSummary.data.averageTicket) : "R$ 0,00"} 
+                value={formatCurrency(salesSummary.data.averageTicket)} 
                 icon={<CreditCard className="h-5 w-5 text-primary" />} 
                 isLoading={salesSummary.isLoading}
               />

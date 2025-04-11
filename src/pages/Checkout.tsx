@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { 
   formatCurrency, 
@@ -60,6 +61,7 @@ const Checkout = () => {
   const [change, setChange] = useState(0);
   const [completedSale, setCompletedSale] = useState<any>(null);
   const [companyProfile, setCompanyProfile] = useState<ExtendedProfile | undefined>(undefined);
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   const form = useForm<CheckoutFormValues>({
@@ -77,21 +79,27 @@ const Checkout = () => {
   
   useEffect(() => {
     const fetchCompanyProfile = async () => {
-      if (state.user?.id) {
+      if (user?.id) {
+        console.log('[Checkout] Buscando perfil da empresa para usuário:', user.id);
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', state.user.id)
+          .eq('id', user.id)
           .single();
           
         if (data && !error) {
           setCompanyProfile(data as ExtendedProfile);
+          console.log('[Checkout] Perfil da empresa encontrado:', data);
+        } else if (error) {
+          console.error('[Checkout] Erro ao buscar perfil da empresa:', error);
         }
+      } else {
+        console.warn('[Checkout] Tentativa de buscar perfil sem ID de usuário');
       }
     };
     
     fetchCompanyProfile();
-  }, [state.user]);
+  }, [user]);
   
   useEffect(() => {
     form.clearErrors('amountPaid');
@@ -138,63 +146,20 @@ const Checkout = () => {
     try {
       saveSaleToStorage(saleData);
       
-      if (state.user) {
-        console.log('Salvando venda no Supabase para o usuário:', state.user.id);
+      if (!user) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const sessionUser = sessionData.session?.user;
         
-        const simplifiedItems = state.items.map(item => ({
-          productId: item.product.id,
-          productName: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity,
-          category: item.product.category
-        }));
-        
-        const supabaseSaleData = {
-          user_id: state.user.id,
-          total: saleData.total,
-          amount_paid: saleData.amountPaid,
-          change: saleData.change,
-          date: new Date().toISOString(),
-          customer: data.customerName,
-          payment_method: saleData.paymentMethod,
-          notes: saleData.notes,
-          items: {
-            customer: {
-              name: saleData.customer.name,
-              phone: saleData.customer.phone,
-              email: saleData.customer.email,
-              nif: saleData.customer.nif
-            },
-            paymentMethod: saleData.paymentMethod,
-            notes: saleData.notes,
-            products: simplifiedItems
-          }
-        };
-        
-        console.log('Dados da venda a serem enviados para o Supabase:', supabaseSaleData);
-        
-        const { data: insertedData, error } = await supabase
-          .from('sales')
-          .insert(supabaseSaleData)
-          .select();
-          
-        if (error) {
-          console.error('Erro ao salvar venda no Supabase:', error);
-          toast.error('Erro ao salvar venda. Os dados foram salvos localmente.');
+        if (sessionUser) {
+          console.log('[Checkout] Usuário encontrado na sessão:', sessionUser.id);
+          await saveToSupabase(saleData, sessionUser.id);
         } else {
-          console.log('Venda salva com sucesso no Supabase:', insertedData);
-          toast.success('Venda salva com sucesso no banco de dados!');
-          
-          try {
-            await generateSalesReport(state.user.id, 30);
-            console.log('Relatório financeiro atualizado após a venda');
-          } catch (reportError) {
-            console.error('Erro ao gerar relatório financeiro:', reportError);
-          }
+          console.warn('[Checkout] Usuário não autenticado, venda salva apenas localmente');
+          toast.warning('Usuário não autenticado. Venda salva apenas localmente.');
         }
       } else {
-        console.warn('Usuário não autenticado, venda salva apenas localmente');
-        toast.warning('Usuário não autenticado. Venda salva apenas localmente.');
+        console.log('[Checkout] Salvando venda no Supabase para o usuário:', user.id);
+        await saveToSupabase(saleData, user.id);
       }
       
       await updateProductStockAfterSale(state.items);
@@ -207,6 +172,61 @@ const Checkout = () => {
       console.error('Erro ao finalizar a venda:', error);
       toast.error('Erro ao finalizar a venda. Por favor, tente novamente.');
       setIsSubmitting(false);
+    }
+  };
+  
+  const saveToSupabase = async (saleData: any, userId: string) => {
+    try {
+      const simplifiedItems = saleData.items.map((item: any) => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+        category: item.product.category
+      }));
+      
+      const supabaseSaleData = {
+        user_id: userId,
+        total: saleData.total,
+        amount_paid: saleData.amountPaid,
+        change: saleData.change,
+        date: new Date().toISOString(),
+        customer: saleData.customer.name,
+        payment_method: saleData.paymentMethod,
+        notes: saleData.notes,
+        items: {
+          customer: saleData.customer,
+          paymentMethod: saleData.paymentMethod,
+          notes: saleData.notes,
+          products: simplifiedItems
+        }
+      };
+      
+      console.log('[Checkout] Dados da venda a serem enviados para o Supabase:', supabaseSaleData);
+      
+      const { data: insertedData, error } = await supabase
+        .from('sales')
+        .insert(supabaseSaleData)
+        .select();
+        
+      if (error) {
+        console.error('[Checkout] Erro ao salvar venda no Supabase:', error);
+        throw error;
+      }
+      
+      console.log('[Checkout] Venda salva com sucesso no Supabase:', insertedData);
+      toast.success('Venda salva com sucesso no banco de dados!');
+      
+      try {
+        await generateSalesReport(userId, 30);
+        console.log('[Checkout] Relatório financeiro atualizado após a venda');
+      } catch (reportError) {
+        console.error('[Checkout] Erro ao gerar relatório financeiro:', reportError);
+      }
+    } catch (error) {
+      console.error('[Checkout] Erro ao salvar no Supabase:', error);
+      toast.error('Erro ao salvar venda no banco de dados. Os dados foram salvos localmente.');
+      throw error;
     }
   };
   

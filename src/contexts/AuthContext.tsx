@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
       
       if (error) {
-        console.error("Erro ao buscar perfil:", error);
+        console.error("[AuthContext] Erro ao buscar perfil:", error);
         return null;
       }
       
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       return profileData;
     } catch (error) {
-      console.error("Erro ao buscar perfil:", error);
+      console.error("[AuthContext] Erro ao buscar perfil:", error);
       return null;
     }
   };
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Função para atualizar o perfil no estado do contexto
   const refreshProfile = async () => {
     if (!user) {
-      console.warn("Tentativa de atualizar perfil sem usuário autenticado");
+      console.warn("[AuthContext] Tentativa de atualizar perfil sem usuário autenticado");
       
       // Verificar se há uma sessão ativa
       const { data: sessionData } = await supabase.auth.getSession();
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    console.log("Atualizando perfil para usuário:", user.id);
+    console.log("[AuthContext] Atualizando perfil para usuário:", user.id);
     const profileData = await fetchProfile(user.id);
     if (profileData) {
       setProfile(profileData);

@@ -1,129 +1,32 @@
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAuthStatus } from './dashboard/useAuthStatus';
+import { useSalesSummary } from './dashboard/useSalesSummary';
+import { useRecentSales } from './dashboard/useRecentSales';
+import { useLowStockProducts } from './dashboard/useLowStockProducts';
+import { refreshAllData } from './dashboard/useDashboardUtils';
 
 export const useDashboardData = (timeRange: string) => {
   const days = parseInt(timeRange);
-  const { user } = useAuth();
-  const userId = user?.id;
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  
-  // Verificar autenticação e preparar o hook
-  useEffect(() => {
-    if (user) {
-      console.log('[useDashboardData] Usuário autenticado:', userId);
-      setIsAuthReady(true);
-    } else {
-      console.log('[useDashboardData] Aguardando autenticação...');
-    }
-  }, [user, userId]);
+  const { userId, isAuthReady } = useAuthStatus();
   
   // Buscar resumo de vendas
-  const salesSummaryQuery = useQuery({
-    queryKey: ['salesSummary', days, userId],
-    queryFn: async () => {
-      if (!userId) throw new Error('Usuário não autenticado');
-      
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-      
-      console.log(`[useDashboardData] Buscando resumo de vendas de ${startDate.toISOString()} até ${endDate.toISOString()}`);
-      
-      const { data, error } = await supabase
-        .from('sales')
-        .select('id, total, date')
-        .gte('date', startDate.toISOString())
-        .lte('date', endDate.toISOString())
-        .eq('user_id', userId);
-      
-      if (error) throw error;
-      
-      // Calcular totais
-      const totalSales = data.length;
-      const totalRevenue = data.reduce((sum, sale) => sum + Number(sale.total), 0);
-      const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
-      
-      return {
-        totalSales,
-        totalRevenue,
-        averageTicket
-      };
-    },
-    enabled: !!userId && isAuthReady,
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    refetchOnWindowFocus: false,
-  });
+  const salesSummaryQuery = useSalesSummary(days, userId, isAuthReady);
   
   // Buscar vendas recentes
-  const recentSalesQuery = useQuery({
-    queryKey: ['recentSales', userId],
-    queryFn: async () => {
-      if (!userId) throw new Error('Usuário não autenticado');
-      
-      console.log(`[useDashboardData] Buscando vendas recentes para usuário ${userId}`);
-      
-      const { data, error } = await supabase
-        .from('sales')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false })
-        .limit(5);
-      
-      if (error) throw error;
-      
-      return data;
-    },
-    enabled: !!userId && isAuthReady,
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
-  });
+  const recentSalesQuery = useRecentSales(userId, isAuthReady);
   
   // Buscar produtos com baixo estoque
-  const lowStockQuery = useQuery({
-    queryKey: ['lowStock', userId],
-    queryFn: async () => {
-      if (!userId) throw new Error('Usuário não autenticado');
-      
-      console.log(`[useDashboardData] Buscando produtos com estoque baixo`);
-      
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('user_id', userId)
-        .lt('stock', 10)
-        .order('stock', { ascending: true })
-        .limit(10);
-      
-      if (error) throw error;
-      
-      return data;
-    },
-    enabled: !!userId && isAuthReady,
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
-  });
+  const lowStockQuery = useLowStockProducts(userId, isAuthReady);
   
   // Função para forçar atualização de todos os dados
-  const refreshAllData = async () => {
-    try {
-      console.log('[useDashboardData] Forçando atualização de todos os dados...');
-      await Promise.all([
-        salesSummaryQuery.refetch(),
-        recentSalesQuery.refetch(),
-        lowStockQuery.refetch()
-      ]);
-      console.log('[useDashboardData] Todos os dados foram atualizados');
-      toast.success('Dados atualizados com sucesso');
-      return true;
-    } catch (error) {
-      console.error('[useDashboardData] Erro ao atualizar dados:', error);
-      toast.error('Erro ao atualizar os dados');
-      return false;
-    }
+  const refreshAllDataFn = async () => {
+    return await refreshAllData([
+      salesSummaryQuery.refetch,
+      recentSalesQuery.refetch,
+      lowStockQuery.refetch
+    ]);
   };
   
   // Combinando todos os estados de carregamento
@@ -158,6 +61,6 @@ export const useDashboardData = (timeRange: string) => {
       isAuthReady,
       userId
     },
-    refreshAllData
+    refreshAllData: refreshAllDataFn
   };
 };

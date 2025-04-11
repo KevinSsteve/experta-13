@@ -103,27 +103,36 @@ export type Database = {
         Row: {
           amount_paid: number
           change: number
+          customer: string | null
           date: string | null
           id: string
           items: Json
+          notes: string | null
+          payment_method: string | null
           total: number
           user_id: string
         }
         Insert: {
           amount_paid: number
           change: number
+          customer?: string | null
           date?: string | null
           id?: string
           items: Json
+          notes?: string | null
+          payment_method?: string | null
           total: number
           user_id: string
         }
         Update: {
           amount_paid?: number
           change?: number
+          customer?: string | null
           date?: string | null
           id?: string
           items?: Json
+          notes?: string | null
+          payment_method?: string | null
           total?: number
           user_id?: string
         }

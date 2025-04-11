@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -8,7 +7,7 @@ import {
   saveSaleToStorage, 
   updateProductStockAfterSale 
 } from '@/lib/utils';
-import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
+import { downloadReceipt } from '@/lib/utils/receipt';
 import { 
   Card, 
   CardContent,
@@ -24,25 +23,36 @@ import {
   FormItem,
   FormLabel,
   FormMessage
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Check, Trash2, Calculator, Download, Printer, Share2 } from 'lucide-react';
+import { Check, Trash2, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
-interface CheckoutFormValues {
-  customerName: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  customerNIF?: string; // Adicionar campo para NIF do cliente
-  notes?: string;
-  amountPaid: number;
-}
+// Schema de validação para Angola
+const checkoutSchema = z.object({
+  customerName: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }),
+  customerPhone: z.string().optional(),
+  customerEmail: z.string().email({ message: "Email inválido" }).optional(),
+  customerNIF: z.string()
+    .min(9, { message: "NIF deve ter 9 dígitos" })
+    .max(14, { message: "NIF não pode exceder 14 dígitos" })
+    .optional(),
+  notes: z.string().optional(),
+  amountPaid: z.coerce.number().min(getTotalPrice(), { 
+    message: `O valor pago deve ser no mínimo ${formatCurrency(getTotalPrice())}` 
+  }),
+  currency: z.enum(['AOA', 'USD', 'EUR']).default('AOA')
+});
+
+type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 const Checkout = () => {
   const { state, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
@@ -52,7 +62,9 @@ const Checkout = () => {
   const navigate = useNavigate();
   
   const form = useForm<CheckoutFormValues>({
+    resolver: zodResolver(checkoutSchema),
     defaultValues: {
+      currency: 'AOA',
       customerName: '',
       customerPhone: '',
       customerEmail: '',
@@ -416,7 +428,6 @@ const Checkout = () => {
                         />
                       </div>
                       
-                      {/* Campo NIF do Cliente para SAFT Angola */}
                       <FormField
                         control={form.control}
                         name="customerNIF"
@@ -424,7 +435,10 @@ const Checkout = () => {
                           <FormItem>
                             <FormLabel>NIF do Cliente (opcional)</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Digite o NIF do cliente" />
+                              <Input 
+                                {...field} 
+                                placeholder="Digite o NIF do cliente" 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

@@ -24,11 +24,13 @@ const THERMAL_CONFIG = {
 
 // Informações da empresa para SAFT de Angola
 const COMPANY_INFO = {
-  name: "MOLOJA",
-  nif: "5000123456", // NIF da empresa (substituir pelo valor real)
+  name: "Moloja Supermercados",
+  nif: "5417623490", // NIF da empresa
   address: "Luanda, Angola",
-  phone: "+244 123 456 789",
-  website: "www.moloja.co.ao"
+  phone: "+244 922 123 456",
+  website: "www.moloja.ao",
+  taxRegime: "Normal", // Regime de tributação
+  currency: "AOA" // Moeda local
 };
 
 export const generateReceiptPDF = (sale: Sale): jsPDF => {
@@ -237,12 +239,13 @@ export const generateReceiptPDF = (sale: Sale): jsPDF => {
   yPos += 3;
   yPos += addLine('INFORMAÇÕES FISCAIS', yPos, THERMAL_CONFIG.fontSize.title);
   yPos += 2;
-  yPos += addLine(`Regime: Normal`, yPos, THERMAL_CONFIG.fontSize.small);
   yPos += addLine(`NIF Emissor: ${COMPANY_INFO.nif}`, yPos, THERMAL_CONFIG.fontSize.small);
+  yPos += addLine(`Regime: ${COMPANY_INFO.taxRegime}`, yPos, THERMAL_CONFIG.fontSize.small);
   
-  // Código para verificação fiscal (simulado)
-  const fiscalCode = sale.id ? sale.id.slice(0, 6).toUpperCase() : 'N/A';
-  yPos += addLine(`Código de Verificação: ${fiscalCode}`, yPos, THERMAL_CONFIG.fontSize.small);
+  // Código de verificação fiscal (simulado)
+  const fiscalVerificationCode = sale.id ? sale.id.slice(0, 6).toUpperCase() : 'N/A';
+  yPos += addLine(`Código de Verificação: ${fiscalVerificationCode}`, yPos, THERMAL_CONFIG.fontSize.small);
+
   yPos += 3;
   
   // Rodapé

@@ -9,6 +9,16 @@ import { formatCurrency } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, DollarSign, ShoppingBag, TrendingUp } from 'lucide-react';
 
+interface SaleItem {
+  id?: string;
+  product?: {
+    id: string;
+    price: number;
+  };
+  quantity?: number;
+  price?: number;
+}
+
 const Demonstracoes = () => {
   const [timeRange, setTimeRange] = useState('30');
   const { user } = useAuth();
@@ -51,27 +61,29 @@ const Demonstracoes = () => {
           purchase_price: product.purchase_price || 0
         };
         return map;
-      }, {}) : {};
+      }, {} as Record<string, { price: number, purchase_price: number }>) : {};
       
       // Calcular o lucro baseado nos items vendidos
       let lucroTotal = 0;
       
       if (sales && sales.length > 0) {
         sales.forEach(sale => {
-          if (sale.items && Array.isArray(sale.items)) {
-            sale.items.forEach(item => {
-              const productId = item.product?.id || item.id;
-              const quantity = item.quantity || 1;
-              const productInfo = productMap[productId];
-              
-              if (productInfo) {
-                const precoVenda = item.price || productInfo.price;
-                const precoCusto = productInfo.purchase_price;
-                const lucroItem = (precoVenda - precoCusto) * quantity;
-                lucroTotal += lucroItem;
-              }
-            });
-          }
+          // Garantir que items é um array e não um campo de string JSON
+          const items: SaleItem[] = Array.isArray(sale.items) ? sale.items : [];
+          
+          items.forEach(item => {
+            // Acessar os campos com verificação de tipos
+            const productId = item.product?.id || (item as any).id;
+            const quantity = item.quantity || 1;
+            const productInfo = productMap[productId];
+            
+            if (productInfo) {
+              const precoVenda = item.price || (item.product?.price) || productInfo.price;
+              const precoCusto = productInfo.purchase_price;
+              const lucroItem = (precoVenda - precoCusto) * quantity;
+              lucroTotal += lucroItem;
+            }
+          });
         });
       }
       

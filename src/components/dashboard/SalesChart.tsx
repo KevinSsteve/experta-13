@@ -1,7 +1,7 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface SalesChartProps {
@@ -13,7 +13,10 @@ export const SalesChart = ({ salesData, isLoading }: SalesChartProps) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
+          <p className="text-muted-foreground text-sm">Carregando dados de vendas...</p>
+        </div>
       </div>
     );
   }
@@ -21,14 +24,15 @@ export const SalesChart = ({ salesData, isLoading }: SalesChartProps) => {
   if (!salesData || salesData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-        <p>Nenhum dado de venda encontrado para o período selecionado.</p>
-        <p className="text-sm">Tente selecionar um período diferente ou cadastrar vendas.</p>
+        <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
+        <p className="font-medium">Nenhum dado de venda encontrado</p>
+        <p className="text-sm mt-1">Tente selecionar um período diferente ou cadastrar vendas.</p>
       </div>
     );
   }
 
   // Make sure we have the data in the right format
-  console.log('Chart data:', salesData);
+  console.log('Dados do gráfico:', salesData);
 
   return (
     <ResponsiveContainer width="100%" height="100%">

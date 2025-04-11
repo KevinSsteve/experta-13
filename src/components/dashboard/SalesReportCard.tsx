@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileDown, ChartBar } from 'lucide-react';
+import { FileDown, ChartBar, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase, getSalesReportData, generateSalesReport } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -26,33 +25,33 @@ export const SalesReportCard = () => {
   });
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
-  const { data: salesData, isLoading } = useQuery({
+  const { data: salesData, isLoading, error } = useQuery({
     queryKey: ['salesReport', dateRange.from.toISOString(), dateRange.to.toISOString(), user?.id],
     queryFn: async () => {
       try {
         if (!user?.id) {
-          console.error('No user ID available for sales report query');
+          console.error('Nenhum ID de usuário disponível para consulta de relatório de vendas');
           return [];
         }
         
-        console.log('Fetching sales report data for user:', user.id);
-        console.log('Date range:', dateRange.from, 'to', dateRange.to);
+        console.log('Buscando dados de relatório de vendas para usuário:', user.id);
+        console.log('Intervalo de datas:', dateRange.from, 'até', dateRange.to);
         
-        // Use the client function to get sales data
+        // Use a função do cliente para obter dados de vendas
         const data = await getSalesReportData(user.id, dateRange.from, dateRange.to);
-        console.log('Sales report data received:', data?.length || 0, 'records');
+        console.log('Dados de relatório de vendas recebidos:', data?.length || 0, 'registros');
 
-        // If we don't have data, return empty array
+        // Se não tivermos dados, retorne uma matriz vazia
         if (!data || data.length === 0) {
-          console.log('No sales data found for the selected period');
+          console.log('Nenhum dado de vendas encontrado para o período selecionado');
           return [];
         }
 
-        // Convert Supabase data to Sale type before processing
+        // Converter dados do Supabase para o tipo Sale antes do processamento
         const salesArray = data.map(sale => adaptSupabaseSale(sale));
-        console.log('Adapted sales data:', salesArray.length, 'records');
+        console.log('Dados de vendas adaptados:', salesArray.length, 'registros');
         
-        // Group sales by day
+        // Agrupar vendas por dia
         const salesByDay: { [key: string]: { date: string; total: number; count: number } } = {};
         
         salesArray.forEach((sale) => {
@@ -71,18 +70,47 @@ export const SalesReportCard = () => {
         });
         
         const result = Object.values(salesByDay);
-        console.log('Processed sales data by day:', result.length, 'days');
+        console.log('Dados de vendas processados por dia:', result.length, 'dias');
         return result;
       } catch (error) {
-        console.error('Error in sales report query:', error);
+        console.error('Erro na consulta do relatório de vendas:', error);
         toast.error('Erro ao carregar dados de vendas');
-        return [];
+        throw error;
       }
     },
-    enabled: !!user?.id, // Only run query if there's an authenticated user
+    enabled: !!user?.id, // Só execute a consulta se houver um usuário autenticado
     retry: 2,
     refetchOnWindowFocus: false
   });
+
+  // Função para mostrar um aviso quando não houver dados ou quando o usuário não estiver autenticado
+  const renderAuthWarning = () => {
+    if (!user) {
+      return (
+        <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-md mb-4">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-yellow-800">Você não está autenticado</h3>
+              <p className="text-sm text-yellow-700 mt-1">
+                Faça login para visualizar seus dados de vendas.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2" 
+                onClick={() => navigate('/auth')}
+              >
+                Ir para página de login
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
 
   const exportToCSV = () => {
     if (!salesData || salesData.length === 0) return;
@@ -113,7 +141,7 @@ export const SalesReportCard = () => {
     document.body.removeChild(link);
   };
 
-  // Function to generate financial report and navigate to results
+  // Função para gerar relatório financeiro
   const generateFinancialReport = async () => {
     if (!user?.id) {
       toast.error('Usuário não autenticado');
@@ -182,6 +210,25 @@ export const SalesReportCard = () => {
         </div>
       </CardHeader>
       <CardContent>
+        {renderAuthWarning()}
+        
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-100 rounded-md mb-4">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-red-800">Erro ao carregar dados</h3>
+                <p className="text-sm text-red-700 mt-1">
+                  Ocorreu um erro ao carregar os dados de vendas. Por favor, tente novamente.
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  Detalhes do erro: {String(error)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      
         <div className="h-80">
           <SalesChart salesData={salesData} isLoading={isLoading} />
         </div>

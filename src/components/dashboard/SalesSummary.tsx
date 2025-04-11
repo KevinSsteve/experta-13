@@ -1,5 +1,6 @@
 
 import { formatCurrency } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react';
 
 interface SalesSummaryProps {
   salesData: any[] | undefined;
@@ -8,8 +9,22 @@ interface SalesSummaryProps {
 export const SalesSummary = ({ salesData }: SalesSummaryProps) => {
   if (!salesData || salesData.length === 0) {
     return (
-      <div className="mt-4 p-3 bg-muted rounded-md text-center">
-        <p className="text-muted-foreground">Nenhum dado de venda para resumir neste período.</p>
+      <div className="mt-4 p-4 bg-muted rounded-md">
+        <div className="flex items-center space-x-2 mb-2">
+          <AlertCircle className="h-5 w-5 text-muted-foreground" />
+          <p className="font-medium">Nenhum dado de venda para resumir neste período</p>
+        </div>
+        <p className="text-sm text-muted-foreground ml-7">
+          Isso pode acontecer por três motivos:
+        </p>
+        <ul className="text-sm text-muted-foreground list-disc pl-10 mt-1 space-y-1">
+          <li>Você não tem vendas registradas para o período selecionado</li>
+          <li>Você não está autenticado no sistema</li>
+          <li>Há um problema com o acesso ao banco de dados</li>
+        </ul>
+        <p className="text-sm text-muted-foreground ml-7 mt-2">
+          Tente selecionar um período diferente, verificar sua autenticação ou registrar novas vendas.
+        </p>
       </div>
     );
   }

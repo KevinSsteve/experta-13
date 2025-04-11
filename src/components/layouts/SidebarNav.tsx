@@ -12,7 +12,8 @@ import {
   LogOut,
   Home,
   User,
-  Receipt
+  Receipt,
+  PieChart
 } from "lucide-react";
 
 const navItems = [
@@ -25,6 +26,11 @@ const navItems = [
     title: "Dashboard",
     href: "/dashboard",
     icon: BarChart4,
+  },
+  {
+    title: "Demonstrações",
+    href: "/demonstracoes",
+    icon: PieChart,
   },
   {
     title: "Produtos",

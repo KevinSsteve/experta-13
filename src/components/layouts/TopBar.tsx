@@ -27,7 +27,7 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="lg:hidden flex items-center">
-            <span className="text-lg font-medium">moloja</span>
+            <span className="text-lg font-medium">Conta Comigo</span>
           </div>
         </div>
 
@@ -64,7 +64,7 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
           </div>
           <div className="ml-2">
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-medium text-sm">AD</span>
+              <span className="text-primary font-medium text-sm">CC</span>
             </div>
           </div>
         </div>

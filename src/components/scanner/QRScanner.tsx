@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import QrScanner from 'react-qr-scanner';
 import { useCart } from '@/contexts/CartContext';
@@ -30,16 +31,42 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
       if (timer) clearTimeout(timer);
     };
   }, [lastScanned]);
+
+  // Iniciar o scanner automaticamente quando o componente montar
+  useEffect(() => {
+    // Pequeno atraso para garantir que o DOM esteja pronto
+    const timer = setTimeout(() => {
+      setScanning(true);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   const handleScan = (data: { text: string } | null) => {
     if (data && data.text && !lastScanned) {
       const scannedCode = data.text;
-      setLastScanned(scannedCode);
       
-      toast.success('Código QR detectado!');
-      
-      if (onProductFound) {
-        onProductFound(scannedCode);
+      try {
+        // Tentar analisar como JSON
+        const jsonData = JSON.parse(scannedCode);
+        const productCode = jsonData.code || jsonData.id;
+        
+        if (productCode) {
+          setLastScanned(productCode);
+          toast.success('Código QR detectado!');
+          
+          if (onProductFound) {
+            onProductFound(productCode);
+          }
+        }
+      } catch (e) {
+        // Se não for JSON, usar o código bruto
+        setLastScanned(scannedCode);
+        toast.success('Código QR detectado!');
+        
+        if (onProductFound) {
+          onProductFound(scannedCode);
+        }
       }
     }
   };
@@ -88,6 +115,7 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
                     top: 0,
                     left: 0
                   }}
+                  delay={300}
                 />
                 <div className="absolute top-2 right-2 flex gap-2">
                   <Button 

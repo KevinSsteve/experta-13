@@ -24,6 +24,8 @@ const ScanProducts = () => {
     
     setIsLoading(true);
     try {
+      console.log("Código de produto escaneado:", productCode);
+      
       // Adicionar a lista de scans recentes
       setRecentScans(prev => {
         const newScans = [{ code: productCode, timestamp: Date.now() }, ...prev];
@@ -37,14 +39,17 @@ const ScanProducts = () => {
         .eq('code', productCode);
         
       if (error) {
+        console.error("Erro ao buscar produto:", error);
         throw error;
       }
 
       if (product && product.length > 0) {
         // Adicionar o produto ao carrinho
+        console.log("Produto encontrado:", product[0]);
         addItem(product[0]);
         toast.success(`${product[0].name} adicionado ao carrinho`);
       } else {
+        console.log("Nenhum produto encontrado com o código:", productCode);
         toast.error('Produto não encontrado');
       }
     } catch (error) {

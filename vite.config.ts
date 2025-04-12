@@ -11,13 +11,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    port: 8080
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Don't mark jspdf as external; instead we'll install it properly
-    // rollupOptions: {
-    //   external: ['jspdf']
-    // }
+    // We're not marking jspdf as external anymore
   },
   optimizeDeps: {
     include: ['jspdf']

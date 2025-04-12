@@ -37,3 +37,93 @@ export function formatShortDate(date: string | Date): string {
   
   return format(dateObj, "dd/MM", { locale: ptBR });
 }
+
+// Utility function to calculate change
+export function calculateChange(total: number, amountPaid: number): number {
+  return Math.max(0, amountPaid - total);
+}
+
+// Utility function to save sale to storage
+export function saveSaleToStorage(saleData: any): void {
+  try {
+    // Get existing sales
+    const existingSales = localStorage.getItem('sales');
+    let sales = existingSales ? JSON.parse(existingSales) : [];
+    
+    // Add timestamp and ID if not present
+    const newSale = {
+      ...saleData,
+      id: saleData.id || `sale-${Date.now()}`,
+      date: saleData.date || new Date().toISOString()
+    };
+    
+    // Add to beginning of array
+    sales = [newSale, ...sales];
+    
+    // Save back to storage
+    localStorage.setItem('sales', JSON.stringify(sales));
+  } catch (error) {
+    console.error('Error saving sale to storage:', error);
+  }
+}
+
+// Utility function to get sales from storage
+export function getSalesFromStorage(): any[] {
+  try {
+    const salesJson = localStorage.getItem('sales');
+    return salesJson ? JSON.parse(salesJson) : [];
+  } catch (error) {
+    console.error('Error getting sales from storage:', error);
+    return [];
+  }
+}
+
+// Utility function to update product stock after sale
+export function updateProductStockAfterSale(items: any[]): Promise<void> {
+  // This would normally update a database, but for now just log
+  console.log('Updating stock for items:', items);
+  return Promise.resolve();
+}
+
+// Debounce function
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  
+  return function(...args: Parameters<T>) {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+    
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Filter products function
+export function filterProducts(products: any[], query: string): any[] {
+  if (!query || query.trim() === '') {
+    return products;
+  }
+  
+  const searchTerms = query.toLowerCase().split(' ');
+  
+  return products.filter(product => {
+    const productName = (product.name || '').toLowerCase();
+    const productDesc = (product.description || '').toLowerCase();
+    const productCategory = (product.category || '').toLowerCase();
+    const productCode = (product.code || '').toLowerCase();
+    
+    return searchTerms.every(term => 
+      productName.includes(term) || 
+      productDesc.includes(term) || 
+      productCategory.includes(term) || 
+      productCode.includes(term)
+    );
+  });
+}

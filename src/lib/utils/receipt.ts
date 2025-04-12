@@ -6,9 +6,10 @@ import { Sale } from '@/lib/sales';
 /**
  * Generates a PDF receipt for a sale
  * @param sale The sale to generate a receipt for
+ * @param companyProfile Optional company profile information to include in the receipt
  * @returns The generated PDF document
  */
-export const generateReceipt = (sale: Sale): jsPDF => {
+export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -20,7 +21,8 @@ export const generateReceipt = (sale: Sale): jsPDF => {
   doc.setFontSize(18);
   
   // Add title
-  doc.text('MOLOJA - RECIBO DE VENDA', 105, 20, { align: 'center' });
+  const companyName = companyProfile?.name || 'MOLOJA';
+  doc.text(`${companyName} - RECIBO DE VENDA`, 105, 20, { align: 'center' });
   
   // Add receipt information
   doc.setFontSize(12);
@@ -71,7 +73,7 @@ export const generateReceipt = (sale: Sale): jsPDF => {
   // Add footer
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  const footerText = 'Moloja - Supermercado Digital';
+  const footerText = companyProfile?.name || 'Moloja - Supermercado Digital';
   const textWidth = doc.getTextWidth(footerText);
   const pageWidth = doc.internal.pageSize.getWidth();
   doc.text(footerText, (pageWidth - textWidth) / 2, 280);
@@ -82,8 +84,54 @@ export const generateReceipt = (sale: Sale): jsPDF => {
 /**
  * Generates and downloads a PDF receipt for a sale
  * @param sale The sale to generate a receipt for
+ * @param companyProfile Optional company profile information
  */
-export const downloadReceipt = (sale: Sale): void => {
-  const doc = generateReceipt(sale);
+export const downloadReceipt = (sale: Sale, companyProfile?: any): void => {
+  const doc = generateReceipt(sale, companyProfile);
   doc.save(`recibo-venda-${sale.id || Date.now()}.pdf`);
+};
+
+/**
+ * Prints a PDF receipt for a sale
+ * @param sale The sale to generate a receipt for
+ * @param companyProfile Optional company profile information
+ */
+export const printReceipt = (sale: Sale, companyProfile?: any): void => {
+  const doc = generateReceipt(sale, companyProfile);
+  doc.autoPrint();
+  doc.output('dataurlnewwindow');
+};
+
+/**
+ * Shares a PDF receipt for a sale
+ * @param sale The sale to generate a receipt for
+ * @param companyProfile Optional company profile information
+ * @returns Promise<boolean> indicating whether sharing was successful
+ */
+export const shareReceipt = async (sale: Sale, companyProfile?: any): Promise<boolean> => {
+  try {
+    // Check if Web Share API is available
+    if (navigator.share) {
+      const doc = generateReceipt(sale, companyProfile);
+      const pdfBlob = doc.output('blob');
+      const pdfFile = new File([pdfBlob], `recibo-venda-${sale.id || Date.now()}.pdf`, { type: 'application/pdf' });
+      
+      await navigator.share({
+        title: 'Recibo de Venda',
+        text: `Recibo da venda ${sale.id || Date.now()}`,
+        files: [pdfFile]
+      });
+      
+      return true;
+    } else {
+      // Fallback to download if sharing not available
+      downloadReceipt(sale, companyProfile);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error sharing receipt:', error);
+    // Fallback to download on error
+    downloadReceipt(sale, companyProfile);
+    return false;
+  }
 };

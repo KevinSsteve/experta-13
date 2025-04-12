@@ -14,6 +14,7 @@ import {
   Home,
   User,
   Receipt,
+  Scan,
 } from "lucide-react";
 
 const navItems = [
@@ -31,6 +32,11 @@ const navItems = [
     title: "Produtos",
     href: "/products",
     icon: Package,
+  },
+  {
+    title: "Scanner QR",
+    href: "/scan",
+    icon: Scan,
   },
   {
     title: "Checkout",

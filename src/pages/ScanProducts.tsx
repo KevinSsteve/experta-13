@@ -7,19 +7,41 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ShoppingCart, Scan, ArrowLeft, Search } from 'lucide-react';
+import { ShoppingCart, Scan, ArrowLeft, Search, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveWrapper } from '@/components/ui/responsive-wrapper';
 import { Input } from '@/components/ui/input';
+import { getProducts } from '@/lib/products/queries';
 
 const ScanProducts = () => {
   const [recentScans, setRecentScans] = useState<{ code: string; timestamp: number }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const { addItem } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Função para buscar todos os produtos disponíveis para debug
+  const fetchAllProductsForDebug = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, code')
+        .limit(10);
+      
+      if (error) {
+        console.error("Erro ao buscar produtos para debug:", error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Erro ao buscar produtos para debug:", error);
+      return null;
+    }
+  };
 
   const searchProduct = async (productCode: string) => {
     if (!productCode) return;
@@ -40,29 +62,41 @@ const ScanProducts = () => {
       // Log para debug: verificar se o usuário está autenticado
       console.log("Status de autenticação:", user ? "Autenticado" : "Não autenticado");
       
-      // Primeiro, tentar busca exata por código
+      // Primeiro, buscar diretamente pelo código sem normalização
+      let { data: exactMatchRaw, error: exactErrorRaw } = await supabase
+        .from('products')
+        .select('*')
+        .eq('code', productCode);
+        
+      if (exactErrorRaw) {
+        console.error("Erro na busca exata (sem normalização):", exactErrorRaw);
+      }
+      
+      // Busca exata com código normalizado
       let { data: exactMatch, error: exactError } = await supabase
         .from('products')
         .select('*')
         .eq('code', normalizedCode);
         
       if (exactError) {
-        console.error("Erro na busca exata:", exactError);
+        console.error("Erro na busca exata (normalizada):", exactError);
       }
       
-      // Log para debug: verificar o resultado da busca exata
-      console.log("Resultado da busca exata:", exactMatch);
+      // Log para debug: verificar o resultado das buscas exatas
+      console.log("Resultado da busca exata sem normalização:", exactMatchRaw);
+      console.log("Resultado da busca exata normalizada:", exactMatch);
       
-      if (exactMatch && exactMatch.length > 0) {
+      if ((exactMatchRaw && exactMatchRaw.length > 0) || (exactMatch && exactMatch.length > 0)) {
         // Produto encontrado com correspondência exata
-        console.log("Produto encontrado com correspondência exata:", exactMatch[0]);
-        addItem(exactMatch[0]);
-        toast.success(`${exactMatch[0].name} adicionado ao carrinho`);
+        const foundProduct = exactMatchRaw?.[0] || exactMatch?.[0];
+        console.log("Produto encontrado com correspondência exata:", foundProduct);
+        addItem(foundProduct);
+        toast.success(`${foundProduct.name} adicionado ao carrinho`);
         setIsLoading(false);
         return;
       }
       
-      // Se não encontrar correspondência exata, tentar busca parcial
+      // Se não encontrar correspondência exata, tentar busca parcial com ILIKE
       let { data: partialMatch, error: partialError } = await supabase
         .from('products')
         .select('*')
@@ -84,13 +118,18 @@ const ScanProducts = () => {
         addItem(partialMatch[0]);
         toast.success(`${partialMatch[0].name} adicionado ao carrinho`);
       } else {
-        // Fazer busca em todos os produtos para debug
-        let { data: allProducts, error: allError } = await supabase
-          .from('products')
-          .select('code, name, id')
-          .limit(5);
-          
-        console.log("Amostra de produtos disponíveis:", allProducts);
+        // Buscar amostra de produtos para debug
+        const sampleProducts = await fetchAllProductsForDebug();
+        setDebugInfo({
+          searchedCode: normalizedCode,
+          availableCodes: sampleProducts?.map(p => ({
+            id: p.id,
+            name: p.name,
+            code: p.code
+          }))
+        });
+        
+        console.log("Amostra de produtos disponíveis:", sampleProducts);
         console.log("Nenhum produto encontrado com o código:", normalizedCode);
         toast.error('Nenhum produto encontrado correspondente ao código escaneado');
       }
@@ -118,6 +157,21 @@ const ScanProducts = () => {
   const goToCheckout = () => {
     navigate('/checkout');
   };
+
+  // Buscar todos os produtos ao carregar o componente para debug
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        // Usar a função getProducts do lib/products/queries
+        const allProducts = await getProducts('', '', 0, Infinity, false, user?.id);
+        console.log("Lista completa de produtos disponíveis:", allProducts);
+      } catch (error) {
+        console.error("Erro ao buscar produtos:", error);
+      }
+    };
+    
+    fetchProducts();
+  }, [user]);
 
   return (
     <MainLayout>
@@ -170,6 +224,27 @@ const ScanProducts = () => {
                 </div>
               </div>
               
+              {debugInfo && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm font-medium text-yellow-800 mb-2">Informações de Debug:</p>
+                  <p className="text-xs text-yellow-700 mb-1">Código buscado: <code className="bg-yellow-100 px-1 rounded">{debugInfo.searchedCode}</code></p>
+                  <p className="text-xs text-yellow-700 mb-1">Códigos disponíveis na base de dados:</p>
+                  <div className="max-h-40 overflow-y-auto">
+                    {debugInfo.availableCodes?.length > 0 ? (
+                      <ul className="text-xs space-y-1 pl-2">
+                        {debugInfo.availableCodes.map((p: any, i: number) => (
+                          <li key={i} className="text-yellow-700">
+                            <code className="bg-yellow-100 px-1 rounded">{p.code || 'null'}</code> - {p.name} (ID: {p.id})
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-yellow-700">Nenhum código encontrado na base de dados.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {recentScans.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-sm font-medium mb-2">Escaneamentos Recentes</h3>
@@ -188,6 +263,28 @@ const ScanProducts = () => {
                   </div>
                 </div>
               )}
+              
+              <div className="mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={async () => {
+                    const products = await fetchAllProductsForDebug();
+                    setDebugInfo({
+                      searchedCode: "Nenhum código buscado ainda",
+                      availableCodes: products?.map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        code: p.code
+                      }))
+                    });
+                  }}
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Mostrar Produtos no Banco de Dados
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </ResponsiveWrapper>

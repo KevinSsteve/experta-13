@@ -84,7 +84,12 @@ export const ProductsTable = ({
                   </Button>
                 ) : (
                   <div className="flex justify-end gap-2">
-                    <ProductQRCode product={product} />
+                    <ProductQRCode 
+                      product={{
+                        ...product,
+                        purchase_price: product.purchase_price || 0,
+                      }} 
+                    />
                     
                     <Button
                       size="sm"

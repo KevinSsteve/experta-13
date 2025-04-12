@@ -70,7 +70,13 @@ export const ProductsCardList = ({
                   </Button>
                 ) : (
                   <div className="flex gap-1">
-                    <ProductQRCode product={product} variant="icon" />
+                    <ProductQRCode 
+                      product={{
+                        ...product,
+                        purchase_price: product.purchase_price || 0,
+                      }} 
+                      variant="icon" 
+                    />
                     
                     <Button
                       size="sm"

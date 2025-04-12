@@ -18,6 +18,7 @@ import {
 import { StockStatusIndicator } from './StockStatusIndicator';
 import { getProductImageUrl } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
+import { ProductQRCode } from './ProductQRCode';
 
 interface ProductCardProps {
   product: Product;
@@ -104,6 +105,8 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
           </div>
           
           <div className="flex space-x-2">
+            <ProductQRCode product={product} />
+            
             <Button 
               variant="outline" 
               size="sm"

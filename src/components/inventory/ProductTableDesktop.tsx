@@ -23,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { StockStatusIndicator } from './StockStatusIndicator';
+import { ProductQRCode } from './ProductQRCode';
 
 interface ProductTableDesktopProps {
   products: Product[];
@@ -90,6 +91,8 @@ export const ProductTableDesktop = ({ products, onEdit, onDelete }: ProductTable
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-1">
+                    <ProductQRCode product={product} />
+                    
                     <Button 
                       variant="outline" 
                       size="sm"

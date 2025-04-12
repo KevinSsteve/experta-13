@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DeleteProductDialog } from './DeleteProductDialog';
+import { ProductQRCode } from '@/components/inventory/ProductQRCode';
 
 interface ProductsTableProps {
   products: Product[];
@@ -83,6 +84,8 @@ export const ProductsTable = ({
                   </Button>
                 ) : (
                   <div className="flex justify-end gap-2">
+                    <ProductQRCode product={product} />
+                    
                     <Button
                       size="sm"
                       variant="outline"

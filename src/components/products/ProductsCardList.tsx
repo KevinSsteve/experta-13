@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pencil, Trash, PlusCircle } from 'lucide-react';
 import { DeleteProductDialog } from './DeleteProductDialog';
+import { ProductQRCode } from '@/components/inventory/ProductQRCode';
 
 interface ProductsCardListProps {
   products: Product[];
@@ -69,6 +70,8 @@ export const ProductsCardList = ({
                   </Button>
                 ) : (
                   <div className="flex gap-1">
+                    <ProductQRCode product={product} variant="icon" />
+                    
                     <Button
                       size="sm"
                       variant="outline"

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,7 +26,6 @@ import { Image as LucideImage, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Esquema de validação para o formulário de produto
 const productSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
   price: z.coerce.number().positive("O preço deve ser positivo"),
@@ -47,22 +45,17 @@ interface ProductFormProps {
   isSubmitting?: boolean;
 }
 
-// Função para redimensionar imagem
 const resizeImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.8): Promise<File> => {
   return new Promise((resolve, reject) => {
-    // Criar um elemento de imagem para carregar o arquivo
     const img = document.createElement('img');
     img.src = URL.createObjectURL(file);
     
     img.onload = () => {
-      // Verificar se a imagem precisa de redimensionamento
       if (img.width <= maxWidth && img.height <= maxHeight && file.size <= 2 * 1024 * 1024) {
-        // A imagem já está em um tamanho aceitável
         resolve(file);
         return;
       }
       
-      // Calcular as novas dimensões mantendo a proporção
       let newWidth = img.width;
       let newHeight = img.height;
       
@@ -76,7 +69,6 @@ const resizeImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.
         newHeight = maxHeight;
       }
       
-      // Criar um canvas para redimensionar a imagem
       const canvas = document.createElement('canvas');
       canvas.width = newWidth;
       canvas.height = newHeight;
@@ -87,17 +79,14 @@ const resizeImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.
         return;
       }
       
-      // Desenhar a imagem redimensionada no canvas
       ctx.drawImage(img, 0, 0, newWidth, newHeight);
       
-      // Converter o canvas para blob com a qualidade definida
       canvas.toBlob((blob) => {
         if (!blob) {
           reject(new Error('Falha ao converter canvas para blob'));
           return;
         }
         
-        // Criar um novo arquivo a partir do blob
         const resizedFile = new File([blob], file.name, {
           type: file.type,
           lastModified: Date.now()
@@ -120,7 +109,6 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch categories when component mounts
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -135,14 +123,12 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
     fetchCategories();
   }, []);
 
-  // Inicializa a pré-visualização da imagem quando houver um valor padrão
   useEffect(() => {
     if (defaultValues?.image && defaultValues.image !== "/placeholder.svg") {
       setPreviewImage(defaultValues.image);
     }
   }, [defaultValues?.image]);
 
-  // Calcular a margem de lucro (apenas para exibição)
   const calculateProfitMargin = (price: number, purchasePrice: number): string => {
     if (!purchasePrice || purchasePrice <= 0) return "N/A";
     const margin = ((price - purchasePrice) / purchasePrice) * 100;
@@ -163,7 +149,6 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
     },
   });
 
-  // Observar alterações nos campos de preço e preço de compra para mostrar a margem de lucro
   const [profitMargin, setProfitMargin] = useState<string>("N/A");
   const price = form.watch("price");
   const purchasePrice = form.watch("purchase_price");
@@ -177,7 +162,6 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Verifica o tipo de arquivo
     if (!file.type.startsWith("image/")) {
       toast.error("Por favor, selecione um arquivo de imagem válido");
       return;
@@ -186,11 +170,9 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
     try {
       setIsUploading(true);
       
-      // Cria um URL de pré-visualização
       const objectUrl = URL.createObjectURL(file);
       setPreviewImage(objectUrl);
       
-      // Verificar tamanho e redimensionar se necessário
       let fileToUpload: File;
       if (file.size > 2 * 1024 * 1024) {
         toast.info("Redimensionando imagem para otimizar o upload...");
@@ -199,12 +181,10 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
         fileToUpload = file;
       }
       
-      // Nome único para o arquivo
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `product-images/${fileName}`;
       
-      // Faz o upload para o Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('products')
         .upload(filePath, fileToUpload, {
@@ -216,12 +196,10 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
         throw uploadError;
       }
 
-      // Obtém a URL pública
       const { data } = supabase.storage
         .from('products')
         .getPublicUrl(filePath);
 
-      // Atualiza o campo de imagem no formulário
       form.setValue("image", data.publicUrl);
       toast.success("Imagem carregada com sucesso");
       
@@ -229,7 +207,6 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
       console.error("Erro ao fazer upload da imagem:", error);
       toast.error(`Falha ao carregar imagem: ${error.message || "Erro desconhecido"}`);
       
-      // Volta para a imagem anterior ou placeholder
       setPreviewImage(currentImage !== "/placeholder.svg" ? currentImage : null);
     } finally {
       setIsUploading(false);
@@ -385,7 +362,7 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
                           className="object-contain h-full w-full"
                         />
                       ) : (
-                        <Image className="h-12 w-12 text-muted-foreground" />
+                        <LucideImage className="h-12 w-12 text-muted-foreground" />
                       )}
                     </div>
                   </div>

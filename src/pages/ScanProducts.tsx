@@ -29,7 +29,7 @@ const ScanProducts = () => {
       const { data, error } = await supabase
         .from('products')
         .select('id, name, code')
-        .limit(10);
+        .limit(20);
       
       if (error) {
         console.error("Erro ao buscar produtos para debug:", error);
@@ -62,33 +62,38 @@ const ScanProducts = () => {
       // Log para debug: verificar se o usuário está autenticado
       console.log("Status de autenticação:", user ? "Autenticado" : "Não autenticado");
       
-      // Primeiro, buscar diretamente pelo código sem normalização
-      let { data: exactMatchRaw, error: exactErrorRaw } = await supabase
-        .from('products')
-        .select('*')
-        .eq('code', productCode);
-        
-      if (exactErrorRaw) {
-        console.error("Erro na busca exata (sem normalização):", exactErrorRaw);
-      }
+      // Buscar produtos por três estratégias:
+      // 1. Buscar pelo código exato
+      // 2. Buscar pelo ID
+      // 3. Buscar por correspondência parcial
       
-      // Busca exata com código normalizado
-      let { data: exactMatch, error: exactError } = await supabase
+      // Estratégia 1: Buscar pelo código exato
+      let { data: codeMatch, error: codeError } = await supabase
         .from('products')
         .select('*')
         .eq('code', normalizedCode);
         
-      if (exactError) {
-        console.error("Erro na busca exata (normalizada):", exactError);
+      if (codeError) {
+        console.error("Erro na busca por código:", codeError);
       }
       
-      // Log para debug: verificar o resultado das buscas exatas
-      console.log("Resultado da busca exata sem normalização:", exactMatchRaw);
-      console.log("Resultado da busca exata normalizada:", exactMatch);
+      console.log("Resultado da busca por código:", codeMatch);
       
-      if ((exactMatchRaw && exactMatchRaw.length > 0) || (exactMatch && exactMatch.length > 0)) {
-        // Produto encontrado com correspondência exata
-        const foundProduct = exactMatchRaw?.[0] || exactMatch?.[0];
+      // Estratégia 2: Buscar pelo ID (considerando que o código QR pode conter o ID do produto)
+      let { data: idMatch, error: idError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', normalizedCode);
+        
+      if (idError) {
+        console.error("Erro na busca por ID:", idError);
+      }
+      
+      console.log("Resultado da busca por ID:", idMatch);
+      
+      // Se encontrou produto por código ou ID, adicionar ao carrinho
+      if ((codeMatch && codeMatch.length > 0) || (idMatch && idMatch.length > 0)) {
+        const foundProduct = codeMatch?.[0] || idMatch?.[0];
         console.log("Produto encontrado com correspondência exata:", foundProduct);
         addItem(foundProduct);
         toast.success(`${foundProduct.name} adicionado ao carrinho`);
@@ -96,7 +101,7 @@ const ScanProducts = () => {
         return;
       }
       
-      // Se não encontrar correspondência exata, tentar busca parcial com ILIKE
+      // Estratégia 3: Busca parcial com ILIKE se as anteriores não funcionaram
       let { data: partialMatch, error: partialError } = await supabase
         .from('products')
         .select('*')
@@ -104,12 +109,8 @@ const ScanProducts = () => {
         
       if (partialError) {
         console.error("Erro na busca parcial:", partialError);
-        toast.error('Erro ao processar o código QR');
-        setIsLoading(false);
-        return;
       }
       
-      // Log para debug: verificar o resultado da busca parcial
       console.log("Resultado da busca parcial:", partialMatch);
 
       if (partialMatch && partialMatch.length > 0) {
@@ -118,7 +119,7 @@ const ScanProducts = () => {
         addItem(partialMatch[0]);
         toast.success(`${partialMatch[0].name} adicionado ao carrinho`);
       } else {
-        // Buscar amostra de produtos para debug
+        // Se ainda não encontrou, mostrar lista de todos os produtos para debug
         const sampleProducts = await fetchAllProductsForDebug();
         setDebugInfo({
           searchedCode: normalizedCode,

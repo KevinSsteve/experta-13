@@ -4,44 +4,26 @@ import { MainLayout } from '@/components/layouts/MainLayout';
 import { QRScanner } from '@/components/scanner/QRScanner';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ShoppingCart, Scan, ArrowLeft, Search, Database } from 'lucide-react';
+import { ShoppingCart, Scan, ArrowLeft, Search, Trash2, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveWrapper } from '@/components/ui/responsive-wrapper';
 import { Input } from '@/components/ui/input';
 import { getProducts } from '@/lib/products/queries';
+import { Separator } from '@/components/ui/separator';
+import { formatCurrency } from '@/lib/utils';
 
 const ScanProducts = () => {
   const [recentScans, setRecentScans] = useState<{ code: string; timestamp: number }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  const { addItem } = useCart();
+  const { addItem, state, removeItem, getTotalPrice, getTotalItems } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  // Função para buscar todos os produtos disponíveis para debug
-  const fetchAllProductsForDebug = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, code')
-        .limit(20);
-      
-      if (error) {
-        console.error("Erro ao buscar produtos para debug:", error);
-        return null;
-      }
-      
-      return data;
-    } catch (error) {
-      console.error("Erro ao buscar produtos para debug:", error);
-      return null;
-    }
-  };
 
   const searchProduct = async (productCode: string) => {
     if (!productCode) return;
@@ -119,18 +101,6 @@ const ScanProducts = () => {
         addItem(partialMatch[0]);
         toast.success(`${partialMatch[0].name} adicionado ao carrinho`);
       } else {
-        // Se ainda não encontrou, mostrar lista de todos os produtos para debug
-        const sampleProducts = await fetchAllProductsForDebug();
-        setDebugInfo({
-          searchedCode: normalizedCode,
-          availableCodes: sampleProducts?.map(p => ({
-            id: p.id,
-            name: p.name,
-            code: p.code
-          }))
-        });
-        
-        console.log("Amostra de produtos disponíveis:", sampleProducts);
         console.log("Nenhum produto encontrado com o código:", normalizedCode);
         toast.error('Nenhum produto encontrado correspondente ao código escaneado');
       }
@@ -163,7 +133,6 @@ const ScanProducts = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Usar a função getProducts do lib/products/queries
         const allProducts = await getProducts('', '', 0, Infinity, false, user?.id);
         console.log("Lista completa de produtos disponíveis:", allProducts);
       } catch (error) {
@@ -264,29 +233,80 @@ const ScanProducts = () => {
                   </div>
                 </div>
               )}
-              
-              <div className="mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={async () => {
-                    const products = await fetchAllProductsForDebug();
-                    setDebugInfo({
-                      searchedCode: "Nenhum código buscado ainda",
-                      availableCodes: products?.map(p => ({
-                        id: p.id,
-                        name: p.name,
-                        code: p.code
-                      }))
-                    });
-                  }}
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Mostrar Produtos no Banco de Dados
-                </Button>
-              </div>
             </CardContent>
+          </Card>
+          
+          {/* Novo Card do Carrinho */}
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ShoppingCart className="h-5 w-5" />
+                <span>Carrinho</span>
+                {getTotalItems() > 0 && (
+                  <span className="ml-auto text-sm bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                    {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'itens'}
+                  </span>
+                )}
+              </CardTitle>
+              <CardDescription>
+                Produtos adicionados ao carrinho
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {state.items.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground">Seu carrinho está vazio</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Escaneie produtos para adicioná-los ao carrinho
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {state.items.map((item) => (
+                    <div key={item.product.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm truncate">{item.product.name}</h3>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <span>{item.quantity} × {formatCurrency(item.product.price)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium">
+                          {formatCurrency(item.product.price * item.quantity)}
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeItem(item.product.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+            {state.items.length > 0 && (
+              <>
+                <Separator />
+                <CardFooter className="flex flex-col pt-4">
+                  <div className="w-full flex justify-between items-center mb-4">
+                    <span className="font-medium">Total</span>
+                    <span className="text-lg font-bold">{formatCurrency(getTotalPrice())}</span>
+                  </div>
+                  <Button 
+                    onClick={goToCheckout} 
+                    className="w-full flex items-center justify-center"
+                    size="lg"
+                  >
+                    Finalizar Compra
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </>
+            )}
           </Card>
         </ResponsiveWrapper>
       </div>

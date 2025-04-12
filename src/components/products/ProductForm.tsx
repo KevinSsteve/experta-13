@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { getCategories } from "@/lib/products-data";
 import { Product } from "@/contexts/CartContext";
-import { Image, Upload } from "lucide-react";
+import { Image as LucideImage, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -51,7 +51,7 @@ interface ProductFormProps {
 const resizeImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.8): Promise<File> => {
   return new Promise((resolve, reject) => {
     // Criar um elemento de imagem para carregar o arquivo
-    const img = new Image();
+    const img = document.createElement('img');
     img.src = URL.createObjectURL(file);
     
     img.onload = () => {

@@ -12,11 +12,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Function to format currency in BRL
+// Function to format currency in AKZ (Kwanzas)
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
+  return new Intl.NumberFormat('pt-AO', {
     style: 'currency',
-    currency: 'BRL'
+    currency: 'AOA',
+    currencyDisplay: 'symbol'
   }).format(value);
 }
 

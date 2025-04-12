@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -95,7 +94,7 @@ const Settings = () => {
         email: profile.email,
         phone: profile.phone || '922 123 456',
         address: profile.address || 'Rua das Mercearias, 123, Luanda',
-        taxId: '5417623490', // Campo não existe no perfil ainda
+        taxId: '5417623490',
         currency: 'AOA',
         taxRate: 14,
         receiptMessage: 'Obrigado pela preferência!',
@@ -258,9 +257,7 @@ const Settings = () => {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="AOA">Kwanza (Kz)</SelectItem>
-                                  <SelectItem value="USD">Dólar (US$)</SelectItem>
-                                  <SelectItem value="EUR">Euro (€)</SelectItem>
+                                  <SelectItem value="AOA">Kwanza (AKZ)</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />

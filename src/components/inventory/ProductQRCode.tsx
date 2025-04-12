@@ -32,9 +32,10 @@ export const ProductQRCode: React.FC<ProductQRCodeProps> = ({ product, variant =
   // Handle QR code download
   const handleDownload = () => {
     // Create a canvas element from the QR code SVG
-    const svg = document.getElementById('product-qrcode') as SVGSVGElement;
-    if (!svg) return;
+    const svgElement = document.getElementById('product-qrcode');
+    if (!svgElement || !(svgElement instanceof SVGSVGElement)) return;
     
+    const svg = svgElement as SVGSVGElement;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;

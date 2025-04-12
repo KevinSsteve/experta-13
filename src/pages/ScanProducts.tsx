@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { QRScanner } from '@/components/scanner/QRScanner';
@@ -6,24 +7,26 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ShoppingCart, Scan, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, Scan, ArrowLeft, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveWrapper } from '@/components/ui/responsive-wrapper';
+import { Input } from '@/components/ui/input';
 
 const ScanProducts = () => {
   const [recentScans, setRecentScans] = useState<{ code: string; timestamp: number }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [manualCode, setManualCode] = useState('');
   const { addItem } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleProductFound = async (productCode: string) => {
+  const searchProduct = async (productCode: string) => {
     if (!productCode) return;
     
     setIsLoading(true);
     try {
-      console.log("Código de produto escaneado:", productCode);
+      console.log("Código de produto a ser buscado:", productCode);
       
       // Normalizar o código do produto (remover espaços, converter para minúsculas)
       const normalizedCode = productCode.trim().toLowerCase();
@@ -34,24 +37,60 @@ const ScanProducts = () => {
         return newScans.slice(0, 5); // Manter apenas os 5 mais recentes
       });
       
-      // Buscar produto usando correspondência flexível
-      let { data: product, error } = await supabase
+      // Log para debug: verificar se o usuário está autenticado
+      console.log("Status de autenticação:", user ? "Autenticado" : "Não autenticado");
+      
+      // Primeiro, tentar busca exata por código
+      let { data: exactMatch, error: exactError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('code', normalizedCode);
+        
+      if (exactError) {
+        console.error("Erro na busca exata:", exactError);
+      }
+      
+      // Log para debug: verificar o resultado da busca exata
+      console.log("Resultado da busca exata:", exactMatch);
+      
+      if (exactMatch && exactMatch.length > 0) {
+        // Produto encontrado com correspondência exata
+        console.log("Produto encontrado com correspondência exata:", exactMatch[0]);
+        addItem(exactMatch[0]);
+        toast.success(`${exactMatch[0].name} adicionado ao carrinho`);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Se não encontrar correspondência exata, tentar busca parcial
+      let { data: partialMatch, error: partialError } = await supabase
         .from('products')
         .select('*')
         .or(`code.ilike.%${normalizedCode}%,name.ilike.%${normalizedCode}%`);
         
-      if (error) {
-        console.error("Erro ao buscar produto:", error);
+      if (partialError) {
+        console.error("Erro na busca parcial:", partialError);
         toast.error('Erro ao processar o código QR');
+        setIsLoading(false);
         return;
       }
+      
+      // Log para debug: verificar o resultado da busca parcial
+      console.log("Resultado da busca parcial:", partialMatch);
 
-      if (product && product.length > 0) {
+      if (partialMatch && partialMatch.length > 0) {
         // Adicionar o primeiro produto correspondente ao carrinho
-        console.log("Produto encontrado:", product[0]);
-        addItem(product[0]);
-        toast.success(`${product[0].name} adicionado ao carrinho`);
+        console.log("Produto encontrado com correspondência parcial:", partialMatch[0]);
+        addItem(partialMatch[0]);
+        toast.success(`${partialMatch[0].name} adicionado ao carrinho`);
       } else {
+        // Fazer busca em todos os produtos para debug
+        let { data: allProducts, error: allError } = await supabase
+          .from('products')
+          .select('code, name, id')
+          .limit(5);
+          
+        console.log("Amostra de produtos disponíveis:", allProducts);
         console.log("Nenhum produto encontrado com o código:", normalizedCode);
         toast.error('Nenhum produto encontrado correspondente ao código escaneado');
       }
@@ -61,6 +100,19 @@ const ScanProducts = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleProductFound = async (productCode: string) => {
+    await searchProduct(productCode);
+  };
+
+  const handleManualSearch = async () => {
+    if (!manualCode.trim()) {
+      toast.error('Digite um código de produto para buscar');
+      return;
+    }
+    await searchProduct(manualCode);
+    setManualCode('');
   };
 
   const goToCheckout = () => {
@@ -98,6 +150,25 @@ const ScanProducts = () => {
             </CardHeader>
             <CardContent>
               <QRScanner onProductFound={handleProductFound} />
+              
+              <div className="mt-4">
+                <div className="flex space-x-2">
+                  <Input 
+                    placeholder="Digite o código do produto manualmente" 
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+                  />
+                  <Button 
+                    onClick={handleManualSearch} 
+                    disabled={isLoading}
+                    className="shrink-0"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Buscar
+                  </Button>
+                </div>
+              </div>
               
               {recentScans.length > 0 && (
                 <div className="mt-6">

@@ -14,3 +14,7 @@
 [build.environment]
   NODE_VERSION = "18"
   NPM_FLAGS = "--legacy-peer-deps"
+
+# Garantir que os pacotes problemáticos sejam processados corretamente
+[build.processing]
+  skip_processing = false

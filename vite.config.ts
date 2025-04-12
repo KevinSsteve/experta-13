@@ -31,11 +31,15 @@ export default defineConfig(({ mode }) => {
     },
     // Configuração para o Netlify
     build: {
-      // Não marcamos o jspdf como externo, pois pode ser necessário para a renderização
-      // rollupOptions: {
-      //   external: ['jspdf']
-      // },
+      // Em vez de marcar jspdf como externo, vamos garantir que seja corretamente incluído no bundle
+      rollupOptions: {
+        // Não queremos excluir jspdf do bundle, mas podemos configurar outras opções se necessário
+      },
       outDir: 'dist',
     },
+    optimizeDeps: {
+      // Garantir que jspdf seja pré-bundled corretamente
+      include: ['jspdf', 'jspdf-autotable']
+    }
   };
 });

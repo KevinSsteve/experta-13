@@ -32,9 +32,6 @@ export default defineConfig(({ mode }) => {
     // Configuração para o Netlify
     build: {
       outDir: 'dist',
-      rollupOptions: {
-        external: ['jspdf', 'jspdf-autotable']
-      }
     },
     optimizeDeps: {
       // Garantir que jspdf e jspdf-autotable sejam pré-bundled corretamente

@@ -5,12 +5,11 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // We'll load the plugin dynamically only in development mode
+  // Configuramos os plugins
   const plugins = [react()];
   
-  // Only attempt to load componentTagger in development mode
+  // Carregamos o plugin componentTagger apenas em desenvolvimento
   if (mode === 'development') {
-    // We'll import it in a way that works with Vite's plugin system
     try {
       const { componentTagger } = require("lovable-tagger");
       plugins.push(componentTagger());
@@ -24,19 +23,18 @@ export default defineConfig(({ mode }) => {
       host: "::",
       port: 8080,
     },
-    plugins: plugins.filter(Boolean),
+    plugins,
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
     },
-    // Add this for Netlify builds
+    // Configuração para o Netlify
     build: {
-      rollupOptions: {
-        // External dependencies that should not be bundled
-        external: ['jspdf']
-      },
-      // Create redirect file for SPA routing in Netlify
+      // Não marcamos o jspdf como externo, pois pode ser necessário para a renderização
+      // rollupOptions: {
+      //   external: ['jspdf']
+      // },
       outDir: 'dist',
     },
   };

@@ -4,14 +4,13 @@
   command = "npm run build"
   publish = "dist"
 
-# Handle SPA routing
+# Manipulação de rotas para SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Environment variables
+# Variáveis de ambiente
 [build.environment]
   NODE_VERSION = "18"
   NPM_FLAGS = "--legacy-peer-deps"
-

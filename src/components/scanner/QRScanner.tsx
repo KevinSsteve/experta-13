@@ -45,24 +45,32 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
   const handleScan = (data: { text: string } | null) => {
     if (data && data.text && !lastScanned) {
       const scannedCode = data.text;
+      console.log("Código QR escaneado (original):", scannedCode);
       
       try {
-        // Tentar analisar como JSON
-        const jsonData = JSON.parse(scannedCode);
-        const productCode = jsonData.code || jsonData.id;
-        
-        if (productCode) {
-          setLastScanned(productCode);
-          toast.success('Código QR detectado!');
-          
-          if (onProductFound) {
-            onProductFound(productCode);
+        // First try to parse as JSON (for backward compatibility with old QR codes)
+        let productCode = scannedCode;
+        try {
+          const jsonData = JSON.parse(scannedCode);
+          if (jsonData && (jsonData.code || jsonData.id)) {
+            productCode = jsonData.code || jsonData.id;
+            console.log("Código extraído do JSON:", productCode);
           }
+        } catch (e) {
+          // Not JSON, use as is
+          console.log("Não é JSON, usando o código bruto:", scannedCode);
+        }
+        
+        setLastScanned(productCode);
+        toast.success('Código QR detectado!');
+        
+        if (onProductFound) {
+          onProductFound(productCode);
         }
       } catch (e) {
-        // Se não for JSON, usar o código bruto
+        console.error("Erro ao processar QR code:", e);
+        // Caso haja erro, ainda tentamos usar o código bruto
         setLastScanned(scannedCode);
-        toast.success('Código QR detectado!');
         
         if (onProductFound) {
           onProductFound(scannedCode);

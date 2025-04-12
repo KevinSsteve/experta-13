@@ -16,11 +16,9 @@ interface ProductQRCodeProps {
 export const ProductQRCode: React.FC<ProductQRCodeProps> = ({ product, variant = 'icon' }) => {
   const qrCodeRef = useRef<HTMLDivElement>(null);
   
-  // Create a serialized object for the QR code
-  const productData = JSON.stringify({
-    id: product.id,
-    code: product.code || product.id
-  });
+  // Create a serialized product code that will match our search logic in ScanProducts.tsx
+  // Simply use the product code directly instead of a JSON object
+  const productData = product.code || product.id.toString();
   
   // Configure the print handler
   const handlePrint = useReactToPrint({

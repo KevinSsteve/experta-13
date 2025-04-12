@@ -47,6 +47,73 @@ interface ProductFormProps {
   isSubmitting?: boolean;
 }
 
+// Função para redimensionar imagem
+const resizeImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.8): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    // Criar um elemento de imagem para carregar o arquivo
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      // Verificar se a imagem precisa de redimensionamento
+      if (img.width <= maxWidth && img.height <= maxHeight && file.size <= 2 * 1024 * 1024) {
+        // A imagem já está em um tamanho aceitável
+        resolve(file);
+        return;
+      }
+      
+      // Calcular as novas dimensões mantendo a proporção
+      let newWidth = img.width;
+      let newHeight = img.height;
+      
+      if (newWidth > maxWidth) {
+        newHeight = Math.round(newHeight * (maxWidth / newWidth));
+        newWidth = maxWidth;
+      }
+      
+      if (newHeight > maxHeight) {
+        newWidth = Math.round(newWidth * (maxHeight / newHeight));
+        newHeight = maxHeight;
+      }
+      
+      // Criar um canvas para redimensionar a imagem
+      const canvas = document.createElement('canvas');
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Não foi possível criar o contexto do canvas'));
+        return;
+      }
+      
+      // Desenhar a imagem redimensionada no canvas
+      ctx.drawImage(img, 0, 0, newWidth, newHeight);
+      
+      // Converter o canvas para blob com a qualidade definida
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('Falha ao converter canvas para blob'));
+          return;
+        }
+        
+        // Criar um novo arquivo a partir do blob
+        const resizedFile = new File([blob], file.name, {
+          type: file.type,
+          lastModified: Date.now()
+        });
+        
+        console.log(`Imagem redimensionada: Original ${(file.size / 1024).toFixed(2)}KB -> Nova ${(resizedFile.size / 1024).toFixed(2)}KB`);
+        resolve(resizedFile);
+      }, file.type, quality);
+    };
+    
+    img.onerror = () => {
+      reject(new Error('Erro ao carregar a imagem'));
+    };
+  });
+};
+
 export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: ProductFormProps) {
   const [categories, setCategories] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -110,12 +177,6 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Verifica o tamanho do arquivo (máximo 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem é muito grande. Tamanho máximo: 2MB");
-      return;
-    }
-
     // Verifica o tipo de arquivo
     if (!file.type.startsWith("image/")) {
       toast.error("Por favor, selecione um arquivo de imagem válido");
@@ -129,6 +190,15 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
       const objectUrl = URL.createObjectURL(file);
       setPreviewImage(objectUrl);
       
+      // Verificar tamanho e redimensionar se necessário
+      let fileToUpload: File;
+      if (file.size > 2 * 1024 * 1024) {
+        toast.info("Redimensionando imagem para otimizar o upload...");
+        fileToUpload = await resizeImage(file);
+      } else {
+        fileToUpload = file;
+      }
+      
       // Nome único para o arquivo
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -137,7 +207,7 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
       // Faz o upload para o Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('products')
-        .upload(filePath, file, {
+        .upload(filePath, fileToUpload, {
           cacheControl: '3600',
           upsert: false
         });
@@ -355,7 +425,7 @@ export function ProductForm({ onSubmit, defaultValues, isSubmitting = false }: P
                   </FormControl>
                   <FormMessage />
                   <p className="text-xs text-muted-foreground">
-                    Formatos aceitos: JPG, PNG, GIF (máx. 2MB)
+                    Formatos aceitos: JPG, PNG, GIF (qualquer tamanho - imagens grandes serão redimensionadas)
                   </p>
                 </div>
               </div>

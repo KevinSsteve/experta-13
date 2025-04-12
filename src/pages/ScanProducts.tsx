@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { QRScanner } from '@/components/scanner/QRScanner';
@@ -26,31 +25,35 @@ const ScanProducts = () => {
     try {
       console.log("Código de produto escaneado:", productCode);
       
+      // Normalizar o código do produto (remover espaços, converter para minúsculas)
+      const normalizedCode = productCode.trim().toLowerCase();
+      
       // Adicionar a lista de scans recentes
       setRecentScans(prev => {
-        const newScans = [{ code: productCode, timestamp: Date.now() }, ...prev];
+        const newScans = [{ code: normalizedCode, timestamp: Date.now() }, ...prev];
         return newScans.slice(0, 5); // Manter apenas os 5 mais recentes
       });
       
-      // Buscar produto pelo código
+      // Buscar produto usando correspondência flexível
       let { data: product, error } = await supabase
         .from('products')
         .select('*')
-        .eq('code', productCode);
+        .or(`code.ilike.%${normalizedCode}%,name.ilike.%${normalizedCode}%`);
         
       if (error) {
         console.error("Erro ao buscar produto:", error);
-        throw error;
+        toast.error('Erro ao processar o código QR');
+        return;
       }
 
       if (product && product.length > 0) {
-        // Adicionar o produto ao carrinho
+        // Adicionar o primeiro produto correspondente ao carrinho
         console.log("Produto encontrado:", product[0]);
         addItem(product[0]);
         toast.success(`${product[0].name} adicionado ao carrinho`);
       } else {
-        console.log("Nenhum produto encontrado com o código:", productCode);
-        toast.error('Produto não encontrado');
+        console.log("Nenhum produto encontrado com o código:", normalizedCode);
+        toast.error('Nenhum produto encontrado correspondente ao código escaneado');
       }
     } catch (error) {
       console.error('Erro ao buscar produto:', error);

@@ -16,19 +16,19 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
     format: 'a4'
   });
   
-  // Set up fonts
+  // Set up fonts with increased sizes
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(24); // Increased from 18 to 24
   
   // Add title
   const companyName = companyProfile?.name || 'MOLOJA';
   doc.text(`${companyName} - RECIBO DE VENDA`, 105, 20, { align: 'center' });
   
   // Add receipt information
-  doc.setFontSize(12);
+  doc.setFontSize(16); // Increased from 12 to 16
   doc.setFont('helvetica', 'normal');
   
-  // Add sale info
+  // Add sale info with increased font size
   doc.text(`Número da Venda: ${sale.id || 'N/A'}`, 20, 40);
   doc.text(`Data: ${formatDate(sale.date)}`, 20, 50);
   
@@ -47,8 +47,8 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   const paymentMethod = sale.paymentMethod || 'N/A';
   doc.text(`Método de Pagamento: ${paymentMethod}`, 20, 70);
   
-  // Add items table
-  doc.setFontSize(10);
+  // Add items table with increased font size
+  doc.setFontSize(14); // Increased from 10 to 14
   doc.text('Item', 20, 90);
   doc.text('Quantidade', 100, 90);
   doc.text('Preço', 140, 90);
@@ -75,7 +75,7 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
     }
   }
   
-  // Add items
+  // Add items with increased font size
   let y = 105;
   itemsList.forEach((item: any, index: number) => {
     let itemName = 'Produto sem nome';
@@ -107,14 +107,15 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   // Draw a line
   doc.line(20, y + 5, 190, y + 5);
   
-  // Add total
+  // Add total with increased font size
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16); // Increased from default
   doc.text('Total:', 140, y + 15);
   doc.text(formatCurrency(sale.total), 180, y + 15);
   
-  // Add footer
+  // Add footer with increased font size
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(10); // Slightly increased from 8
   const footerText = companyProfile?.name || 'Moloja - Supermercado Digital';
   const textWidth = doc.getTextWidth(footerText);
   const pageWidth = doc.internal.pageSize.getWidth();

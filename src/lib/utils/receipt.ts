@@ -24,13 +24,20 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   const companyName = companyProfile?.name || 'MOLOJA';
   doc.text(`${companyName} - RECIBO DE VENDA`, 105, 20, { align: 'center' });
   
-  // Add receipt information
-  doc.setFontSize(18); // Aumentado de 12 para 18
+  // Add receipt information - 3 vezes o tamanho original
+  doc.setFontSize(36); // Aumentado de 12 para 36 (3x)
   doc.setFont('helvetica', 'normal');
   
+  // Adjust vertical spacing to fit on page
+  let yPos = 45; // Starting position with more space
+  const lineSpacing = 15; // Increased spacing between lines
+  
   // Add sale info with increased font size
-  doc.text(`Número da Venda: ${sale.id || 'N/A'}`, 20, 40);
-  doc.text(`Data: ${formatDate(sale.date)}`, 20, 50);
+  doc.text(`Número da Venda: ${sale.id || 'N/A'}`, 20, yPos);
+  yPos += lineSpacing;
+  
+  doc.text(`Data: ${formatDate(sale.date)}`, 20, yPos);
+  yPos += lineSpacing;
   
   // Manipular o cliente que pode vir em diferentes formatos
   let customerName = 'Cliente não identificado';
@@ -41,21 +48,25 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
       customerName = sale.customer.name || 'Cliente não identificado';
     }
   }
-  doc.text(`Cliente: ${customerName}`, 20, 60);
+  doc.text(`Cliente: ${customerName}`, 20, yPos);
+  yPos += lineSpacing;
   
   // Método de pagamento
   const paymentMethod = sale.paymentMethod || 'N/A';
-  doc.text(`Método de Pagamento: ${paymentMethod}`, 20, 70);
+  doc.text(`Método de Pagamento: ${paymentMethod}`, 20, yPos);
+  yPos += lineSpacing * 1.5; // Extra spacing before table
   
   // Add items table with increased font size
-  doc.setFontSize(18); // Aumentado de 10 para 18
-  doc.text('Item', 20, 90);
-  doc.text('Quantidade', 100, 90);
-  doc.text('Preço', 140, 90);
-  doc.text('Total', 180, 90);
+  doc.setFontSize(30); // Aumentado para tabela (3x de 10)
+  doc.text('Item', 20, yPos);
+  doc.text('Qtd', 120, yPos);
+  doc.text('Preço', 145, yPos);
+  doc.text('Total', 180, yPos);
   
   // Draw a line
-  doc.line(20, 95, 190, 95);
+  yPos += 5;
+  doc.line(20, yPos, 190, yPos);
+  yPos += 10;
   
   // Processar items que podem vir em diferentes formatos
   let itemsList = [];
@@ -75,8 +86,8 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
     }
   }
   
-  // Add items with increased font size
-  let y = 105;
+  // Add items with increased font size and adjusted spacing
+  const itemSpacing = 12; // Increased spacing between items
   itemsList.forEach((item: any, index: number) => {
     let itemName = 'Produto sem nome';
     let quantity = 1;
@@ -96,26 +107,39 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
     
     const total = price * quantity;
     
-    doc.text(itemName, 20, y);
-    doc.text(quantity.toString(), 100, y);
-    doc.text(formatCurrency(price), 140, y);
-    doc.text(formatCurrency(total), 180, y);
+    // Truncate item name if too long to fit on page
+    const maxNameLength = 20;
+    if (itemName.length > maxNameLength) {
+      itemName = itemName.substring(0, maxNameLength - 3) + '...';
+    }
     
-    y += 10;
+    doc.text(itemName, 20, yPos);
+    doc.text(quantity.toString(), 120, yPos);
+    doc.text(formatCurrency(price), 145, yPos);
+    doc.text(formatCurrency(total), 180, yPos);
+    
+    yPos += itemSpacing;
+    
+    // Check if we need a new page
+    if (yPos > 270) {
+      doc.addPage();
+      yPos = 20;
+    }
   });
   
   // Draw a line
-  doc.line(20, y + 5, 190, y + 5);
+  doc.line(20, yPos, 190, yPos);
+  yPos += 10;
   
   // Add total with increased font size
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18); // Aumentado para 18
-  doc.text('Total:', 140, y + 15);
-  doc.text(formatCurrency(sale.total), 180, y + 15);
+  doc.setFontSize(36); // Aumentado para 36 (3x)
+  doc.text('Total:', 120, yPos);
+  doc.text(formatCurrency(sale.total), 180, yPos);
   
   // Add footer with increased font size
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(14); // Aumentado de 8 para 14
+  doc.setFontSize(24); // Aumentado para 24 (3x de 8)
   const footerText = companyProfile?.name || 'Moloja - Supermercado Digital';
   const textWidth = doc.getTextWidth(footerText);
   const pageWidth = doc.internal.pageSize.getWidth();

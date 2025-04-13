@@ -136,9 +136,15 @@ const SaleDetails = () => {
     );
   }
   
-  const customerName = typeof sale.customer === 'object' && sale.customer 
-    ? (sale.customer as CustomerInfo).name || 'Cliente não identificado' 
-    : (sale.customer as string || 'Cliente não identificado');
+  let customerName = 'Cliente não identificado';
+  
+  if (sale.customer) {
+    if (typeof sale.customer === 'object' && sale.customer !== null) {
+      customerName = sale.customer.name || 'Cliente não identificado';
+    } else if (typeof sale.customer === 'string') {
+      customerName = sale.customer;
+    }
+  }
   
   return (
     <MainLayout>
@@ -232,33 +238,41 @@ const SaleDetails = () => {
                   
                   {Array.isArray(sale.items) && sale.items.length > 0 ? (
                     <div className="space-y-3">
-                      {sale.items.map((item, index) => (
-                        <div 
-                          key={index} 
-                          className="flex items-center justify-between py-2 border-b last:border-b-0"
-                        >
-                          <div className="flex items-center">
-                            {item.product.image && (
-                              <div className="h-12 w-12 bg-muted rounded overflow-hidden mr-3">
-                                <img 
-                                  src={item.product.image} 
-                                  alt={item.product.name} 
-                                  className="h-full w-full object-cover"
-                                />
+                      {sale.items.map((item, index) => {
+                        const product = item.product || item;
+                        const quantity = item.quantity || 1;
+                        const price = product.price || 0;
+                        const name = product.name || 'Produto sem nome';
+                        const image = product.image || null;
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            className="flex items-center justify-between py-2 border-b last:border-b-0"
+                          >
+                            <div className="flex items-center">
+                              {image && (
+                                <div className="h-12 w-12 bg-muted rounded overflow-hidden mr-3">
+                                  <img 
+                                    src={image} 
+                                    alt={name} 
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium">{name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {formatCurrency(price)} × {quantity}
+                                </p>
                               </div>
-                            )}
-                            <div>
-                              <p className="font-medium">{item.product.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {formatCurrency(item.product.price)} × {item.quantity}
-                              </p>
                             </div>
+                            <p className="font-medium">
+                              {formatCurrency(price * quantity)}
+                            </p>
                           </div>
-                          <p className="font-medium">
-                            {formatCurrency(item.product.price * item.quantity)}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">

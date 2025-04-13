@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { useQuery } from '@tanstack/react-query';
@@ -136,9 +137,40 @@ const SaleDetails = () => {
     );
   }
   
-  const customerName = typeof sale.customer === 'object' && sale.customer 
-    ? (sale.customer as CustomerInfo).name || 'Cliente não identificado' 
-    : (sale.customer as string || 'Cliente não identificado');
+  // Determine o tipo de valor de customer e extraia o nome do cliente
+  let customerName = 'Cliente não identificado';
+  
+  if (sale.customer) {
+    if (typeof sale.customer === 'object') {
+      customerName = (sale.customer as CustomerInfo).name || 'Cliente não identificado';
+    } else if (typeof sale.customer === 'string') {
+      customerName = sale.customer;
+    }
+  }
+  
+  // Garanta que os itens estejam em um formato consistente
+  const saleItems = (() => {
+    if (!sale.items) return [];
+    
+    if (Array.isArray(sale.items)) {
+      return sale.items;
+    }
+    
+    // Se items for um objeto com produtos
+    if (sale.items && typeof sale.items === 'object' && 'products' in sale.items) {
+      return (sale.items.products || []).map((item: any) => ({
+        product: {
+          id: item.productId || '',
+          name: item.productName || '',
+          price: item.price || 0,
+          category: item.category || ''
+        },
+        quantity: item.quantity || 1
+      }));
+    }
+    
+    return [];
+  })();
   
   return (
     <MainLayout>
@@ -230,15 +262,15 @@ const SaleDetails = () => {
                 <div>
                   <h3 className="text-sm font-medium mb-4">Itens da Venda</h3>
                   
-                  {Array.isArray(sale.items) && sale.items.length > 0 ? (
+                  {saleItems.length > 0 ? (
                     <div className="space-y-3">
-                      {sale.items.map((item, index) => (
+                      {saleItems.map((item, index) => (
                         <div 
                           key={index} 
                           className="flex items-center justify-between py-2 border-b last:border-b-0"
                         >
                           <div className="flex items-center">
-                            {item.product.image && (
+                            {item.product?.image && (
                               <div className="h-12 w-12 bg-muted rounded overflow-hidden mr-3">
                                 <img 
                                   src={item.product.image} 
@@ -248,14 +280,14 @@ const SaleDetails = () => {
                               </div>
                             )}
                             <div>
-                              <p className="font-medium">{item.product.name}</p>
+                              <p className="font-medium">{item.product?.name || 'Produto'}</p>
                               <p className="text-sm text-muted-foreground">
-                                {formatCurrency(item.product.price)} × {item.quantity}
+                                {formatCurrency(item.product?.price || 0)} × {item.quantity || 1}
                               </p>
                             </div>
                           </div>
                           <p className="font-medium">
-                            {formatCurrency(item.product.price * item.quantity)}
+                            {formatCurrency((item.product?.price || 0) * (item.quantity || 1))}
                           </p>
                         </div>
                       ))}

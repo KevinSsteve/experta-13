@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import QrScanner from 'react-qr-scanner';
 import { useCart } from '@/contexts/CartContext';
@@ -23,7 +22,6 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
   const scanCooldownRef = useRef<boolean>(false);
   
   useEffect(() => {
-    // Iniciar o scanner automaticamente quando o componente montar
     const timer = setTimeout(() => {
       setScanning(true);
     }, 1000);
@@ -35,7 +33,6 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
     if (data && data.text && !scanCooldownRef.current) {
       const scannedCode = data.text;
       
-      // Verificar se este código já foi escaneado anteriormente
       if (scannedCodesRef.current.has(scannedCode)) {
         toast.warning('Este produto já foi escaneado!');
         return;
@@ -43,7 +40,6 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
       
       console.log("Código QR escaneado:", scannedCode);
       
-      // Adicionar à lista de códigos escaneados
       scannedCodesRef.current.add(scannedCode);
       setLastScanned(scannedCode);
       toast.success('Código QR detectado!');
@@ -52,7 +48,6 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
         onProductFound(scannedCode);
       }
       
-      // Configurar cooldown para evitar múltiplos scans do mesmo código
       scanCooldownRef.current = true;
       setTimeout(() => {
         scanCooldownRef.current = false;
@@ -81,15 +76,14 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
   };
   
   const refreshCamera = () => {
-    // Simulando o fechamento e reabertura da câmera
+    scannedCodesRef.current.clear();
+    setLastScanned(null);
     setScanning(false);
-    scannedCodesRef.current.clear(); // Limpar códigos escaneados
-    
+    setError(null);
     setTimeout(() => {
-      setError(null);
       setScanning(true);
       toast.success('Câmera reiniciada');
-    }, 500);
+    }, 100);
   };
   
   return (
@@ -167,7 +161,6 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
         </CardContent>
       </Card>
       
-      {/* Substituindo o input de busca manual por um botão de atualizar câmera */}
       <div className="mt-4">
         <Button 
           onClick={refreshCamera} 
@@ -175,7 +168,7 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
           variant="secondary"
         >
           <RefreshCw className="h-4 w-4" />
-          Reiniciar Câmera
+          Limpar Scanner
         </Button>
       </div>
       

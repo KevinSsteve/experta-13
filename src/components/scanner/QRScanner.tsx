@@ -5,7 +5,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Loader2, Camera, CameraOff } from 'lucide-react';
+import { Loader2, Camera, CameraOff, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
@@ -78,6 +78,18 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
       setError(null);
       setScanning(true);
     }
+  };
+  
+  const refreshCamera = () => {
+    // Simulando o fechamento e reabertura da câmera
+    setScanning(false);
+    scannedCodesRef.current.clear(); // Limpar códigos escaneados
+    
+    setTimeout(() => {
+      setError(null);
+      setScanning(true);
+      toast.success('Câmera reiniciada');
+    }, 500);
   };
   
   return (
@@ -154,6 +166,18 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Substituindo o input de busca manual por um botão de atualizar câmera */}
+      <div className="mt-4">
+        <Button 
+          onClick={refreshCamera} 
+          className="w-full flex items-center justify-center gap-2"
+          variant="secondary"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Reiniciar Câmera
+        </Button>
+      </div>
       
       {lastScanned && (
         <div className="mt-4">

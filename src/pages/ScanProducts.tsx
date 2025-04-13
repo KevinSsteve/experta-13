@@ -7,11 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ShoppingCart, Scan, ArrowLeft, Search, Trash2, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Scan, ArrowLeft, Trash2, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ResponsiveWrapper } from '@/components/ui/responsive-wrapper';
-import { Input } from '@/components/ui/input';
 import { getProducts } from '@/lib/products/queries';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/lib/utils';
@@ -19,7 +18,6 @@ import { formatCurrency } from '@/lib/utils';
 const ScanProducts = () => {
   const [recentScans, setRecentScans] = useState<{ code: string; timestamp: number }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [manualCode, setManualCode] = useState('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const { addItem, state, removeItem, getTotalPrice, getTotalItems, updateQuantity } = useCart();
   const { user } = useAuth();
@@ -148,15 +146,6 @@ const ScanProducts = () => {
     await searchProduct(productCode);
   };
 
-  const handleManualSearch = async () => {
-    if (!manualCode.trim()) {
-      toast.error('Digite um código de produto para buscar');
-      return;
-    }
-    await searchProduct(manualCode);
-    setManualCode('');
-  };
-
   const goToCheckout = () => {
     navigate('/checkout');
   };
@@ -207,24 +196,7 @@ const ScanProducts = () => {
             <CardContent>
               <QRScanner onProductFound={handleProductFound} />
               
-              <div className="mt-4">
-                <div className="flex space-x-2">
-                  <Input 
-                    placeholder="Digite o código do produto manualmente" 
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
-                  />
-                  <Button 
-                    onClick={handleManualSearch} 
-                    disabled={isLoading}
-                    className="shrink-0"
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Buscar
-                  </Button>
-                </div>
-              </div>
+              {/* O input de busca manual foi removido e substituído pelo botão na QRScanner */}
               
               {debugInfo && (
                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">

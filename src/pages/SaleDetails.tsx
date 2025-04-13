@@ -158,10 +158,12 @@ const SaleDetails = () => {
       return [];
     }
     
+    // Explicitly handle the case where items is an object
     if (typeof sale.items === 'object') {
-      // Handle case where items is an object with products array
-      if ('products' in sale.items && Array.isArray(sale.items.products)) {
-        return sale.items.products.map((item: any) => ({
+      // Check if it has a products property and it's an array
+      if ('products' in sale.items && Array.isArray((sale.items as any).products)) {
+        const products = (sale.items as any).products;
+        return products.map((item: any) => ({
           product: {
             id: item.productId || '',
             name: item.productName || '',

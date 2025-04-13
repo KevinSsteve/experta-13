@@ -18,14 +18,14 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   
   // Set up fonts with increased sizes
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(24); // Increased from 18 to 24
+  doc.setFontSize(36); // Dobro do tamanho original (18) para o título
   
   // Add title
   const companyName = companyProfile?.name || 'MOLOJA';
   doc.text(`${companyName} - RECIBO DE VENDA`, 105, 20, { align: 'center' });
   
   // Add receipt information
-  doc.setFontSize(16); // Increased from 12 to 16
+  doc.setFontSize(18); // Aumentado de 12 para 18
   doc.setFont('helvetica', 'normal');
   
   // Add sale info with increased font size
@@ -48,7 +48,7 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   doc.text(`Método de Pagamento: ${paymentMethod}`, 20, 70);
   
   // Add items table with increased font size
-  doc.setFontSize(14); // Increased from 10 to 14
+  doc.setFontSize(18); // Aumentado de 10 para 18
   doc.text('Item', 20, 90);
   doc.text('Quantidade', 100, 90);
   doc.text('Preço', 140, 90);
@@ -109,13 +109,13 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   
   // Add total with increased font size
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16); // Increased from default
+  doc.setFontSize(18); // Aumentado para 18
   doc.text('Total:', 140, y + 15);
   doc.text(formatCurrency(sale.total), 180, y + 15);
   
   // Add footer with increased font size
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10); // Slightly increased from 8
+  doc.setFontSize(14); // Aumentado de 8 para 14
   const footerText = companyProfile?.name || 'Moloja - Supermercado Digital';
   const textWidth = doc.getTextWidth(footerText);
   const pageWidth = doc.internal.pageSize.getWidth();

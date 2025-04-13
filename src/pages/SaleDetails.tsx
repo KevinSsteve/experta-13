@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -157,15 +158,16 @@ const SaleDetails = () => {
       return [];
     }
     
-    if (typeof sale.items === 'object' && 'products' in sale.items) {
-      const products = sale.items.products || [];
-      if (Array.isArray(products)) {
-        return products.map((item: any) => ({
+    if (typeof sale.items === 'object') {
+      // Handle case where items is an object with products array
+      if ('products' in sale.items && Array.isArray(sale.items.products)) {
+        return sale.items.products.map((item: any) => ({
           product: {
             id: item.productId || '',
             name: item.productName || '',
             price: item.price || 0,
-            category: item.category || ''
+            category: item.category || '',
+            image: item.image || undefined
           },
           quantity: item.quantity || 1
         }));

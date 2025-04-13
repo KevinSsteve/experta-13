@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -137,7 +136,6 @@ const SaleDetails = () => {
     );
   }
   
-  // Determine o tipo de valor de customer e extraia o nome do cliente
   let customerName = 'Cliente não identificado';
   
   if (sale.customer) {
@@ -148,7 +146,6 @@ const SaleDetails = () => {
     }
   }
   
-  // Garanta que os itens estejam em um formato consistente
   const saleItems = (() => {
     if (!sale.items) return [];
     
@@ -156,17 +153,23 @@ const SaleDetails = () => {
       return sale.items;
     }
     
-    // Se items for um objeto com produtos
-    if (sale.items && typeof sale.items === 'object' && 'products' in sale.items) {
-      return (sale.items.products || []).map((item: any) => ({
-        product: {
-          id: item.productId || '',
-          name: item.productName || '',
-          price: item.price || 0,
-          category: item.category || ''
-        },
-        quantity: item.quantity || 1
-      }));
+    if (typeof sale.items === 'number') {
+      return [];
+    }
+    
+    if (typeof sale.items === 'object' && 'products' in sale.items) {
+      const products = sale.items.products || [];
+      if (Array.isArray(products)) {
+        return products.map((item: any) => ({
+          product: {
+            id: item.productId || '',
+            name: item.productName || '',
+            price: item.price || 0,
+            category: item.category || ''
+          },
+          quantity: item.quantity || 1
+        }));
+      }
     }
     
     return [];

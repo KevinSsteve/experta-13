@@ -62,11 +62,11 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   if (sale.items) {
     if (Array.isArray(sale.items)) {
       itemsList = sale.items;
-    } else if (typeof sale.items === 'object' && 'products' in sale.items) {
-      // Formato no qual os items estão na propriedade products
-      const products = (sale.items as any).products;
-      if (Array.isArray(products)) {
-        itemsList = products.map((item: any) => ({
+    } else if (typeof sale.items === 'object' && sale.items !== null) {
+      // Verificar se há produtos na propriedade 'products'
+      const productsObj = sale.items as any;
+      if ('products' in productsObj && Array.isArray(productsObj.products)) {
+        itemsList = productsObj.products.map((item: any) => ({
           name: item.productName || 'Produto',
           quantity: item.quantity || 1,
           price: item.price || 0

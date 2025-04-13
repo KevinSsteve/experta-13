@@ -1,3 +1,4 @@
+
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -30,8 +31,21 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   // Add sale info
   doc.text(`Número da Venda: ${sale.id || 'N/A'}`, 20, 40);
   doc.text(`Data: ${formatDate(sale.date)}`, 20, 50);
-  doc.text(`Cliente: ${sale.customer || 'N/A'}`, 20, 60);
-  doc.text(`Método de Pagamento: ${sale.paymentMethod || 'N/A'}`, 20, 70);
+  
+  // Manipular o cliente que pode vir em diferentes formatos
+  let customerName = 'Cliente não identificado';
+  if (sale.customer) {
+    if (typeof sale.customer === 'string') {
+      customerName = sale.customer;
+    } else if (typeof sale.customer === 'object' && sale.customer !== null) {
+      customerName = sale.customer.name || 'Cliente não identificado';
+    }
+  }
+  doc.text(`Cliente: ${customerName}`, 20, 60);
+  
+  // Método de pagamento
+  const paymentMethod = sale.paymentMethod || 'N/A';
+  doc.text(`Método de Pagamento: ${paymentMethod}`, 20, 70);
   
   // Add items table
   doc.setFontSize(10);
@@ -43,23 +57,52 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   // Draw a line
   doc.line(20, 95, 190, 95);
   
+  // Processar items que podem vir em diferentes formatos
+  let itemsList = [];
+  if (sale.items) {
+    if (Array.isArray(sale.items)) {
+      itemsList = sale.items;
+    } else if (typeof sale.items === 'object' && 'products' in sale.items) {
+      // Formato no qual os items estão na propriedade products
+      const products = (sale.items as any).products;
+      if (Array.isArray(products)) {
+        itemsList = products.map((item: any) => ({
+          name: item.productName || 'Produto',
+          quantity: item.quantity || 1,
+          price: item.price || 0
+        }));
+      }
+    }
+  }
+  
   // Add items
   let y = 105;
-  if (Array.isArray(sale.items)) {
-    sale.items.forEach((item: any, index: number) => {
-      const itemName = item.name || 'Produto sem nome';
-      const quantity = item.quantity || 1;
-      const price = item.price || 0;
-      const total = price * quantity;
-      
-      doc.text(itemName, 20, y);
-      doc.text(quantity.toString(), 100, y);
-      doc.text(formatCurrency(price), 140, y);
-      doc.text(formatCurrency(total), 180, y);
-      
-      y += 10;
-    });
-  }
+  itemsList.forEach((item: any, index: number) => {
+    let itemName = 'Produto sem nome';
+    let quantity = 1;
+    let price = 0;
+    
+    if (item.product) {
+      // Formato onde temos um objeto product
+      itemName = item.product.name || 'Produto sem nome';
+      price = item.product.price || 0;
+      quantity = item.quantity || 1;
+    } else {
+      // Formato simplificado
+      itemName = item.name || item.productName || 'Produto sem nome';
+      price = item.price || 0;
+      quantity = item.quantity || 1;
+    }
+    
+    const total = price * quantity;
+    
+    doc.text(itemName, 20, y);
+    doc.text(quantity.toString(), 100, y);
+    doc.text(formatCurrency(price), 140, y);
+    doc.text(formatCurrency(total), 180, y);
+    
+    y += 10;
+  });
   
   // Draw a line
   doc.line(20, y + 5, 190, y + 5);

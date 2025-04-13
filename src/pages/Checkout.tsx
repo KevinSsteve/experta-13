@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -58,6 +57,24 @@ const Checkout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
+  useEffect(() => {
+    const loadCompanyProfile = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (!error && data) {
+          setCompanyProfile(data as ExtendedProfile);
+        }
+      }
+    };
+    
+    loadCompanyProfile();
+  }, [user]);
+  
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -87,35 +104,42 @@ const Checkout = () => {
     
     setIsSubmitting(true);
     
-    const saleData = {
-      customer: {
-        name: data.customerName,
-        phone: data.customerPhone || '',
-        email: '',
-        nif: '',
-      },
-      total: getTotalPrice(),
-      amountPaid: data.amountPaid,
-      change: change,
-      notes: '',
-      items: state.items,
-      paymentMethod: 'Dinheiro',
-    };
-    
     try {
+      const saleId = crypto.randomUUID();
+      const saleData = {
+        id: saleId,
+        customer: {
+          name: data.customerName,
+          phone: data.customerPhone || '',
+          email: '',
+          nif: '',
+        },
+        total: getTotalPrice(),
+        amountPaid: data.amountPaid,
+        change: change,
+        notes: '',
+        items: state.items,
+        paymentMethod: 'Dinheiro',
+        date: new Date().toISOString(),
+      };
+      
       saveSaleToStorage(saleData);
       
-      if (user?.id) {
-        await saveToSupabase(saleData, user.id);
-      } else {
+      let userId = user?.id;
+      
+      if (!userId) {
         const { data: sessionData } = await supabase.auth.getSession();
         const sessionUser = sessionData.session?.user;
         
         if (sessionUser) {
-          await saveToSupabase(saleData, sessionUser.id);
+          userId = sessionUser.id;
         } else {
           toast.warning('Usuário não autenticado. Venda salva apenas localmente.');
         }
+      }
+      
+      if (userId) {
+        await saveToSupabase(saleData, userId);
       }
       
       await updateProductStockAfterSale(state.items);
@@ -123,6 +147,7 @@ const Checkout = () => {
       toast.success('Venda finalizada com sucesso!');
       
       setCompletedSale(saleData);
+      setIsSubmitting(false);
       
     } catch (error) {
       console.error('Erro ao finalizar a venda:', error);
@@ -138,15 +163,17 @@ const Checkout = () => {
         productName: item.product.name,
         price: item.product.price,
         quantity: item.quantity,
-        category: item.product.category
+        category: item.product.category,
+        image: item.product.image
       }));
       
       const supabaseSaleData = {
+        id: saleData.id,
         user_id: userId,
         total: saleData.total,
         amount_paid: saleData.amountPaid,
         change: saleData.change,
-        date: new Date().toISOString(),
+        date: saleData.date,
         customer: saleData.customer.name,
         payment_method: saleData.paymentMethod,
         notes: saleData.notes,
@@ -164,9 +191,11 @@ const Checkout = () => {
         .select();
         
       if (error) {
+        console.error('Erro ao inserir venda no Supabase:', error);
         throw error;
       }
       
+      console.log('Venda salva com sucesso no banco de dados:', insertedData);
       toast.success('Venda salva com sucesso no banco de dados!');
       
       try {
@@ -262,14 +291,23 @@ const Checkout = () => {
                         Recibo
                       </Button>
                       <Button
-                        onClick={handleShareReceipt}
+                        variant="outline"
+                        onClick={handleDownloadReceipt}
                         size="sm"
                         className="w-full"
                       >
-                        <Share2 className="mr-1 h-4 w-4" />
-                        Compartilhar
+                        <Download className="mr-1 h-4 w-4" />
+                        PDF
                       </Button>
                     </div>
+                    <Button
+                      onClick={handleShareReceipt}
+                      size="sm"
+                      className="w-full mt-2"
+                    >
+                      <Share2 className="mr-1 h-4 w-4" />
+                      Compartilhar
+                    </Button>
                   </div>
                   
                   <Button 
@@ -280,12 +318,19 @@ const Checkout = () => {
                     <BarChart3 className="mr-2 h-4 w-4" />
                     Ver Dashboard
                   </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => finishAndNavigate('/sales-history')}
+                    className="w-full"
+                  >
+                    Ver Histórico de Vendas
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4">
-              {/* Resumo do Carrinho */}
               <Card className="mx-auto max-w-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg text-center">Carrinho</CardTitle>
@@ -345,7 +390,6 @@ const Checkout = () => {
                 </CardFooter>
               </Card>
               
-              {/* Formulário Simplificado */}
               <Card className="mx-auto max-w-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg text-center">Dados da Venda</CardTitle>

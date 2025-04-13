@@ -7,7 +7,6 @@ import { X, Trash, Plus, Minus, ShoppingBag, Printer, Share2 } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { saveSaleToStorage } from '@/lib/utils';
 import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
 
 export function ShoppingCart() {
@@ -54,6 +53,18 @@ export function ShoppingCart() {
     }
   };
 
+  const handleDownloadReceipt = () => {
+    if (!lastSale) return;
+    
+    try {
+      downloadReceipt(lastSale);
+      toast.success('Recibo baixado com sucesso');
+    } catch (error) {
+      console.error('Erro ao baixar recibo:', error);
+      toast.error('Erro ao baixar recibo');
+    }
+  };
+
   useEffect(() => {
     if (mounted) {
       if (state.isOpen) {
@@ -80,7 +91,7 @@ export function ShoppingCart() {
             const currentTime = new Date().getTime();
             const timeDiff = (currentTime - saleTime) / 1000 / 60;
             
-            if (timeDiff < 1) {
+            if (timeDiff < 5) { // Aumentamos para 5 minutos
               setLastSale(lastSaleData);
               setShowReceiptOptions(true);
             } else {
@@ -130,11 +141,11 @@ export function ShoppingCart() {
               <p className="text-sm text-green-700 dark:text-green-300 mb-2">
                 Sua compra foi finalizada com sucesso!
               </p>
-              <div className="flex space-x-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="flex-1 text-xs" 
+                  className="text-xs" 
                   onClick={handlePrintReceipt}
                 >
                   <Printer className="h-3 w-3 mr-1" />
@@ -143,13 +154,21 @@ export function ShoppingCart() {
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="flex-1 text-xs" 
-                  onClick={handleShareReceipt}
+                  className="text-xs" 
+                  onClick={handleDownloadReceipt}
                 >
                   <Share2 className="h-3 w-3 mr-1" />
-                  Compartilhar
+                  Baixar
                 </Button>
               </div>
+              <Button 
+                size="sm" 
+                className="w-full mt-2 text-xs" 
+                onClick={handleShareReceipt}
+              >
+                <Share2 className="h-3 w-3 mr-1" />
+                Compartilhar
+              </Button>
             </div>
           )}
 

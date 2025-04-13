@@ -20,23 +20,10 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
   const [error, setError] = useState<string | null>(null);
   const { addItem } = useCart();
   const scannedCodesRef = useRef<Set<string>>(new Set());
-  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scanCooldownRef = useRef<boolean>(false);
   
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (lastScanned) {
-      timer = setTimeout(() => {
-        setLastScanned(null);
-      }, 3000);
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [lastScanned]);
-
-  // Iniciar o scanner automaticamente quando o componente montar
-  useEffect(() => {
-    // Pequeno atraso para garantir que o DOM esteja pronto
+    // Iniciar o scanner automaticamente quando o componente montar
     const timer = setTimeout(() => {
       setScanning(true);
     }, 1000);
@@ -45,24 +32,13 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
   }, []);
   
   const handleScan = (data: { text: string } | null) => {
-    if (data && data.text) {
+    if (data && data.text && !scanCooldownRef.current) {
       const scannedCode = data.text;
-      
-      // Evitar processamento repetido do mesmo código em sequência
-      if (lastScanned === scannedCode) {
-        return;
-      }
       
       // Verificar se este código já foi escaneado anteriormente
       if (scannedCodesRef.current.has(scannedCode)) {
         toast.warning('Este produto já foi escaneado!');
-        setLastScanned(scannedCode);
         return;
-      }
-      
-      // Limpar qualquer timeout pendente
-      if (scanTimeoutRef.current) {
-        clearTimeout(scanTimeoutRef.current);
       }
       
       console.log("Código QR escaneado:", scannedCode);
@@ -76,8 +52,10 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
         onProductFound(scannedCode);
       }
       
-      // Configurar timeout para permitir escanear novamente após 1.5 segundos
-      scanTimeoutRef.current = setTimeout(() => {
+      // Configurar cooldown para evitar múltiplos scans do mesmo código
+      scanCooldownRef.current = true;
+      setTimeout(() => {
+        scanCooldownRef.current = false;
         setLastScanned(null);
       }, 1500);
     }
@@ -100,11 +78,6 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
       setError(null);
       setScanning(true);
     }
-  };
-  
-  const resetScanner = () => {
-    scannedCodesRef.current.clear();
-    toast.info('Scanner reiniciado. Pronto para escanear novos produtos.');
   };
   
   return (
@@ -182,28 +155,14 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
         </CardContent>
       </Card>
       
-      <div className="mt-4 flex justify-between items-center">
-        {lastScanned ? (
-          <div className="p-3 bg-primary-foreground border rounded-md flex-1 mr-2">
+      {lastScanned && (
+        <div className="mt-4">
+          <div className="p-3 bg-primary-foreground border rounded-md">
             <p className="text-sm font-medium">Último código escaneado:</p>
             <p className="text-xs text-muted-foreground truncate">{lastScanned}</p>
           </div>
-        ) : (
-          <div className="p-3 bg-primary-foreground border rounded-md flex-1 mr-2">
-            <p className="text-sm font-medium">Scanner pronto</p>
-            <p className="text-xs text-muted-foreground">Escaneie o código de um produto</p>
-          </div>
-        )}
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={resetScanner}
-          className="whitespace-nowrap"
-        >
-          Limpar Histórico
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

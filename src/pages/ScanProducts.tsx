@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { QRScanner } from '@/components/scanner/QRScanner';
 import { useCart } from '@/contexts/CartContext';
@@ -21,9 +21,16 @@ const ScanProducts = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  const { addItem, state, removeItem, getTotalPrice, getTotalItems } = useCart();
+  const { addItem, state, removeItem, getTotalPrice, getTotalItems, updateQuantity } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const scannedProductsRef = useRef<Set<string>>(new Set());
+
+  // Inicializar o set com os IDs dos produtos já no carrinho
+  useEffect(() => {
+    const cartProductIds = new Set(state.items.map(item => item.product.id));
+    scannedProductsRef.current = cartProductIds;
+  }, []);
 
   const searchProduct = async (productCode: string) => {
     if (!productCode) return;
@@ -73,12 +80,26 @@ const ScanProducts = () => {
       
       console.log("Resultado da busca por ID:", idMatch);
       
-      // Se encontrou produto por código ou ID, adicionar ao carrinho
+      // Se encontrou produto por código ou ID, adicionar ao carrinho se ainda não estiver nele
       if ((codeMatch && codeMatch.length > 0) || (idMatch && idMatch.length > 0)) {
         const foundProduct = codeMatch?.[0] || idMatch?.[0];
         console.log("Produto encontrado com correspondência exata:", foundProduct);
-        addItem(foundProduct);
-        toast.success(`${foundProduct.name} adicionado ao carrinho`);
+        
+        // Verificar se este produto já está no carrinho pelo ID
+        const existingItem = state.items.find(item => item.product.id === foundProduct.id);
+        
+        if (existingItem) {
+          // Produto já está no carrinho, aumentar a quantidade
+          updateQuantity(foundProduct.id, existingItem.quantity + 1);
+          toast.success(`Quantidade de ${foundProduct.name} aumentada para ${existingItem.quantity + 1}`);
+        } else {
+          // Produto novo, adicionar ao carrinho
+          addItem(foundProduct);
+          // Adicionar ID ao conjunto de produtos escaneados
+          scannedProductsRef.current.add(foundProduct.id);
+          toast.success(`${foundProduct.name} adicionado ao carrinho`);
+        }
+        
         setIsLoading(false);
         return;
       }
@@ -96,10 +117,21 @@ const ScanProducts = () => {
       console.log("Resultado da busca parcial:", partialMatch);
 
       if (partialMatch && partialMatch.length > 0) {
-        // Adicionar o primeiro produto correspondente ao carrinho
-        console.log("Produto encontrado com correspondência parcial:", partialMatch[0]);
-        addItem(partialMatch[0]);
-        toast.success(`${partialMatch[0].name} adicionado ao carrinho`);
+        // Verificar se este produto já está no carrinho pelo ID
+        const existingItem = state.items.find(item => item.product.id === partialMatch[0].id);
+        
+        if (existingItem) {
+          // Produto já está no carrinho, aumentar a quantidade
+          updateQuantity(partialMatch[0].id, existingItem.quantity + 1);
+          toast.success(`Quantidade de ${partialMatch[0].name} aumentada para ${existingItem.quantity + 1}`);
+        } else {
+          // Produto novo, adicionar ao carrinho
+          console.log("Produto encontrado com correspondência parcial:", partialMatch[0]);
+          addItem(partialMatch[0]);
+          // Adicionar ID ao conjunto de produtos escaneados
+          scannedProductsRef.current.add(partialMatch[0].id);
+          toast.success(`${partialMatch[0].name} adicionado ao carrinho`);
+        }
       } else {
         console.log("Nenhum produto encontrado com o código:", normalizedCode);
         toast.error('Nenhum produto encontrado correspondente ao código escaneado');

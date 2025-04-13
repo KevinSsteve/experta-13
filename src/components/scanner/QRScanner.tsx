@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import QrScanner from 'react-qr-scanner';
 import { useCart } from '@/contexts/CartContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +19,8 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [error, setError] = useState<string | null>(null);
   const { addItem } = useCart();
+  const scannedCodesRef = useRef<Set<string>>(new Set());
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -43,18 +45,41 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
   }, []);
   
   const handleScan = (data: { text: string } | null) => {
-    if (data && data.text && !lastScanned) {
+    if (data && data.text) {
       const scannedCode = data.text;
+      
+      // Evitar processamento repetido do mesmo código em sequência
+      if (lastScanned === scannedCode) {
+        return;
+      }
+      
+      // Verificar se este código já foi escaneado anteriormente
+      if (scannedCodesRef.current.has(scannedCode)) {
+        toast.warning('Este produto já foi escaneado!');
+        setLastScanned(scannedCode);
+        return;
+      }
+      
+      // Limpar qualquer timeout pendente
+      if (scanTimeoutRef.current) {
+        clearTimeout(scanTimeoutRef.current);
+      }
+      
       console.log("Código QR escaneado:", scannedCode);
       
-      // Usar o código bruto diretamente sem tentar parsear como JSON
-      // (Isso permite que o código seja tanto um UUID quanto qualquer outro formato)
+      // Adicionar à lista de códigos escaneados
+      scannedCodesRef.current.add(scannedCode);
       setLastScanned(scannedCode);
       toast.success('Código QR detectado!');
       
       if (onProductFound) {
         onProductFound(scannedCode);
       }
+      
+      // Configurar timeout para permitir escanear novamente após 1.5 segundos
+      scanTimeoutRef.current = setTimeout(() => {
+        setLastScanned(null);
+      }, 1500);
     }
   };
   
@@ -75,6 +100,11 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
       setError(null);
       setScanning(true);
     }
+  };
+  
+  const resetScanner = () => {
+    scannedCodesRef.current.clear();
+    toast.info('Scanner reiniciado. Pronto para escanear novos produtos.');
   };
   
   return (
@@ -152,12 +182,28 @@ export const QRScanner = ({ onProductFound }: QRScannerProps) => {
         </CardContent>
       </Card>
       
-      {lastScanned && (
-        <div className="mt-4 p-3 bg-primary-foreground border rounded-md">
-          <p className="text-sm font-medium">Último código escaneado:</p>
-          <p className="text-xs text-muted-foreground truncate">{lastScanned}</p>
-        </div>
-      )}
+      <div className="mt-4 flex justify-between items-center">
+        {lastScanned ? (
+          <div className="p-3 bg-primary-foreground border rounded-md flex-1 mr-2">
+            <p className="text-sm font-medium">Último código escaneado:</p>
+            <p className="text-xs text-muted-foreground truncate">{lastScanned}</p>
+          </div>
+        ) : (
+          <div className="p-3 bg-primary-foreground border rounded-md flex-1 mr-2">
+            <p className="text-sm font-medium">Scanner pronto</p>
+            <p className="text-xs text-muted-foreground">Escaneie o código de um produto</p>
+          </div>
+        )}
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={resetScanner}
+          className="whitespace-nowrap"
+        >
+          Limpar Histórico
+        </Button>
+      </div>
     </div>
   );
 };

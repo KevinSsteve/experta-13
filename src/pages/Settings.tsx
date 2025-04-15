@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -94,10 +95,10 @@ const Settings = () => {
         email: profile.email,
         phone: profile.phone || '922 123 456',
         address: profile.address || 'Rua das Mercearias, 123, Luanda',
-        taxId: '5417623490',
-        currency: 'AOA',
-        taxRate: 14,
-        receiptMessage: 'Obrigado pela preferência!',
+        taxId: profile.taxId || '5417623490',
+        currency: profile.currency || 'AOA',
+        taxRate: profile.taxRate || 14,
+        receiptMessage: profile.receiptMessage || 'Obrigado pela preferência!',
       });
     }
   }, [profile, form]);
@@ -117,6 +118,11 @@ const Settings = () => {
           name: values.name,
           phone: values.phone,
           address: values.address,
+          // Add receipt customization fields
+          taxId: values.taxId,
+          currency: values.currency,
+          taxRate: values.taxRate,
+          receiptMessage: values.receiptMessage
         })
         .eq('id', profile.id);
       

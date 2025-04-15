@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
       
-      // Ensure all required fields exist in the profile data
+      // Use type assertion to create a properly typed profile with optional fields
       const profileData: ExtendedProfile = {
         id: data.id,
         name: data.name,
@@ -45,17 +45,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         position: data.position || null,
         role: data.role,
         avatar_url: data.avatar_url,
-        // Additional receipt customization fields - handle as optional
-        taxId: data.taxId || undefined,
-        currency: data.currency || undefined,
-        taxRate: data.taxRate || undefined,
-        receiptMessage: data.receiptMessage || undefined,
-        receiptLogo: data.receiptLogo || undefined,
-        receiptTitle: data.receiptTitle || undefined,
-        receiptShowLogo: data.receiptShowLogo || undefined,
-        receiptShowSignature: data.receiptShowSignature || undefined,
-        receiptFooterText: data.receiptFooterText || undefined,
-        receiptAdditionalInfo: data.receiptAdditionalInfo || undefined
+        // Safely handle receipt customization fields that might not exist in the database
+        ...(data.taxId !== undefined && { taxId: data.taxId }),
+        ...(data.currency !== undefined && { currency: data.currency }),
+        ...(data.taxRate !== undefined && { taxRate: data.taxRate }),
+        ...(data.receiptMessage !== undefined && { receiptMessage: data.receiptMessage }),
+        ...(data.receiptLogo !== undefined && { receiptLogo: data.receiptLogo }),
+        ...(data.receiptTitle !== undefined && { receiptTitle: data.receiptTitle }),
+        ...(data.receiptShowLogo !== undefined && { receiptShowLogo: data.receiptShowLogo }),
+        ...(data.receiptShowSignature !== undefined && { receiptShowSignature: data.receiptShowSignature }),
+        ...(data.receiptFooterText !== undefined && { receiptFooterText: data.receiptFooterText }),
+        ...(data.receiptAdditionalInfo !== undefined && { receiptAdditionalInfo: data.receiptAdditionalInfo })
       };
       
       return profileData;

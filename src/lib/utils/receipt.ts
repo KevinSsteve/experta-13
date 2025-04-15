@@ -124,12 +124,8 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(titleSize);
   
-  // Título do recibo: Nome da empresa - Endereço
-  const addressParts = receiptConfig.companyAddress ? receiptConfig.companyAddress.split(',') : [];
-  const street = addressParts.length > 0 ? addressParts[0].trim() : '';
-  
-  const title = `${receiptConfig.companyName} - ${street}`;
-  doc.text(title, 105, 15, { align: 'center' });
+  // Título do recibo: Nome da empresa
+  doc.text(receiptConfig.companyName || 'MOLOJA', 105, 15, { align: 'center' });
   
   // Adicionar informações da empresa centralizadas
   doc.setFontSize(normalSize - 6);
@@ -138,35 +134,41 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   let currentYPos = 22;
   const lineSpacing = 6;
   
-  // Bairro (neighborhood)
-  const neighborhood = receiptConfig.companyNeighborhood || '';
-  doc.text(neighborhood, 105, currentYPos, { align: 'center' });
-  currentYPos += lineSpacing;
+  // Endereço da empresa com melhor formatação
+  if (receiptConfig.companyAddress) {
+    doc.text(receiptConfig.companyAddress, 105, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
+  }
+  
+  // Bairro 
+  if (receiptConfig.companyNeighborhood) {
+    doc.text(receiptConfig.companyNeighborhood, 105, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
+  }
+  
+  // Município
+  if (receiptConfig.companyCity) {
+    doc.text(receiptConfig.companyCity, 105, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
+  }
   
   // Telefone
   if (receiptConfig.companyPhone) {
-    doc.text(receiptConfig.companyPhone, 105, currentYPos, { align: 'center' });
+    doc.text(`Tel: ${receiptConfig.companyPhone}`, 105, currentYPos, { align: 'center' });
     currentYPos += lineSpacing;
   }
   
   // Email
   if (receiptConfig.companyEmail) {
-    doc.text(receiptConfig.companyEmail, 105, currentYPos, { align: 'center' });
+    doc.text(`Email: ${receiptConfig.companyEmail}`, 105, currentYPos, { align: 'center' });
     currentYPos += lineSpacing;
   }
   
-  // Nome da empresa (repetir para destaque)
-  doc.text(receiptConfig.companyName || '', 105, currentYPos, { align: 'center' });
-  currentYPos += lineSpacing;
-  
-  // Município
-  const city = receiptConfig.companyCity || '';
-  doc.text(city, 105, currentYPos, { align: 'center' });
-  currentYPos += lineSpacing;
-  
-  // NIF
+  // NIF - Destaque importante
   if (receiptConfig.taxId) {
+    doc.setFont('helvetica', 'bold');
     doc.text(`NIF: ${receiptConfig.taxId}`, 105, currentYPos, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
     currentYPos += lineSpacing;
   }
   
@@ -179,37 +181,41 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Linha divisória após informações da empresa
   currentYPos += 2;
   doc.line(20, currentYPos, 190, currentYPos);
-  currentYPos += 6;
+  currentYPos += 8; // Espaçamento maior após a linha
   
-  // Informações da fatura alinhadas à esquerda
+  // Informações da fatura com melhor alinhamento
   doc.setFontSize(normalSize - 8);
   
-  // Original
-  doc.text("Original:", 20, currentYPos);
+  // Seção de detalhes do documento com layout em duas colunas
+  const leftColumn = 20;
+  const rightColumn = 105;
+  
+  // Coluna esquerda
+  doc.setFont('helvetica', 'bold');
+  doc.text("DOCUMENTO:", leftColumn, currentYPos);
+  doc.setFont('helvetica', 'normal');
   currentYPos += lineSpacing;
   
-  // F (valor fixo para Original)
-  doc.text("F", 20, currentYPos);
+  doc.text("Original: F", leftColumn, currentYPos);
   currentYPos += lineSpacing;
   
-  // Documento (Data e hora)
-  doc.text("Documento:", 20, currentYPos);
+  doc.text(`Data: ${formatDateTimeForReceipt(sale.date)}`, leftColumn, currentYPos);
   currentYPos += lineSpacing;
   
-  // Data e hora formatadas
-  doc.text(formatDateTimeForReceipt(sale.date), 20, currentYPos);
+  doc.setFont('helvetica', 'bold');
+  doc.text("FACTURA RECIBO:", leftColumn, currentYPos);
+  doc.setFont('helvetica', 'normal');
   currentYPos += lineSpacing;
   
-  // Fatura Recibo
-  doc.text("FACTURA RECIBO:", 20, currentYPos);
-  currentYPos += lineSpacing;
+  doc.text(sale.id || 'N/A', leftColumn, currentYPos);
   
-  // Código da fatura
-  doc.text(sale.id || 'N/A', 20, currentYPos);
-  currentYPos += lineSpacing;
+  // Resetar posição Y para coluna direita
+  currentYPos = currentYPos - (lineSpacing * 4);
   
-  // Cliente
-  doc.text("Cliente:", 20, currentYPos);
+  // Coluna direita
+  doc.setFont('helvetica', 'bold');
+  doc.text("CLIENTE:", rightColumn, currentYPos);
+  doc.setFont('helvetica', 'normal');
   currentYPos += lineSpacing;
   
   // Nome do cliente
@@ -221,24 +227,31 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
       customerName = sale.customer.name || 'Cliente não identificado';
     }
   }
-  doc.text(`${customerName} NIF: NULL`, 20, currentYPos);
+  doc.text(customerName, rightColumn, currentYPos);
   currentYPos += lineSpacing;
   
-  // Endereço (baseado na localização da loja)
-  doc.text("Endereço:", 20, currentYPos);
+  if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
+    doc.text(`NIF: ${(sale.customer as any).nif}`, rightColumn, currentYPos);
+  } else {
+    doc.text("NIF: Não fornecido", rightColumn, currentYPos);
+  }
   currentYPos += lineSpacing;
   
-  doc.text(receiptConfig.companyAddress || 'N/A', 20, currentYPos);
-  currentYPos += lineSpacing * 1.5; // Espaçamento extra antes dos itens
+  if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).address) {
+    doc.text(`Endereço: ${(sale.customer as any).address}`, rightColumn, currentYPos);
+  }
   
-  // Cabeçalho da tabela de itens
-  doc.setFontSize(tableSize - 10);
+  // Avançar para depois das informações do cliente e documento
+  currentYPos += lineSpacing * 2; // Espaçamento extra antes dos itens
+  
+  // Cabeçalho da tabela de itens com melhor espaçamento
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(tableSize - 6);
   doc.text('Item', 20, currentYPos);
   doc.text('Preço', 100, currentYPos);
   doc.text('Qtd', 130, currentYPos);
-  doc.text('IVA', 145, currentYPos);
-  doc.text('Total', 165, currentYPos);
+  doc.text('IVA', 150, currentYPos);
+  doc.text('Total', 175, currentYPos);
   
   // Desenhar uma linha
   currentYPos += 2;
@@ -266,11 +279,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     }
   }
   
-  // Definir variáveis de espaçamento fora do loop de itens
-  const itemSpacing = 20; 
-  const lineSpacingItems = 7; // Declarada uma única vez
-  
-  // Adicionar itens
+  // Melhor formatação para itens
   itemsList.forEach((item: any) => {
     let itemName = 'Produto sem nome';
     let quantity = 1;
@@ -291,28 +300,21 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     const taxValue = (total * taxRate) / 100;
     
     // Truncar nome do item se for muito longo
-    const maxNameLength = 25;
+    const maxNameLength = 35;
     if (itemName.length > maxNameLength) {
       itemName = itemName.substring(0, maxNameLength - 3) + '...';
     }
     
     // Nome do produto
     doc.text(itemName, 20, currentYPos);
-    currentYPos += lineSpacingItems;
     
-    // Adicionar informações em linhas separadas com mais espaço
-    doc.text(`Preço unitário: ${formatCurrency(price)}`, 20, currentYPos);
-    currentYPos += lineSpacingItems;
+    // Preço unitário, quantidade, IVA e total em uma única linha para economizar espaço
+    doc.text(formatCurrency(price), 100, currentYPos);
+    doc.text(quantity.toString(), 130, currentYPos);
+    doc.text(`${taxRate}%`, 150, currentYPos);
+    doc.text(formatCurrency(total), 175, currentYPos);
     
-    doc.text(`Quantidade: ${quantity}`, 20, currentYPos);
-    currentYPos += lineSpacingItems;
-    
-    doc.text(`IVA: ${taxRate}%`, 20, currentYPos);
-    currentYPos += lineSpacingItems;
-    
-    doc.text(`Total: ${formatCurrency(total)}`, 20, currentYPos);
-    
-    currentYPos += itemSpacing; // Espaço entre os itens
+    currentYPos += lineSpacing;
     
     // Verificar se precisamos de uma nova página
     if (currentYPos > 270) {
@@ -323,24 +325,30 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   // Desenhar uma linha
   doc.line(20, currentYPos, 190, currentYPos);
-  currentYPos += 6;
+  currentYPos += 8; // Espaçamento maior após a linha
   
-  // Adicionar total e forma de pagamento
+  // Adicionar total e forma de pagamento com destaque
   doc.setFont('helvetica', 'bold');
   doc.text('Total:', 130, currentYPos);
-  doc.text(formatCurrency(sale.total), 165, currentYPos);
-  currentYPos += lineSpacingItems;
+  doc.text(formatCurrency(sale.total), 175, currentYPos);
+  currentYPos += lineSpacing;
   
   // Forma de pagamento
-  doc.text('Forma de Pagamento:', 100, currentYPos);
-  doc.text(sale.paymentMethod || 'Dinheiro', 165, currentYPos);
+  doc.text('Forma de Pagamento:', 130, currentYPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(sale.paymentMethod || 'Dinheiro', 175, currentYPos);
   
   // Adicionar rodapé
-  const footerYPos = 280; // Moved up from previous position
+  const footerYPos = 280;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(footerSize);
   const footerText = receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição';
   doc.text(footerText, 105, footerYPos, { align: 'center' });
+  
+  // Adicionar mensagem de agradecimento
+  if (receiptConfig.thankYouMessage) {
+    doc.text(receiptConfig.thankYouMessage, 105, footerYPos - 10, { align: 'center' });
+  }
   
   return doc;
 };

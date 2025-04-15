@@ -2,23 +2,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
-
-interface ProfileData {
-  id: string;
-  name: string | null;
-  email: string;
-  phone: string | null;
-  address: string | null;
-  position: string | null;
-  role: string;
-  avatar_url: string | null;
-}
+import { ExtendedProfile } from "@/types/profile";
 
 interface AuthContextProps {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  profile: ProfileData | null;
+  profile: ExtendedProfile | null;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -29,7 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<ExtendedProfile | null>(null);
 
   // Função para buscar o perfil do usuário atual
   const fetchProfile = async (userId: string) => {
@@ -46,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Ensure all required fields exist in the profile data
-      const profileData: ProfileData = {
+      const profileData: ExtendedProfile = {
         id: data.id,
         name: data.name,
         email: data.email,
@@ -54,7 +44,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         address: data.address || null,
         position: data.position || null,
         role: data.role,
-        avatar_url: data.avatar_url
+        avatar_url: data.avatar_url,
+        // Additional receipt customization fields
+        taxId: data.taxId,
+        currency: data.currency,
+        taxRate: data.taxRate,
+        receiptMessage: data.receiptMessage,
+        receiptLogo: data.receiptLogo,
+        receiptTitle: data.receiptTitle,
+        receiptShowLogo: data.receiptShowLogo,
+        receiptShowSignature: data.receiptShowSignature,
+        receiptFooterText: data.receiptFooterText,
+        receiptAdditionalInfo: data.receiptAdditionalInfo
       };
       
       return profileData;

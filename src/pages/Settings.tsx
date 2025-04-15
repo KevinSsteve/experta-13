@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -133,8 +134,6 @@ const Settings = () => {
           phone: values.phone,
           address: values.address,
           taxId: values.taxId,
-          currency: values.currency,
-          taxRate: values.taxRate,
           receiptMessage: values.receiptMessage,
           receiptShowLogo: values.receiptShowLogo,
           receiptShowSignature: values.receiptShowSignature,

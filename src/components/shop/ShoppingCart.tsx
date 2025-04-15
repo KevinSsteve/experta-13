@@ -1,19 +1,20 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { formatCurrency } from '@/lib/utils';
-import { X, Trash, Plus, Minus, ShoppingBag, Printer, Share2 } from 'lucide-react';
+import { X, Trash, Plus, Minus, ShoppingBag, Printer, Share2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
+import { downloadReceipt, printReceipt, shareReceipt, ReceiptConfig } from '@/lib/utils/receipt';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function ShoppingCart() {
   const { state, closeCart, removeItem, updateQuantity, clearCart, getTotalPrice } = useCart();
   const [mounted, setMounted] = useState(false);
   const [showReceiptOptions, setShowReceiptOptions] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
+  const { profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,11 +26,23 @@ export function ShoppingCart() {
     navigate('/checkout');
   };
 
+  const getReceiptConfig = (): ReceiptConfig => {
+    return {
+      companyName: profile?.name || 'MOLOJA',
+      companyAddress: profile?.address,
+      companyPhone: profile?.phone,
+      companyEmail: profile?.email,
+      taxId: profile?.taxId,
+      currency: profile?.currency || 'AOA',
+      thankYouMessage: profile?.receiptMessage || 'Obrigado pela preferência!',
+    };
+  };
+
   const handlePrintReceipt = () => {
     if (!lastSale) return;
     
     try {
-      printReceipt(lastSale);
+      printReceipt(lastSale, getReceiptConfig());
       toast.success('Recibo enviado para impressão');
     } catch (error) {
       console.error('Erro ao imprimir recibo:', error);
@@ -41,7 +54,7 @@ export function ShoppingCart() {
     if (!lastSale) return;
     
     try {
-      const shared = await shareReceipt(lastSale);
+      const shared = await shareReceipt(lastSale, getReceiptConfig());
       if (shared) {
         toast.success('Recibo compartilhado com sucesso');
       } else {
@@ -57,7 +70,7 @@ export function ShoppingCart() {
     if (!lastSale) return;
     
     try {
-      downloadReceipt(lastSale);
+      downloadReceipt(lastSale, getReceiptConfig());
       toast.success('Recibo baixado com sucesso');
     } catch (error) {
       console.error('Erro ao baixar recibo:', error);
@@ -91,7 +104,7 @@ export function ShoppingCart() {
             const currentTime = new Date().getTime();
             const timeDiff = (currentTime - saleTime) / 1000 / 60;
             
-            if (timeDiff < 5) { // Aumentamos para 5 minutos
+            if (timeDiff < 5) {
               setLastSale(lastSaleData);
               setShowReceiptOptions(true);
             } else {
@@ -141,7 +154,7 @@ export function ShoppingCart() {
               <p className="text-sm text-green-700 dark:text-green-300 mb-2">
                 Sua compra foi finalizada com sucesso!
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -157,18 +170,19 @@ export function ShoppingCart() {
                   className="text-xs" 
                   onClick={handleDownloadReceipt}
                 >
-                  <Share2 className="h-3 w-3 mr-1" />
+                  <Download className="h-3 w-3 mr-1" />
                   Baixar
                 </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-xs" 
+                  onClick={handleShareReceipt}
+                >
+                  <Share2 className="h-3 w-3 mr-1" />
+                  Compartilhar
+                </Button>
               </div>
-              <Button 
-                size="sm" 
-                className="w-full mt-2 text-xs" 
-                onClick={handleShareReceipt}
-              >
-                <Share2 className="h-3 w-3 mr-1" />
-                Compartilhar
-              </Button>
             </div>
           )}
 

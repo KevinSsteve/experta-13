@@ -4,35 +4,103 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
 
 /**
- * Generates a PDF receipt for a sale
- * @param sale The sale to generate a receipt for
- * @param companyProfile Optional company profile information to include in the receipt
- * @returns The generated PDF document
+ * Estrutura de configuração para personalizar o recibo
  */
-export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
+export interface ReceiptConfig {
+  // Informações básicas da empresa
+  companyName?: string;
+  companyLogo?: string;
+  companyAddress?: string;
+  companyPhone?: string;
+  companyEmail?: string;
+  companyWebsite?: string;
+  taxId?: string; // NIF (Número de Identificação Fiscal)
+  
+  // Estilo do recibo
+  fontSize?: {
+    title?: number;     // Título do recibo
+    header?: number;    // Cabeçalhos de seção
+    normal?: number;    // Texto normal
+    table?: number;     // Tabela de produtos
+    footer?: number;    // Rodapé
+  };
+  
+  // Textos personalizados
+  receiptTitle?: string;
+  thankYouMessage?: string;
+  footerText?: string;
+  
+  // Configurações fiscais
+  showTaxInfo?: boolean;
+  taxRate?: number;
+  currency?: string;
+  
+  // Configurações extras
+  showLogo?: boolean;
+  showSignature?: boolean;
+  showBarcode?: boolean;
+  additionalInfo?: string;
+}
+
+// Configuração padrão para o recibo
+const defaultReceiptConfig: ReceiptConfig = {
+  companyName: 'MOLOJA',
+  fontSize: {
+    title: 36,
+    header: 36,
+    normal: 30,
+    table: 30,
+    footer: 24
+  },
+  receiptTitle: 'RECIBO DE VENDA',
+  thankYouMessage: 'Obrigado pela preferência!',
+  footerText: 'Moloja - Supermercado Digital',
+  showTaxInfo: true,
+  currency: 'AOA',
+  showLogo: false,
+  showSignature: false,
+  showBarcode: false
+};
+
+/**
+ * Gera um PDF de recibo para uma venda
+ * @param sale A venda para gerar um recibo
+ * @param config Configuração opcional para personalizar o recibo
+ * @returns O documento PDF gerado
+ */
+export const generateReceipt = (sale: Sale, config?: ReceiptConfig): jsPDF => {
+  // Mescla a configuração padrão com a configuração fornecida
+  const receiptConfig = { ...defaultReceiptConfig, ...config };
+  
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4'
   });
   
-  // Set up fonts with increased sizes
+  // Configurar fontes e tamanhos
+  const titleSize = receiptConfig.fontSize?.title || 36;
+  const headerSize = receiptConfig.fontSize?.header || 36;
+  const normalSize = receiptConfig.fontSize?.normal || 30;
+  const tableSize = receiptConfig.fontSize?.table || 30;
+  const footerSize = receiptConfig.fontSize?.footer || 24;
+  
+  // Adicionar título
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(36); // Dobro do tamanho original (18) para o título
+  doc.setFontSize(titleSize);
   
-  // Add title
-  const companyName = companyProfile?.name || 'MOLOJA';
-  doc.text(`${companyName} - RECIBO DE VENDA`, 105, 20, { align: 'center' });
+  const title = `${receiptConfig.companyName} - ${receiptConfig.receiptTitle}`;
+  doc.text(title, 105, 20, { align: 'center' });
   
-  // Add receipt information - 3 vezes o tamanho original
-  doc.setFontSize(36); // Aumentado de 12 para 36 (3x)
+  // Adicionar informações do recibo
+  doc.setFontSize(headerSize);
   doc.setFont('helvetica', 'normal');
   
-  // Adjust vertical spacing to fit on page
-  let yPos = 45; // Starting position with more space
-  const lineSpacing = 15; // Increased spacing between lines
+  // Ajustar espaçamento vertical
+  let yPos = 45;
+  const lineSpacing = 15;
   
-  // Add sale info with increased font size
+  // Adicionar informações da venda
   doc.text(`Número da Venda: ${sale.id || 'N/A'}`, 20, yPos);
   yPos += lineSpacing;
   
@@ -51,24 +119,29 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
   doc.text(`Cliente: ${customerName}`, 20, yPos);
   yPos += lineSpacing;
   
+  // Adicionar NIF se configurado para mostrar informações fiscais
+  if (receiptConfig.showTaxInfo && receiptConfig.taxId) {
+    doc.text(`NIF: ${receiptConfig.taxId}`, 20, yPos);
+    yPos += lineSpacing;
+  }
+  
   // Método de pagamento
   const paymentMethod = sale.paymentMethod || 'N/A';
   doc.text(`Método de Pagamento: ${paymentMethod}`, 20, yPos);
-  yPos += lineSpacing * 1.5; // Extra spacing before table
+  yPos += lineSpacing * 1.5; // Espaçamento extra antes da tabela
   
-  // Add items table with increased font size
-  doc.setFontSize(30); // Aumentado para tabela (3x de 10)
+  // Adicionar tabela de itens
+  doc.setFontSize(tableSize);
   doc.text('Item', 20, yPos);
-  doc.text('Qtd', 120, yPos);
   doc.text('Preço', 145, yPos);
   doc.text('Total', 180, yPos);
   
-  // Draw a line
+  // Desenhar uma linha
   yPos += 5;
   doc.line(20, yPos, 190, yPos);
   yPos += 10;
   
-  // Processar items que podem vir em diferentes formatos
+  // Processar itens que podem vir em diferentes formatos
   let itemsList = [];
   if (sale.items) {
     if (Array.isArray(sale.items)) {
@@ -86,8 +159,8 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
     }
   }
   
-  // Add items with increased font size and adjusted spacing
-  const itemSpacing = 12; // Increased spacing between items
+  // Adicionar itens com tamanho de fonte aumentado e espaçamento ajustado
+  const itemSpacing = 36; // Espaçamento aumentado entre itens para acomodar 3 linhas de informação
   itemsList.forEach((item: any, index: number) => {
     let itemName = 'Produto sem nome';
     let quantity = 1;
@@ -107,40 +180,61 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
     
     const total = price * quantity;
     
-    // Truncate item name if too long to fit on page
-    const maxNameLength = 20;
+    // Truncar nome do item se for muito longo para caber na página
+    const maxNameLength = 25;
     if (itemName.length > maxNameLength) {
       itemName = itemName.substring(0, maxNameLength - 3) + '...';
     }
     
+    // Nome do produto na primeira linha
     doc.text(itemName, 20, yPos);
-    doc.text(quantity.toString(), 120, yPos);
-    doc.text(formatCurrency(price), 145, yPos);
     doc.text(formatCurrency(total), 180, yPos);
     
-    yPos += itemSpacing;
+    // Quantidade e preço unitário na segunda linha
+    yPos += 12;
+    doc.setFontSize(normalSize - 6); // Tamanho um pouco menor para informações secundárias
+    doc.text(`Qtd: ${quantity} x Preço: ${formatCurrency(price)}`, 30, yPos);
+    doc.setFontSize(tableSize); // Restaurar tamanho da fonte
     
-    // Check if we need a new page
+    yPos += itemSpacing - 12; // Ajustar para o próximo item
+    
+    // Verificar se precisamos de uma nova página
     if (yPos > 270) {
       doc.addPage();
       yPos = 20;
     }
   });
   
-  // Draw a line
+  // Desenhar uma linha
   doc.line(20, yPos, 190, yPos);
   yPos += 10;
   
-  // Add total with increased font size
+  // Adicionar total
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(36); // Aumentado para 36 (3x)
+  doc.setFontSize(headerSize);
   doc.text('Total:', 120, yPos);
   doc.text(formatCurrency(sale.total), 180, yPos);
   
-  // Add footer with increased font size
+  // Adicionar mensagem de agradecimento se configurado
+  if (receiptConfig.thankYouMessage) {
+    yPos += lineSpacing * 1.5;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(normalSize - 6);
+    doc.text(receiptConfig.thankYouMessage, 105, yPos, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+  }
+  
+  // Adicionar informações adicionais se configurado
+  if (receiptConfig.additionalInfo) {
+    yPos += lineSpacing;
+    doc.setFontSize(normalSize - 10);
+    doc.text(receiptConfig.additionalInfo, 105, yPos, { align: 'center' });
+  }
+  
+  // Adicionar rodapé
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(24); // Aumentado para 24 (3x de 8)
-  const footerText = companyProfile?.name || 'Moloja - Supermercado Digital';
+  doc.setFontSize(footerSize);
+  const footerText = receiptConfig.footerText || 'Moloja - Supermercado Digital';
   const textWidth = doc.getTextWidth(footerText);
   const pageWidth = doc.internal.pageSize.getWidth();
   doc.text(footerText, (pageWidth - textWidth) / 2, 280);
@@ -149,37 +243,37 @@ export const generateReceipt = (sale: Sale, companyProfile?: any): jsPDF => {
 };
 
 /**
- * Generates and downloads a PDF receipt for a sale
- * @param sale The sale to generate a receipt for
- * @param companyProfile Optional company profile information
+ * Gera e baixa um PDF de recibo para uma venda
+ * @param sale A venda para gerar um recibo
+ * @param config Configuração opcional para personalizar o recibo
  */
-export const downloadReceipt = (sale: Sale, companyProfile?: any): void => {
-  const doc = generateReceipt(sale, companyProfile);
+export const downloadReceipt = (sale: Sale, config?: ReceiptConfig): void => {
+  const doc = generateReceipt(sale, config);
   doc.save(`recibo-venda-${sale.id || Date.now()}.pdf`);
 };
 
 /**
- * Prints a PDF receipt for a sale
- * @param sale The sale to generate a receipt for
- * @param companyProfile Optional company profile information
+ * Imprime um PDF de recibo para uma venda
+ * @param sale A venda para gerar um recibo
+ * @param config Configuração opcional para personalizar o recibo
  */
-export const printReceipt = (sale: Sale, companyProfile?: any): void => {
-  const doc = generateReceipt(sale, companyProfile);
+export const printReceipt = (sale: Sale, config?: ReceiptConfig): void => {
+  const doc = generateReceipt(sale, config);
   doc.autoPrint();
   doc.output('dataurlnewwindow');
 };
 
 /**
- * Shares a PDF receipt for a sale
- * @param sale The sale to generate a receipt for
- * @param companyProfile Optional company profile information
- * @returns Promise<boolean> indicating whether sharing was successful
+ * Compartilha um PDF de recibo para uma venda
+ * @param sale A venda para gerar um recibo
+ * @param config Configuração opcional para personalizar o recibo
+ * @returns Promise<boolean> indicando se o compartilhamento foi bem-sucedido
  */
-export const shareReceipt = async (sale: Sale, companyProfile?: any): Promise<boolean> => {
+export const shareReceipt = async (sale: Sale, config?: ReceiptConfig): Promise<boolean> => {
   try {
-    // Check if Web Share API is available
+    // Verificar se a Web Share API está disponível
     if (navigator.share) {
-      const doc = generateReceipt(sale, companyProfile);
+      const doc = generateReceipt(sale, config);
       const pdfBlob = doc.output('blob');
       const pdfFile = new File([pdfBlob], `recibo-venda-${sale.id || Date.now()}.pdf`, { type: 'application/pdf' });
       
@@ -191,14 +285,14 @@ export const shareReceipt = async (sale: Sale, companyProfile?: any): Promise<bo
       
       return true;
     } else {
-      // Fallback to download if sharing not available
-      downloadReceipt(sale, companyProfile);
+      // Fallback para download se o compartilhamento não estiver disponível
+      downloadReceipt(sale, config);
       return false;
     }
   } catch (error) {
     console.error('Error sharing receipt:', error);
-    // Fallback to download on error
-    downloadReceipt(sale, companyProfile);
+    // Fallback para download em caso de erro
+    downloadReceipt(sale, config);
     return false;
   }
 };

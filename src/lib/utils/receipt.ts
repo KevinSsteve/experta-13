@@ -183,31 +183,31 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   // Original
   doc.text("Original:", 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   // F (valor fixo para Original)
   doc.text("F", 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   // Documento (Data e hora)
   doc.text("Documento:", 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   // Data e hora formatadas
   doc.text(formatDateTimeForReceipt(sale.date), 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   // Fatura Recibo
   doc.text("FACTURA RECIBO:", 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   // Código da fatura
   doc.text(sale.id || 'N/A', 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   // Cliente
   doc.text("Cliente:", 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   // Nome do cliente
   let customerName = 'Cliente não identificado';
@@ -219,14 +219,14 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     }
   }
   doc.text(`${customerName} NIF: NULL`, 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   // Endereço (baseado na localização da loja)
   doc.text("Endereço:", 20, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingInvoiceInfo;
   
   doc.text(receiptConfig.companyAddress || 'N/A', 20, currentYPos);
-  currentYPos += lineSpacing * 1.5; // Espaçamento extra antes dos itens
+  currentYPos += lineSpacingInvoiceInfo * 1.5; // Espaçamento extra antes dos itens
   
   // Cabeçalho da tabela de itens
   doc.setFontSize(tableSize - 10);

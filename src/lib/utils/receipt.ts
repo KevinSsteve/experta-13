@@ -263,10 +263,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     }
   }
   
+  // Definir variáveis de espaçamento fora do loop de itens
+  const itemSpacing = 20; 
+  const lineSpacingItems = 7; // Declarada uma única vez
+  
   // Adicionar itens
-  const itemSpacing = 20; // Increased from previous value
-  const lineSpacing = 7; // Consistent line spacing
-
   itemsList.forEach((item: any) => {
     let itemName = 'Produto sem nome';
     let quantity = 1;
@@ -294,21 +295,21 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     
     // Nome do produto
     doc.text(itemName, 20, currentYPos);
-    currentYPos += lineSpacing;
+    currentYPos += lineSpacingItems;
     
     // Adicionar informações em linhas separadas com mais espaço
     doc.text(`Preço unitário: ${formatCurrency(price)}`, 20, currentYPos);
-    currentYPos += lineSpacing;
+    currentYPos += lineSpacingItems;
     
     doc.text(`Quantidade: ${quantity}`, 20, currentYPos);
-    currentYPos += lineSpacing;
+    currentYPos += lineSpacingItems;
     
     doc.text(`IVA: ${taxRate}%`, 20, currentYPos);
-    currentYPos += lineSpacing;
+    currentYPos += lineSpacingItems;
     
     doc.text(`Total: ${formatCurrency(total)}`, 20, currentYPos);
     
-    currentYPos += itemSpacing; // Increased space between items
+    currentYPos += itemSpacing; // Espaço entre os itens
     
     // Verificar se precisamos de uma nova página
     if (currentYPos > 270) {
@@ -325,7 +326,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFont('helvetica', 'bold');
   doc.text('Total:', 130, currentYPos);
   doc.text(formatCurrency(sale.total), 165, currentYPos);
-  currentYPos += lineSpacing;
+  currentYPos += lineSpacingItems;
   
   // Forma de pagamento
   doc.text('Forma de Pagamento:', 100, currentYPos);

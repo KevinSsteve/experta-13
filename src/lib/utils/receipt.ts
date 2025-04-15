@@ -231,8 +231,8 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Determinar o ponto Y mais baixo na coluna esquerda para continuar a partir dele mais tarde
   const leftColumnEndY = currentYPos;
   
-  // Resetar posição Y para coluna direita
-  currentYPos = currentYPos - (lineSpacing * 4);
+  // Resetar posição Y para coluna direita - com mais espaço para não sobrepor "Original: F"
+  currentYPos = currentYPos - (lineSpacing * 4) + 4; // Ajustado para iniciar após a linha "Original: F"
   
   // Coluna direita
   doc.setFont('helvetica', 'bold');
@@ -288,14 +288,24 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const rightColumnEndY = currentYPos;
   currentYPos = Math.max(leftColumnEndY, rightColumnEndY) + lineSpacing;
   
-  // Cabeçalho da tabela de itens com melhor espaçamento
+  // Cabeçalho da tabela de itens - reestruturado para evitar sobreposição
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(tableSize - 6);
+  
+  // Nova organização do cabeçalho da tabela em 2 linhas para evitar sobreposição
   doc.text('Item', marginLeft, currentYPos);
-  doc.text('Preço', marginLeft + 80, currentYPos);
-  doc.text('Qtd', marginLeft + 110, currentYPos);
-  doc.text('IVA', marginLeft + 130, currentYPos);
-  doc.text('Total', marginLeft + 155, currentYPos);
+  currentYPos += lineSpacing;
+  
+  // Segunda linha de cabeçalho com colunas numéricas
+  const colPrice = marginLeft + 5;
+  const colQty = colPrice + 40;
+  const colTax = colQty + 25;
+  const colTotal = colTax + 30;
+  
+  doc.text('Preço', colPrice, currentYPos);
+  doc.text('Qtd', colQty, currentYPos);
+  doc.text('IVA', colTax, currentYPos);
+  doc.text('Total', colTotal, currentYPos);
   
   // Desenhar uma linha
   currentYPos += 2;
@@ -358,30 +368,24 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
       
       // Nome do produto (primeira linha)
       doc.text(firstLine, marginLeft, currentYPos);
-      
-      // Preço, quantidade, IVA e total na mesma linha da primeira parte do nome
-      doc.text(formatCurrency(price), marginLeft + 80, currentYPos);
-      doc.text(quantity.toString(), marginLeft + 110, currentYPos);
-      doc.text(`${taxRate}%`, marginLeft + 130, currentYPos);
-      doc.text(formatCurrency(total), marginLeft + 155, currentYPos);
-      
       currentYPos += lineSpacing - 2; // Espaçamento reduzido para a continuação do nome
       
       // Segunda linha do nome do produto
       doc.text(secondLine, marginLeft, currentYPos);
-      currentYPos += lineSpacing;
+      currentYPos += lineSpacing - 2;
     } else {
       // Nome do produto (cabe em uma linha)
       doc.text(itemName, marginLeft, currentYPos);
-      
-      // Preço, quantidade, IVA e total em uma única linha
-      doc.text(formatCurrency(price), marginLeft + 80, currentYPos);
-      doc.text(quantity.toString(), marginLeft + 110, currentYPos);
-      doc.text(`${taxRate}%`, marginLeft + 130, currentYPos);
-      doc.text(formatCurrency(total), marginLeft + 155, currentYPos);
-      
-      currentYPos += lineSpacing;
+      currentYPos += lineSpacing - 2;
     }
+    
+    // Informações numéricas em uma linha separada, alinhadas de acordo com o cabeçalho
+    doc.text(formatCurrency(price), colPrice, currentYPos);
+    doc.text(quantity.toString(), colQty, currentYPos);
+    doc.text(`${taxRate}%`, colTax, currentYPos);
+    doc.text(formatCurrency(total), colTotal, currentYPos);
+    
+    currentYPos += lineSpacing;
   });
   
   // Verificar se precisamos de uma nova página para o resumo final

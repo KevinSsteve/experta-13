@@ -8,12 +8,12 @@ export interface ExtendedProfile {
   position: string | null;
   role: string;
   avatar_url: string | null;
-  // Campos fiscais e para personalização do recibo
+  // Campos fiscais e para personalização do recibo - todos opcionais
   taxId?: string;
   currency?: string;
   taxRate?: number;
   receiptMessage?: string;
-  // Novos campos para personalização do recibo
+  // Novos campos para personalização do recibo - todos opcionais
   receiptLogo?: string;
   receiptTitle?: string;
   receiptShowLogo?: boolean;

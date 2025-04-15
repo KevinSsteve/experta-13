@@ -45,17 +45,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         position: data.position || null,
         role: data.role,
         avatar_url: data.avatar_url,
-        // Additional receipt customization fields
-        taxId: data.taxId,
-        currency: data.currency,
-        taxRate: data.taxRate,
-        receiptMessage: data.receiptMessage,
-        receiptLogo: data.receiptLogo,
-        receiptTitle: data.receiptTitle,
-        receiptShowLogo: data.receiptShowLogo,
-        receiptShowSignature: data.receiptShowSignature,
-        receiptFooterText: data.receiptFooterText,
-        receiptAdditionalInfo: data.receiptAdditionalInfo
+        // Additional receipt customization fields - handle as optional
+        taxId: data.taxId || undefined,
+        currency: data.currency || undefined,
+        taxRate: data.taxRate || undefined,
+        receiptMessage: data.receiptMessage || undefined,
+        receiptLogo: data.receiptLogo || undefined,
+        receiptTitle: data.receiptTitle || undefined,
+        receiptShowLogo: data.receiptShowLogo || undefined,
+        receiptShowSignature: data.receiptShowSignature || undefined,
+        receiptFooterText: data.receiptFooterText || undefined,
+        receiptAdditionalInfo: data.receiptAdditionalInfo || undefined
       };
       
       return profileData;

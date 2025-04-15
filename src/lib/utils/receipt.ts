@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -265,19 +264,19 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   }
   
   // Adicionar itens
-  const itemSpacing = 10;
+  const itemSpacing = 15; // Aumentei o espaçamento para 15
+  let yPos = 120; // Ajustei a posição inicial dos itens
+  
   itemsList.forEach((item: any) => {
     let itemName = 'Produto sem nome';
     let quantity = 1;
     let price = 0;
     
     if (item.product) {
-      // Formato onde temos um objeto product
       itemName = item.product.name || 'Produto sem nome';
       price = item.product.price || 0;
       quantity = item.quantity || 1;
     } else {
-      // Formato simplificado
       itemName = item.name || item.productName || 'Produto sem nome';
       price = item.price || 0;
       quantity = item.quantity || 1;
@@ -295,16 +294,23 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     
     // Nome do produto
     doc.text(itemName, 20, yPos);
-    // Preço unitário
-    doc.text(formatCurrency(price), 100, yPos);
-    // Quantidade
-    doc.text(quantity.toString(), 130, yPos);
-    // IVA
-    doc.text(`${taxRate}%`, 145, yPos);
-    // Total
-    doc.text(formatCurrency(total), 165, yPos);
     
-    yPos += itemSpacing;
+    // Adicionar informações em linhas separadas
+    yPos += 7; // Nova linha logo abaixo do nome do produto
+    
+    // Preço unitário, Quantidade, IVA e Total em linhas separadas
+    doc.text(`Preço unitário: ${formatCurrency(price)}`, 20, yPos);
+    yPos += 7;
+    
+    doc.text(`Quantidade: ${quantity}`, 20, yPos);
+    yPos += 7;
+    
+    doc.text(`IVA: ${taxRate}%`, 20, yPos);
+    yPos += 7;
+    
+    doc.text(`Total: ${formatCurrency(total)}`, 20, yPos);
+    
+    yPos += itemSpacing; // Espaço entre os itens
     
     // Verificar se precisamos de uma nova página
     if (yPos > 270) {
@@ -328,7 +334,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.text(sale.paymentMethod || 'Dinheiro', 165, yPos);
   
   // Adicionar rodapé
-  yPos = 280; // Posicionar no final da página
+  yPos = 270; // Posicionar no final da página
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(footerSize);
   const footerText = receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição';

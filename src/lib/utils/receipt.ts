@@ -1,3 +1,4 @@
+
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -132,82 +133,82 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFontSize(normalSize - 6);
   doc.setFont('helvetica', 'normal');
   
-  let yPos = 22;
+  let currentYPos = 22;
   const lineSpacing = 6;
   
   // Bairro (neighborhood)
   const neighborhood = addressParts.length > 1 ? addressParts[1].trim() : '';
-  doc.text(neighborhood, 105, yPos, { align: 'center' });
-  yPos += lineSpacing;
+  doc.text(neighborhood, 105, currentYPos, { align: 'center' });
+  currentYPos += lineSpacing;
   
   // Telefone
   if (receiptConfig.companyPhone) {
-    doc.text(receiptConfig.companyPhone, 105, yPos, { align: 'center' });
-    yPos += lineSpacing;
+    doc.text(receiptConfig.companyPhone, 105, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
   }
   
   // Email
   if (receiptConfig.companyEmail) {
-    doc.text(receiptConfig.companyEmail, 105, yPos, { align: 'center' });
-    yPos += lineSpacing;
+    doc.text(receiptConfig.companyEmail, 105, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
   }
   
   // Nome da empresa (repetir para destaque)
-  doc.text(receiptConfig.companyName || '', 105, yPos, { align: 'center' });
-  yPos += lineSpacing;
+  doc.text(receiptConfig.companyName || '', 105, currentYPos, { align: 'center' });
+  currentYPos += lineSpacing;
   
   // Município
   const city = addressParts.length > 2 ? addressParts[2].trim() : '';
-  doc.text(city, 105, yPos, { align: 'center' });
-  yPos += lineSpacing;
+  doc.text(city, 105, currentYPos, { align: 'center' });
+  currentYPos += lineSpacing;
   
   // NIF
   if (receiptConfig.taxId) {
-    doc.text(`NIF: ${receiptConfig.taxId}`, 105, yPos, { align: 'center' });
-    yPos += lineSpacing;
+    doc.text(`NIF: ${receiptConfig.taxId}`, 105, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
   }
   
   // Conta social
   if (receiptConfig.companySocialMedia) {
-    doc.text(receiptConfig.companySocialMedia, 105, yPos, { align: 'center' });
-    yPos += lineSpacing;
+    doc.text(receiptConfig.companySocialMedia, 105, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
   }
   
   // Linha divisória após informações da empresa
-  yPos += 2;
-  doc.line(20, yPos, 190, yPos);
-  yPos += 6;
+  currentYPos += 2;
+  doc.line(20, currentYPos, 190, currentYPos);
+  currentYPos += 6;
   
   // Informações da fatura alinhadas à esquerda
   doc.setFontSize(normalSize - 8);
   
   // Original
-  doc.text("Original:", 20, yPos);
-  yPos += lineSpacing;
+  doc.text("Original:", 20, currentYPos);
+  currentYPos += lineSpacing;
   
   // F (valor fixo para Original)
-  doc.text("F", 20, yPos);
-  yPos += lineSpacing;
+  doc.text("F", 20, currentYPos);
+  currentYPos += lineSpacing;
   
   // Documento (Data e hora)
-  doc.text("Documento:", 20, yPos);
-  yPos += lineSpacing;
+  doc.text("Documento:", 20, currentYPos);
+  currentYPos += lineSpacing;
   
   // Data e hora formatadas
-  doc.text(formatDateTimeForReceipt(sale.date), 20, yPos);
-  yPos += lineSpacing;
+  doc.text(formatDateTimeForReceipt(sale.date), 20, currentYPos);
+  currentYPos += lineSpacing;
   
   // Fatura Recibo
-  doc.text("FACTURA RECIBO:", 20, yPos);
-  yPos += lineSpacing;
+  doc.text("FACTURA RECIBO:", 20, currentYPos);
+  currentYPos += lineSpacing;
   
   // Código da fatura
-  doc.text(sale.id || 'N/A', 20, yPos);
-  yPos += lineSpacing;
+  doc.text(sale.id || 'N/A', 20, currentYPos);
+  currentYPos += lineSpacing;
   
   // Cliente
-  doc.text("Cliente:", 20, yPos);
-  yPos += lineSpacing;
+  doc.text("Cliente:", 20, currentYPos);
+  currentYPos += lineSpacing;
   
   // Nome do cliente
   let customerName = 'Cliente não identificado';
@@ -218,29 +219,29 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
       customerName = sale.customer.name || 'Cliente não identificado';
     }
   }
-  doc.text(`${customerName} NIF: NULL`, 20, yPos);
-  yPos += lineSpacing;
+  doc.text(`${customerName} NIF: NULL`, 20, currentYPos);
+  currentYPos += lineSpacing;
   
   // Endereço (baseado na localização da loja)
-  doc.text("Endereço:", 20, yPos);
-  yPos += lineSpacing;
+  doc.text("Endereço:", 20, currentYPos);
+  currentYPos += lineSpacing;
   
-  doc.text(receiptConfig.companyAddress || 'N/A', 20, yPos);
-  yPos += lineSpacing * 1.5; // Espaçamento extra antes dos itens
+  doc.text(receiptConfig.companyAddress || 'N/A', 20, currentYPos);
+  currentYPos += lineSpacing * 1.5; // Espaçamento extra antes dos itens
   
   // Cabeçalho da tabela de itens
   doc.setFontSize(tableSize - 10);
   doc.setFont('helvetica', 'bold');
-  doc.text('Item', 20, yPos);
-  doc.text('Preço', 100, yPos);
-  doc.text('Qtd', 130, yPos);
-  doc.text('IVA', 145, yPos);
-  doc.text('Total', 165, yPos);
+  doc.text('Item', 20, currentYPos);
+  doc.text('Preço', 100, currentYPos);
+  doc.text('Qtd', 130, currentYPos);
+  doc.text('IVA', 145, currentYPos);
+  doc.text('Total', 165, currentYPos);
   
   // Desenhar uma linha
-  yPos += 2;
-  doc.line(20, yPos, 190, yPos);
-  yPos += 6;
+  currentYPos += 2;
+  doc.line(20, currentYPos, 190, currentYPos);
+  currentYPos += 6;
   
   // Resetar fonte
   doc.setFont('helvetica', 'normal');
@@ -265,7 +266,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   // Adicionar itens
   const itemSpacing = 15; // Aumentei o espaçamento para 15
-  let yPos = 120; // Ajustei a posição inicial dos itens
   
   itemsList.forEach((item: any) => {
     let itemName = 'Produto sem nome';
@@ -293,52 +293,52 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     }
     
     // Nome do produto
-    doc.text(itemName, 20, yPos);
+    doc.text(itemName, 20, currentYPos);
     
     // Adicionar informações em linhas separadas
-    yPos += 7; // Nova linha logo abaixo do nome do produto
+    currentYPos += 7; // Nova linha logo abaixo do nome do produto
     
     // Preço unitário, Quantidade, IVA e Total em linhas separadas
-    doc.text(`Preço unitário: ${formatCurrency(price)}`, 20, yPos);
-    yPos += 7;
+    doc.text(`Preço unitário: ${formatCurrency(price)}`, 20, currentYPos);
+    currentYPos += 7;
     
-    doc.text(`Quantidade: ${quantity}`, 20, yPos);
-    yPos += 7;
+    doc.text(`Quantidade: ${quantity}`, 20, currentYPos);
+    currentYPos += 7;
     
-    doc.text(`IVA: ${taxRate}%`, 20, yPos);
-    yPos += 7;
+    doc.text(`IVA: ${taxRate}%`, 20, currentYPos);
+    currentYPos += 7;
     
-    doc.text(`Total: ${formatCurrency(total)}`, 20, yPos);
+    doc.text(`Total: ${formatCurrency(total)}`, 20, currentYPos);
     
-    yPos += itemSpacing; // Espaço entre os itens
+    currentYPos += itemSpacing; // Espaço entre os itens
     
     // Verificar se precisamos de uma nova página
-    if (yPos > 270) {
+    if (currentYPos > 270) {
       doc.addPage();
-      yPos = 20;
+      currentYPos = 20;
     }
   });
   
   // Desenhar uma linha
-  doc.line(20, yPos, 190, yPos);
-  yPos += 6;
+  doc.line(20, currentYPos, 190, currentYPos);
+  currentYPos += 6;
   
   // Adicionar total e forma de pagamento
   doc.setFont('helvetica', 'bold');
-  doc.text('Total:', 130, yPos);
-  doc.text(formatCurrency(sale.total), 165, yPos);
-  yPos += lineSpacing;
+  doc.text('Total:', 130, currentYPos);
+  doc.text(formatCurrency(sale.total), 165, currentYPos);
+  currentYPos += lineSpacing;
   
   // Forma de pagamento
-  doc.text('Forma de Pagamento:', 100, yPos);
-  doc.text(sale.paymentMethod || 'Dinheiro', 165, yPos);
+  doc.text('Forma de Pagamento:', 100, currentYPos);
+  doc.text(sale.paymentMethod || 'Dinheiro', 165, currentYPos);
   
   // Adicionar rodapé
-  yPos = 270; // Posicionar no final da página
+  const footerYPos = 270; // Posicionar no final da página
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(footerSize);
   const footerText = receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição';
-  doc.text(footerText, 105, yPos, { align: 'center' });
+  doc.text(footerText, 105, footerYPos, { align: 'center' });
   
   return doc;
 };

@@ -58,6 +58,10 @@ const formSchema = z.object({
   currency: z.string(),
   taxRate: z.coerce.number().min(0).max(100),
   receiptMessage: z.string(),
+  // Add new receipt customization fields
+  receiptShowLogo: z.boolean().optional(),
+  receiptShowSignature: z.boolean().optional(),
+  receiptFooterText: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -84,6 +88,9 @@ const Settings = () => {
       currency: 'AOA',
       taxRate: 14,
       receiptMessage: 'Obrigado pela preferência!',
+      receiptShowLogo: false,
+      receiptShowSignature: false,
+      receiptFooterText: '',
     },
   });
 
@@ -99,6 +106,9 @@ const Settings = () => {
         currency: profile.currency || 'AOA',
         taxRate: profile.taxRate || 14,
         receiptMessage: profile.receiptMessage || 'Obrigado pela preferência!',
+        receiptShowLogo: profile.receiptShowLogo || false,
+        receiptShowSignature: profile.receiptShowSignature || false,
+        receiptFooterText: profile.receiptFooterText || '',
       });
     }
   }, [profile, form]);
@@ -118,11 +128,14 @@ const Settings = () => {
           name: values.name,
           phone: values.phone,
           address: values.address,
-          // Add receipt customization fields
+          // Add all receipt customization fields
           taxId: values.taxId,
           currency: values.currency,
           taxRate: values.taxRate,
-          receiptMessage: values.receiptMessage
+          receiptMessage: values.receiptMessage,
+          receiptShowLogo: values.receiptShowLogo,
+          receiptShowSignature: values.receiptShowSignature,
+          receiptFooterText: values.receiptFooterText,
         })
         .eq('id', profile.id);
       

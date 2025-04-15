@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
       
-      // Use type assertion to create a properly typed profile with optional fields
+      // Create a properly typed profile with required fields
       const profileData: ExtendedProfile = {
         id: data.id,
         name: data.name,
@@ -45,18 +45,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         position: data.position || null,
         role: data.role,
         avatar_url: data.avatar_url,
-        // Safely handle receipt customization fields that might not exist in the database
-        ...(data.taxId !== undefined && { taxId: data.taxId }),
-        ...(data.currency !== undefined && { currency: data.currency }),
-        ...(data.taxRate !== undefined && { taxRate: data.taxRate }),
-        ...(data.receiptMessage !== undefined && { receiptMessage: data.receiptMessage }),
-        ...(data.receiptLogo !== undefined && { receiptLogo: data.receiptLogo }),
-        ...(data.receiptTitle !== undefined && { receiptTitle: data.receiptTitle }),
-        ...(data.receiptShowLogo !== undefined && { receiptShowLogo: data.receiptShowLogo }),
-        ...(data.receiptShowSignature !== undefined && { receiptShowSignature: data.receiptShowSignature }),
-        ...(data.receiptFooterText !== undefined && { receiptFooterText: data.receiptFooterText }),
-        ...(data.receiptAdditionalInfo !== undefined && { receiptAdditionalInfo: data.receiptAdditionalInfo })
       };
+      
+      // Conditionally add optional receipt fields if they exist
+      // Using type assertion (as any) to bypass TypeScript property check
+      const dataAny = data as any;
+      
+      if (dataAny.taxId !== undefined) profileData.taxId = dataAny.taxId;
+      if (dataAny.currency !== undefined) profileData.currency = dataAny.currency;
+      if (dataAny.taxRate !== undefined) profileData.taxRate = dataAny.taxRate;
+      if (dataAny.receiptMessage !== undefined) profileData.receiptMessage = dataAny.receiptMessage;
+      if (dataAny.receiptLogo !== undefined) profileData.receiptLogo = dataAny.receiptLogo;
+      if (dataAny.receiptTitle !== undefined) profileData.receiptTitle = dataAny.receiptTitle;
+      if (dataAny.receiptShowLogo !== undefined) profileData.receiptShowLogo = dataAny.receiptShowLogo;
+      if (dataAny.receiptShowSignature !== undefined) profileData.receiptShowSignature = dataAny.receiptShowSignature;
+      if (dataAny.receiptFooterText !== undefined) profileData.receiptFooterText = dataAny.receiptFooterText;
+      if (dataAny.receiptAdditionalInfo !== undefined) profileData.receiptAdditionalInfo = dataAny.receiptAdditionalInfo;
       
       return profileData;
     } catch (error) {

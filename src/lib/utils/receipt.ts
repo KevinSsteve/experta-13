@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -265,8 +264,9 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   }
   
   // Adicionar itens
-  const itemSpacing = 15; // Aumentei o espaçamento para 15
-  
+  const itemSpacing = 20; // Increased from previous value
+  const lineSpacing = 7; // Consistent line spacing
+
   itemsList.forEach((item: any) => {
     let itemName = 'Produto sem nome';
     let quantity = 1;
@@ -294,23 +294,21 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     
     // Nome do produto
     doc.text(itemName, 20, currentYPos);
+    currentYPos += lineSpacing;
     
-    // Adicionar informações em linhas separadas
-    currentYPos += 7; // Nova linha logo abaixo do nome do produto
-    
-    // Preço unitário, Quantidade, IVA e Total em linhas separadas
+    // Adicionar informações em linhas separadas com mais espaço
     doc.text(`Preço unitário: ${formatCurrency(price)}`, 20, currentYPos);
-    currentYPos += 7;
+    currentYPos += lineSpacing;
     
     doc.text(`Quantidade: ${quantity}`, 20, currentYPos);
-    currentYPos += 7;
+    currentYPos += lineSpacing;
     
     doc.text(`IVA: ${taxRate}%`, 20, currentYPos);
-    currentYPos += 7;
+    currentYPos += lineSpacing;
     
     doc.text(`Total: ${formatCurrency(total)}`, 20, currentYPos);
     
-    currentYPos += itemSpacing; // Espaço entre os itens
+    currentYPos += itemSpacing; // Increased space between items
     
     // Verificar se precisamos de uma nova página
     if (currentYPos > 270) {
@@ -334,7 +332,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.text(sale.paymentMethod || 'Dinheiro', 165, currentYPos);
   
   // Adicionar rodapé
-  const footerYPos = 270; // Posicionar no final da página
+  const footerYPos = 280; // Moved up from previous position
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(footerSize);
   const footerText = receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição';

@@ -19,4 +19,8 @@ export interface ExtendedProfile {
   receiptShowSignature?: boolean;
   receiptFooterText?: string;
   receiptAdditionalInfo?: string;
+  // Novos campos para informações sociais e localização
+  companyNeighborhood?: string;
+  companyCity?: string;
+  companySocialMedia?: string;
 }

@@ -159,6 +159,9 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          company_city: string | null
+          company_neighborhood: string | null
+          company_social_media: string | null
           created_at: string | null
           email: string
           id: string
@@ -171,6 +174,9 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          company_city?: string | null
+          company_neighborhood?: string | null
+          company_social_media?: string | null
           created_at?: string | null
           email: string
           id: string
@@ -183,6 +189,9 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          company_city?: string | null
+          company_neighborhood?: string | null
+          company_social_media?: string | null
           created_at?: string | null
           email?: string
           id?: string

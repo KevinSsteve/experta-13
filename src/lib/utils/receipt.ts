@@ -101,7 +101,10 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     showLogo: config?.receiptShowLogo || defaultReceiptConfig.showLogo,
     showSignature: config?.receiptShowSignature || defaultReceiptConfig.showSignature,
     footerText: config?.receiptFooterText || defaultReceiptConfig.footerText,
-    additionalInfo: config?.receiptAdditionalInfo || ''
+    additionalInfo: config?.receiptAdditionalInfo || '',
+    companyNeighborhood: config?.companyNeighborhood || '',
+    companyCity: config?.companyCity || '',
+    companySocialMedia: config?.companySocialMedia || ''
   };
   
   const doc = new jsPDF({
@@ -136,7 +139,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const lineSpacing = 6;
   
   // Bairro (neighborhood)
-  const neighborhood = addressParts.length > 1 ? addressParts[1].trim() : '';
+  const neighborhood = receiptConfig.companyNeighborhood || '';
   doc.text(neighborhood, 105, currentYPos, { align: 'center' });
   currentYPos += lineSpacing;
   
@@ -157,7 +160,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   currentYPos += lineSpacing;
   
   // Município
-  const city = addressParts.length > 2 ? addressParts[2].trim() : '';
+  const city = receiptConfig.companyCity || '';
   doc.text(city, 105, currentYPos, { align: 'center' });
   currentYPos += lineSpacing;
   

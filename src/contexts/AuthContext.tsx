@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -21,7 +20,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<ExtendedProfile | null>(null);
 
-  // Função para buscar o perfil do usuário atual
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -35,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
       
-      // Create a properly typed profile with required fields
       const profileData: ExtendedProfile = {
         id: data.id,
         name: data.name,
@@ -47,8 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         avatar_url: data.avatar_url,
       };
       
-      // Conditionally add optional receipt fields if they exist
-      // Using type assertion (as any) to bypass TypeScript property check
       const dataAny = data as any;
       
       if (dataAny.taxId !== undefined) profileData.taxId = dataAny.taxId;
@@ -61,6 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (dataAny.receiptShowSignature !== undefined) profileData.receiptShowSignature = dataAny.receiptShowSignature;
       if (dataAny.receiptFooterText !== undefined) profileData.receiptFooterText = dataAny.receiptFooterText;
       if (dataAny.receiptAdditionalInfo !== undefined) profileData.receiptAdditionalInfo = dataAny.receiptAdditionalInfo;
+      if (dataAny.companyNeighborhood !== undefined) profileData.companyNeighborhood = dataAny.companyNeighborhood;
+      if (dataAny.companyCity !== undefined) profileData.companyCity = dataAny.companyCity;
+      if (dataAny.companySocialMedia !== undefined) profileData.companySocialMedia = dataAny.companySocialMedia;
       
       return profileData;
     } catch (error) {
@@ -69,12 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Função para atualizar o perfil no estado do contexto
   const refreshProfile = async () => {
     if (!user) {
       console.warn("[AuthContext] Tentativa de atualizar perfil sem usuário autenticado");
       
-      // Verificar se há uma sessão ativa
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session?.user) {
         setUser(sessionData.session.user);
@@ -99,7 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log("[AuthContext] Inicializando contexto de autenticação");
     
-    // Define a função que será chamada quando o estado de autenticação mudar
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("[AuthContext] Evento de autenticação:", event);
@@ -107,10 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setIsLoading(false);
         
-        // Busca o perfil quando o usuário faz login
         if (session?.user) {
           console.log("[AuthContext] Usuário autenticado:", session.user.id);
-          // Usando setTimeout(0) para evitar problemas de deadlock com o Supabase
           setTimeout(() => {
             fetchProfile(session.user.id).then(profileData => {
               if (profileData) {
@@ -128,13 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Verifica se já existe uma sessão ativa
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log("[AuthContext] Verificando sessão existente:", session ? "Encontrada" : "Não encontrada");
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Busca o perfil se houver um usuário na sessão
       if (session?.user) {
         console.log("[AuthContext] Carregando perfil para sessão existente:", session.user.id);
         fetchProfile(session.user.id).then(profileData => {

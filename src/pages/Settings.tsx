@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -62,6 +61,10 @@ const formSchema = z.object({
   receiptShowLogo: z.boolean().optional(),
   receiptShowSignature: z.boolean().optional(),
   receiptFooterText: z.string().optional(),
+  // Novos campos para personalização adicional
+  companyNeighborhood: z.string().optional(),
+  companyCity: z.string().optional(),
+  companySocialMedia: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -91,6 +94,9 @@ const Settings = () => {
       receiptShowLogo: false,
       receiptShowSignature: false,
       receiptFooterText: '',
+      companyNeighborhood: '',
+      companyCity: '',
+      companySocialMedia: '',
     },
   });
 
@@ -109,6 +115,9 @@ const Settings = () => {
         receiptShowLogo: profile.receiptShowLogo || false,
         receiptShowSignature: profile.receiptShowSignature || false,
         receiptFooterText: profile.receiptFooterText || '',
+        companyNeighborhood: profile.companyNeighborhood || '',
+        companyCity: profile.companyCity || '',
+        companySocialMedia: profile.companySocialMedia || '',
       });
     }
   }, [profile, form]);
@@ -128,7 +137,6 @@ const Settings = () => {
           name: values.name,
           phone: values.phone,
           address: values.address,
-          // Add all receipt customization fields
           taxId: values.taxId,
           currency: values.currency,
           taxRate: values.taxRate,
@@ -136,6 +144,9 @@ const Settings = () => {
           receiptShowLogo: values.receiptShowLogo,
           receiptShowSignature: values.receiptShowSignature,
           receiptFooterText: values.receiptFooterText,
+          companyNeighborhood: values.companyNeighborhood,
+          companyCity: values.companyCity,
+          companySocialMedia: values.companySocialMedia,
         })
         .eq('id', profile.id);
       
@@ -317,6 +328,61 @@ const Settings = () => {
                           )}
                         />
                       </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Informações da Loja na Fatura */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Informações da Loja na Fatura</CardTitle>
+                      <CardDescription>
+                        Adicione informações detalhadas para aparecer no cabeçalho da fatura
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="companyNeighborhood"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bairro</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Nome do bairro" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="companyCity"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Município</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Nome do município" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="companySocialMedia"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Conta Social</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Instagram, Facebook ou outra rede social" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </CardContent>
                   </Card>
                 </div>

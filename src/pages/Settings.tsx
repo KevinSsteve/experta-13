@@ -37,7 +37,6 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Loader2, Save } from 'lucide-react';
 
-// Definindo schema de validação para o formulário
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Nome deve ter pelo menos 2 caracteres.",
@@ -57,11 +56,9 @@ const formSchema = z.object({
   currency: z.string(),
   taxRate: z.coerce.number().min(0).max(100),
   receiptMessage: z.string(),
-  // Add new receipt customization fields
   receiptShowLogo: z.boolean().optional(),
   receiptShowSignature: z.boolean().optional(),
   receiptFooterText: z.string().optional(),
-  // Novos campos para personalização adicional
   companyNeighborhood: z.string().optional(),
   companyCity: z.string().optional(),
   companySocialMedia: z.string().optional(),
@@ -79,7 +76,6 @@ const Settings = () => {
     promotions: false,
   });
 
-  // Inicializando formulário
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -100,7 +96,6 @@ const Settings = () => {
     },
   });
 
-  // Carregando dados do perfil quando disponível
   useEffect(() => {
     if (profile) {
       form.reset({
@@ -144,9 +139,9 @@ const Settings = () => {
           receiptShowLogo: values.receiptShowLogo,
           receiptShowSignature: values.receiptShowSignature,
           receiptFooterText: values.receiptFooterText,
-          companyNeighborhood: values.companyNeighborhood,
-          companyCity: values.companyCity,
-          companySocialMedia: values.companySocialMedia,
+          company_neighborhood: values.companyNeighborhood,
+          company_city: values.companyCity,
+          company_social_media: values.companySocialMedia,
         })
         .eq('id', profile.id);
       
@@ -154,7 +149,6 @@ const Settings = () => {
         throw error;
       }
       
-      // Atualizando o perfil do usuário no contexto
       await refreshProfile();
       
       toast.success('Configurações salvas com sucesso!');
@@ -179,7 +173,6 @@ const Settings = () => {
             <form onSubmit={form.handleSubmit(handleSaveSettings)} className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                  {/* Store Information */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Informações da Loja</CardTitle>
@@ -250,7 +243,6 @@ const Settings = () => {
                     </CardContent>
                   </Card>
                   
-                  {/* Fiscal Settings */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Configurações Fiscais</CardTitle>
@@ -331,7 +323,6 @@ const Settings = () => {
                     </CardContent>
                   </Card>
                   
-                  {/* Informações da Loja na Fatura */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Informações da Loja na Fatura</CardTitle>
@@ -388,7 +379,6 @@ const Settings = () => {
                 </div>
                 
                 <div className="space-y-6">
-                  {/* Appearance */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Aparência</CardTitle>
@@ -413,7 +403,6 @@ const Settings = () => {
                     </CardContent>
                   </Card>
                   
-                  {/* Notifications */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Notificações</CardTitle>
@@ -466,7 +455,6 @@ const Settings = () => {
                     </CardContent>
                   </Card>
                   
-                  {/* System Info */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Informações do Sistema</CardTitle>

@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -82,6 +81,50 @@ const formatDateTimeForReceipt = (date: string | Date): string => {
 };
 
 /**
+ * Quebra texto longo em múltiplas linhas com limite de caracteres
+ * @param text Texto a ser quebrado
+ * @param maxLength Comprimento máximo por linha
+ * @returns Array de linhas de texto
+ */
+const wrapText = (text: string, maxLength: number = 38): string[] => {
+  if (!text || text.length <= maxLength) {
+    return [text];
+  }
+
+  const lines: string[] = [];
+  let currentLine = '';
+  const words = text.split(' ');
+
+  for (const word of words) {
+    if ((currentLine + ' ' + word).trim().length <= maxLength) {
+      currentLine += (currentLine ? ' ' : '') + word;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      if (word.length > maxLength) {
+        let remainingWord = word;
+        while (remainingWord.length > 0) {
+          const part = remainingWord.substring(0, maxLength);
+          lines.push(part);
+          remainingWord = remainingWord.substring(maxLength);
+        }
+        currentLine = '';
+      } else {
+        currentLine = word;
+      }
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+};
+
+/**
  * Gera um PDF de recibo para uma venda
  * @param sale A venda para gerar um recibo
  * @param config Configuração opcional para personalizar o recibo
@@ -127,6 +170,9 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const pageWidth = marginRight - marginLeft;
   const pageCenter = marginLeft + pageWidth / 2;
   
+  // Espaçamento entre linhas aumentado para 9 conforme solicitado
+  const lineSpacing = 9;
+  
   // Adicionar cabeçalho com informações da empresa
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(titleSize);
@@ -138,13 +184,15 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFontSize(normalSize - 6);
   doc.setFont('helvetica', 'normal');
   
-  let currentYPos = 22;
-  const lineSpacing = 7; // Aumentado para evitar sobreposições
+  let currentYPos = 24; // Aumentado para dar mais espaço após o título
   
   // Endereço da empresa com melhor formatação
   if (receiptConfig.companyAddress) {
-    doc.text(receiptConfig.companyAddress, pageCenter, currentYPos, { align: 'center' });
-    currentYPos += lineSpacing;
+    const addressLines = wrapText(receiptConfig.companyAddress);
+    for (const line of addressLines) {
+      doc.text(line, pageCenter, currentYPos, { align: 'center' });
+      currentYPos += lineSpacing;
+    }
   }
   
   // Bairro 
@@ -167,8 +215,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   // Email
   if (receiptConfig.companyEmail) {
-    doc.text(`Email: ${receiptConfig.companyEmail}`, pageCenter, currentYPos, { align: 'center' });
-    currentYPos += lineSpacing;
+    const emailLines = wrapText(`Email: ${receiptConfig.companyEmail}`);
+    for (const line of emailLines) {
+      doc.text(line, pageCenter, currentYPos, { align: 'center' });
+      currentYPos += lineSpacing;
+    }
   }
   
   // NIF - Destaque importante
@@ -181,28 +232,31 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   // Conta social
   if (receiptConfig.companySocialMedia) {
-    doc.text(receiptConfig.companySocialMedia, pageCenter, currentYPos, { align: 'center' });
-    currentYPos += lineSpacing;
+    const socialLines = wrapText(receiptConfig.companySocialMedia);
+    for (const line of socialLines) {
+      doc.text(line, pageCenter, currentYPos, { align: 'center' });
+      currentYPos += lineSpacing;
+    }
   }
   
   // Linha divisória após informações da empresa
   currentYPos += 2;
   doc.line(marginLeft, currentYPos, marginRight, currentYPos);
-  currentYPos += 8; // Espaçamento maior após a linha
+  currentYPos += lineSpacing; // Espaçamento maior após a linha
   
   // Informações da fatura com melhor alinhamento
   doc.setFontSize(normalSize - 8);
   
   // Seção de detalhes do documento com layout em duas colunas
   const leftColumn = marginLeft;
-  const rightColumn = marginLeft + 85; // Reajustado para melhor distribuição horizontal
+  const rightColumn = marginLeft + 90; // Aumentado para melhor separação das colunas
   
   // Coluna esquerda
   doc.setFont('helvetica', 'bold');
   doc.text("DOCUMENTO:", leftColumn, currentYPos);
-  doc.setFont('helvetica', 'normal');
   currentYPos += lineSpacing;
   
+  doc.setFont('helvetica', 'normal');
   doc.text("Original: F", leftColumn, currentYPos);
   currentYPos += lineSpacing;
   
@@ -214,31 +268,26 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFont('helvetica', 'normal');
   currentYPos += lineSpacing;
   
-  // Verificar se o ID é muito longo e quebrá-lo em múltiplas linhas se necessário
+  // Verificar se o ID é muito longo e quebrá-lo em múltiplas linhas
   const saleIdText = sale.id || 'N/A';
-  if (saleIdText.length > 20) {
-    const parts = [
-      saleIdText.substring(0, 20),
-      saleIdText.substring(20)
-    ];
-    doc.text(parts[0], leftColumn, currentYPos);
-    currentYPos += lineSpacing - 2; // Espaçamento menor entre linhas do mesmo campo
-    doc.text(parts[1], leftColumn, currentYPos);
-  } else {
-    doc.text(saleIdText, leftColumn, currentYPos);
+  const saleIdLines = wrapText(saleIdText, 30);
+  for (const line of saleIdLines) {
+    doc.text(line, leftColumn, currentYPos);
+    currentYPos += lineSpacing;
   }
   
-  // Determinar o ponto Y mais baixo na coluna esquerda para continuar a partir dele mais tarde
+  // Salvar o ponto Y da coluna esquerda para posterior comparação
   const leftColumnEndY = currentYPos;
   
-  // Resetar posição Y para coluna direita - com mais espaço para não sobrepor "Original: F"
-  currentYPos = currentYPos - (lineSpacing * 4) + 4; // Ajustado para iniciar após a linha "Original: F"
+  // Resetar para a coluna direita com posição Y adequada para evitar sobreposições
+  let rightColumnY = currentYPos - (saleIdLines.length + 4) * lineSpacing;
   
-  // Coluna direita
+  // Coluna direita - garantindo que sempre tenha espaço suficiente
   doc.setFont('helvetica', 'bold');
-  doc.text("CLIENTE:", rightColumn, currentYPos);
+  doc.text("CLIENTE:", rightColumn, rightColumnY);
+  rightColumnY += lineSpacing;
+  
   doc.setFont('helvetica', 'normal');
-  currentYPos += lineSpacing;
   
   // Nome do cliente
   let customerName = 'Cliente não identificado';
@@ -250,67 +299,58 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     }
   }
   
-  // Verificar se o nome do cliente é muito longo e quebrá-lo em múltiplas linhas
-  if (customerName.length > 25) {
-    const parts = [
-      customerName.substring(0, 25),
-      customerName.substring(25)
-    ];
-    doc.text(parts[0], rightColumn, currentYPos);
-    currentYPos += lineSpacing - 2;
-    doc.text(parts[1], rightColumn, currentYPos);
-    currentYPos += lineSpacing;
-  } else {
-    doc.text(customerName, rightColumn, currentYPos);
-    currentYPos += lineSpacing;
+  // Quebrar o nome do cliente em múltiplas linhas se necessário
+  const customerNameLines = wrapText(customerName);
+  for (const line of customerNameLines) {
+    doc.text(line, rightColumn, rightColumnY);
+    rightColumnY += lineSpacing;
   }
   
+  // NIF do cliente
   if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
-    doc.text(`NIF: ${(sale.customer as any).nif}`, rightColumn, currentYPos);
+    doc.text(`NIF: ${(sale.customer as any).nif}`, rightColumn, rightColumnY);
   } else {
-    doc.text("NIF: Não fornecido", rightColumn, currentYPos);
+    doc.text("NIF: Não fornecido", rightColumn, rightColumnY);
   }
-  currentYPos += lineSpacing;
+  rightColumnY += lineSpacing;
   
+  // Endereço do cliente
   if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).address) {
     const address = (sale.customer as any).address;
-    // Verificar se o endereço é muito longo e quebrá-lo em múltiplas linhas
-    if (address.length > 30) {
-      doc.text(`Endereço:`, rightColumn, currentYPos);
-      currentYPos += lineSpacing - 2;
-      doc.text(address, rightColumn, currentYPos);
-    } else {
-      doc.text(`Endereço: ${address}`, rightColumn, currentYPos);
+    const addressLines = wrapText(`Endereço: ${address}`, 30);
+    for (const line of addressLines) {
+      doc.text(line, rightColumn, rightColumnY);
+      rightColumnY += lineSpacing;
     }
   }
   
   // Determinar o ponto Y mais baixo entre as duas colunas para continuar
-  const rightColumnEndY = currentYPos;
-  currentYPos = Math.max(leftColumnEndY, rightColumnEndY) + lineSpacing;
+  currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
   
-  // Cabeçalho da tabela de itens - reestruturado para evitar sobreposição
+  // Cabeçalho da tabela de itens - reestruturado completamente
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(tableSize - 6);
   
-  // Nova organização do cabeçalho da tabela em 2 linhas para evitar sobreposição
+  // Título da coluna Item na primeira linha
   doc.text('Item', marginLeft, currentYPos);
   currentYPos += lineSpacing;
   
-  // Segunda linha de cabeçalho com colunas numéricas
-  const colPrice = marginLeft + 5;
-  const colQty = colPrice + 40;
+  // Colunas numéricas em layout mais espaçado horizontalmente
+  const colPrice = marginLeft + 10;
+  const colQty = colPrice + 45;
   const colTax = colQty + 25;
-  const colTotal = colTax + 30;
+  const colTotal = colTax + 25;
   
+  // Cabeçalhos das colunas numéricas em linha separada
   doc.text('Preço', colPrice, currentYPos);
   doc.text('Qtd', colQty, currentYPos);
   doc.text('IVA', colTax, currentYPos);
   doc.text('Total', colTotal, currentYPos);
   
-  // Desenhar uma linha
+  // Linha divisória após cabeçalho
   currentYPos += 2;
   doc.line(marginLeft, currentYPos, marginRight, currentYPos);
-  currentYPos += 6;
+  currentYPos += lineSpacing;
   
   // Resetar fonte
   doc.setFont('helvetica', 'normal');
@@ -334,7 +374,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   }
   
   // Melhor formatação para itens com tratamento para textos longos
-  const maxNameLength = 30; // Número máximo de caracteres antes de truncar ou quebrar
+  const maxNameLength = 38; // Comprimento máximo por linha conforme solicitado
   
   itemsList.forEach((item: any) => {
     let itemName = 'Produto sem nome';
@@ -361,23 +401,20 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
       currentYPos = 20;
     }
     
-    // Tratar nomes longos de produtos quebrando em múltiplas linhas
-    if (itemName.length > maxNameLength) {
-      const firstLine = itemName.substring(0, maxNameLength);
-      const secondLine = "  " + itemName.substring(maxNameLength); // Indentação para a segunda linha
+    // Quebrar nome do produto em múltiplas linhas se necessário
+    const productNameLines = wrapText(itemName, maxNameLength);
+    
+    // Nome do produto (possivelmente múltiplas linhas)
+    for (let i = 0; i < productNameLines.length; i++) {
+      doc.text(productNameLines[i], marginLeft, currentYPos);
       
-      // Nome do produto (primeira linha)
-      doc.text(firstLine, marginLeft, currentYPos);
-      currentYPos += lineSpacing - 2; // Espaçamento reduzido para a continuação do nome
-      
-      // Segunda linha do nome do produto
-      doc.text(secondLine, marginLeft, currentYPos);
-      currentYPos += lineSpacing - 2;
-    } else {
-      // Nome do produto (cabe em uma linha)
-      doc.text(itemName, marginLeft, currentYPos);
-      currentYPos += lineSpacing - 2;
+      if (i < productNameLines.length - 1) {
+        currentYPos += lineSpacing;
+      }
     }
+    
+    // Avançar para a linha onde colocaremos as informações numéricas
+    currentYPos += lineSpacing;
     
     // Informações numéricas em uma linha separada, alinhadas de acordo com o cabeçalho
     doc.text(formatCurrency(price), colPrice, currentYPos);
@@ -385,6 +422,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     doc.text(`${taxRate}%`, colTax, currentYPos);
     doc.text(formatCurrency(total), colTotal, currentYPos);
     
+    // Espaçamento extra após cada item
     currentYPos += lineSpacing;
   });
   
@@ -396,7 +434,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   // Desenhar uma linha
   doc.line(marginLeft, currentYPos, marginRight, currentYPos);
-  currentYPos += 8; // Espaçamento maior após a linha
+  currentYPos += lineSpacing; // Espaçamento após a linha
   
   // Adicionar total e forma de pagamento com destaque
   doc.setFont('helvetica', 'bold');
@@ -405,31 +443,30 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   currentYPos += lineSpacing;
   
   // Forma de pagamento
-  doc.text('Forma de Pagamento:', marginLeft + 110, currentYPos - 2);
+  doc.text('Forma de Pagamento:', marginLeft + 85, currentYPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 155, currentYPos - 2);
+  doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 155, currentYPos);
   
   // Adicionar rodapé
   const footerYPos = 280;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(footerSize);
   
-  // Verificar se o texto do rodapé é muito longo e quebrá-lo em múltiplas linhas
+  // Quebrar texto do rodapé em múltiplas linhas se necessário
   const footerText = receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição';
-  if (footerText.length > 50) {
-    const parts = [
-      footerText.substring(0, 50),
-      footerText.substring(50)
-    ];
-    doc.text(parts[0], pageCenter, footerYPos - 10, { align: 'center' });
-    doc.text(parts[1], pageCenter, footerYPos, { align: 'center' });
-  } else {
-    doc.text(footerText, pageCenter, footerYPos, { align: 'center' });
+  const footerLines = wrapText(footerText);
+  
+  let footerY = footerYPos - ((footerLines.length - 1) * lineSpacing);
+  
+  // Adicionar mensagem de agradecimento acima do rodapé
+  if (receiptConfig.thankYouMessage) {
+    doc.text(receiptConfig.thankYouMessage, pageCenter, footerY - lineSpacing, { align: 'center' });
   }
   
-  // Adicionar mensagem de agradecimento
-  if (receiptConfig.thankYouMessage) {
-    doc.text(receiptConfig.thankYouMessage, pageCenter, footerYPos - 15, { align: 'center' });
+  // Escrever as linhas do rodapé
+  for (const line of footerLines) {
+    doc.text(line, pageCenter, footerY, { align: 'center' });
+    footerY += lineSpacing;
   }
   
   return doc;

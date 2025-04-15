@@ -350,7 +350,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Resetar fonte
   doc.setFont('helvetica', 'normal');
   
-  // Processar itens
+  // Processar itens - Corrigido para tratar melhor as diferentes estruturas de dados
   let itemsList = [];
   if (sale.items) {
     if (Array.isArray(sale.items)) {
@@ -359,11 +359,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
       // Verificar se há produtos na propriedade 'products'
       const productsObj = sale.items as any;
       if ('products' in productsObj && Array.isArray(productsObj.products)) {
-        itemsList = productsObj.products.map((item: any) => ({
-          name: item.productName || 'Produto',
-          quantity: item.quantity || 1,
-          price: item.price || 0
-        }));
+        itemsList = productsObj.products;
       }
     }
   }
@@ -372,19 +368,31 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const maxNameLength = 38; // Comprimento máximo por linha conforme solicitado
   
   itemsList.forEach((item: any) => {
+    // Determinando os valores corretos independente da estrutura do objeto
     let itemName = 'Produto sem nome';
     let quantity = 1;
     let price = 0;
     
     if (item.product) {
+      // Formato usando estrutura com objeto product
       itemName = item.product.name || 'Produto sem nome';
-      price = item.product.price || 0;
-      quantity = item.quantity || 1;
+      price = parseFloat(item.product.price) || 0;
+      quantity = parseInt(item.quantity) || 1;
+    } else if (item.productName) {
+      // Formato usando propriedades diretas dos produtos vindos do Supabase
+      itemName = item.productName || 'Produto sem nome';
+      price = parseFloat(item.price) || 0;
+      quantity = parseInt(item.quantity) || 1;
     } else {
-      itemName = item.name || item.productName || 'Produto sem nome';
-      price = item.price || 0;
-      quantity = item.quantity || 1;
+      // Formato possível alternativo
+      itemName = item.name || 'Produto sem nome';
+      price = parseFloat(item.price) || 0;
+      quantity = parseInt(item.quantity) || 1;
     }
+    
+    // Garantir que preço e quantidade são números para evitar undefined
+    price = isNaN(price) ? 0 : price;
+    quantity = isNaN(quantity) ? 1 : quantity;
     
     const total = price * quantity;
     const taxRate = receiptConfig.taxRate || 0;
@@ -412,10 +420,13 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     currentYPos += lineSpacing;
     
     // Informações numéricas em uma linha separada, com espaço adequado entre moeda e valor
-    doc.text(`${receiptConfig.currency} ${formatCurrency(price).split(' ')[1]}`, marginLeft, currentYPos);
+    const priceFormatted = price.toFixed(2).replace('.', ',');
+    const totalFormatted = total.toFixed(2).replace('.', ',');
+    
+    doc.text(`${receiptConfig.currency} ${priceFormatted}`, marginLeft, currentYPos);
     doc.text(quantity.toString(), marginLeft + 40, currentYPos);
     doc.text(`${taxRate}%`, marginLeft + 60, currentYPos);
-    doc.text(`${receiptConfig.currency} ${formatCurrency(total).split(' ')[1]}`, marginLeft + 80, currentYPos);
+    doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 80, currentYPos);
     
     // Espaçamento extra após cada item
     currentYPos += lineSpacing;
@@ -435,12 +446,17 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFont('helvetica', 'bold');
   // Ajustando posição para evitar quebra de margem
   doc.text('Total:', marginLeft, currentYPos);
+  
+  // Garantir que o total é um número para evitar undefined
+  const totalSale = parseFloat(String(sale.total)) || 0;
+  const totalFormatted = totalSale.toFixed(2).replace('.', ',');
+  
   // Usando receiptConfig.currency para formatação consistente
-  doc.text(`${receiptConfig.currency} ${formatCurrency(sale.total).split(' ')[1]}`, marginLeft + 80, currentYPos);
+  doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 80, currentYPos);
   currentYPos += lineSpacing;
   
-  // Forma de pagamento
-  doc.text('Forma de Pagamento:', marginLeft, currentYPos);
+  // Alterando "Forma de Pagamento" para apenas "Pagamento"
+  doc.text('Pagamento:', marginLeft, currentYPos);
   doc.setFont('helvetica', 'normal');
   doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 80, currentYPos);
   

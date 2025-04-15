@@ -1,3 +1,4 @@
+
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -59,7 +60,7 @@ const defaultReceiptConfig: ReceiptConfig = {
   thankYouMessage: 'Obrigado pela preferência!',
   footerText: 'Os bens/serviços prestados foram colocados à disposição',
   showTaxInfo: true,
-  currency: 'AOA',
+  currency: 'AKZ', // Alterado para AKZ conforme solicitado
   showLogo: false,
   showSignature: false,
   showBarcode: false
@@ -186,6 +187,14 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   let currentYPos = 24; // Aumentado para dar mais espaço após o título
   
+  // NIF - Destaque importante e adicionado no início para garantir visibilidade
+  if (receiptConfig.taxId) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(`NIF: ${receiptConfig.taxId}`, pageCenter, currentYPos, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    currentYPos += lineSpacing;
+  }
+
   // Endereço da empresa com melhor formatação
   if (receiptConfig.companyAddress) {
     const addressLines = wrapText(receiptConfig.companyAddress);
@@ -220,14 +229,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
       doc.text(line, pageCenter, currentYPos, { align: 'center' });
       currentYPos += lineSpacing;
     }
-  }
-  
-  // NIF - Destaque importante
-  if (receiptConfig.taxId) {
-    doc.setFont('helvetica', 'bold');
-    doc.text(`NIF: ${receiptConfig.taxId}`, pageCenter, currentYPos, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    currentYPos += lineSpacing;
   }
   
   // Conta social
@@ -327,7 +328,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Determinar o ponto Y mais baixo entre as duas colunas para continuar
   currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
   
-  // Cabeçalho da tabela de itens - reestruturado completamente
+  // Cabeçalho da tabela de itens - reestruturado para evitar quebra de margem
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(tableSize - 6);
   
@@ -335,17 +336,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.text('Item', marginLeft, currentYPos);
   currentYPos += lineSpacing;
   
-  // Colunas numéricas em layout mais espaçado horizontalmente
-  const colPrice = marginLeft + 10;
-  const colQty = colPrice + 45;
-  const colTax = colQty + 25;
-  const colTotal = colTax + 25;
-  
-  // Cabeçalhos das colunas numéricas em linha separada
-  doc.text('Preço', colPrice, currentYPos);
-  doc.text('Qtd', colQty, currentYPos);
-  doc.text('IVA', colTax, currentYPos);
-  doc.text('Total', colTotal, currentYPos);
+  // Colocando as outras colunas na linha seguinte com espaço adequado entre elas
+  doc.text('Preço', marginLeft, currentYPos);
+  doc.text('Qtd', marginLeft + 40, currentYPos);
+  doc.text('IVA', marginLeft + 60, currentYPos);
+  doc.text('Total', marginLeft + 80, currentYPos);
   
   // Linha divisória após cabeçalho
   currentYPos += 2;
@@ -416,11 +411,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     // Avançar para a linha onde colocaremos as informações numéricas
     currentYPos += lineSpacing;
     
-    // Informações numéricas em uma linha separada, alinhadas de acordo com o cabeçalho
-    doc.text(formatCurrency(price), colPrice, currentYPos);
-    doc.text(quantity.toString(), colQty, currentYPos);
-    doc.text(`${taxRate}%`, colTax, currentYPos);
-    doc.text(formatCurrency(total), colTotal, currentYPos);
+    // Informações numéricas em uma linha separada, com espaço adequado entre moeda e valor
+    doc.text(`${receiptConfig.currency} ${formatCurrency(price).split(' ')[1]}`, marginLeft, currentYPos);
+    doc.text(quantity.toString(), marginLeft + 40, currentYPos);
+    doc.text(`${taxRate}%`, marginLeft + 60, currentYPos);
+    doc.text(`${receiptConfig.currency} ${formatCurrency(total).split(' ')[1]}`, marginLeft + 80, currentYPos);
     
     // Espaçamento extra após cada item
     currentYPos += lineSpacing;
@@ -436,16 +431,18 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.line(marginLeft, currentYPos, marginRight, currentYPos);
   currentYPos += lineSpacing; // Espaçamento após a linha
   
-  // Adicionar total e forma de pagamento com destaque
+  // Adicionar total e forma de pagamento com destaque (corrigindo quebra de margem)
   doc.setFont('helvetica', 'bold');
-  doc.text('Total:', marginLeft + 110, currentYPos);
-  doc.text(formatCurrency(sale.total), marginLeft + 155, currentYPos);
+  // Ajustando posição para evitar quebra de margem
+  doc.text('Total:', marginLeft, currentYPos);
+  // Usando receiptConfig.currency para formatação consistente
+  doc.text(`${receiptConfig.currency} ${formatCurrency(sale.total).split(' ')[1]}`, marginLeft + 80, currentYPos);
   currentYPos += lineSpacing;
   
   // Forma de pagamento
-  doc.text('Forma de Pagamento:', marginLeft + 85, currentYPos);
+  doc.text('Forma de Pagamento:', marginLeft, currentYPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 155, currentYPos);
+  doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 80, currentYPos);
   
   // Adicionar rodapé
   const footerYPos = 280;

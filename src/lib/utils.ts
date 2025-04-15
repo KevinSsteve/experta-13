@@ -16,7 +16,7 @@ export function cn(...inputs: ClassValue[]) {
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-AO', {
     style: 'currency',
-    currency: 'AOA',
+    currency: 'AKZ',
     currencyDisplay: 'symbol'
   }).format(value);
 }

@@ -6,7 +6,7 @@ import { X, Trash, Plus, Minus, ShoppingBag, Printer, Share2, Download } from 'l
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { downloadReceipt, printReceipt, shareReceipt, ReceiptConfig } from '@/lib/utils/receipt';
+import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function ShoppingCart() {
@@ -26,23 +26,11 @@ export function ShoppingCart() {
     navigate('/checkout');
   };
 
-  const getReceiptConfig = (): ReceiptConfig => {
-    return {
-      companyName: profile?.name || 'MOLOJA',
-      companyAddress: profile?.address,
-      companyPhone: profile?.phone,
-      companyEmail: profile?.email,
-      taxId: profile?.taxId,
-      currency: profile?.currency || 'AOA',
-      thankYouMessage: profile?.receiptMessage || 'Obrigado pela preferência!',
-    };
-  };
-
   const handlePrintReceipt = () => {
-    if (!lastSale) return;
+    if (!lastSale || !profile) return;
     
     try {
-      printReceipt(lastSale, getReceiptConfig());
+      printReceipt(lastSale, profile);
       toast.success('Recibo enviado para impressão');
     } catch (error) {
       console.error('Erro ao imprimir recibo:', error);
@@ -51,10 +39,10 @@ export function ShoppingCart() {
   };
 
   const handleShareReceipt = async () => {
-    if (!lastSale) return;
+    if (!lastSale || !profile) return;
     
     try {
-      const shared = await shareReceipt(lastSale, getReceiptConfig());
+      const shared = await shareReceipt(lastSale, profile);
       if (shared) {
         toast.success('Recibo compartilhado com sucesso');
       } else {
@@ -67,10 +55,10 @@ export function ShoppingCart() {
   };
 
   const handleDownloadReceipt = () => {
-    if (!lastSale) return;
+    if (!lastSale || !profile) return;
     
     try {
-      downloadReceipt(lastSale, getReceiptConfig());
+      downloadReceipt(lastSale, profile);
       toast.success('Recibo baixado com sucesso');
     } catch (error) {
       console.error('Erro ao baixar recibo:', error);

@@ -82,9 +82,6 @@ const formatDateTimeForReceipt = (date: string | Date): string => {
 
 /**
  * Quebra texto longo em múltiplas linhas com limite de caracteres
- * @param text Texto a ser quebrado
- * @param maxLength Comprimento máximo por linha
- * @returns Array de linhas de texto
  */
 const wrapText = (text: string, maxLength: number = 38): string[] => {
   if (!text || text.length <= maxLength) {
@@ -138,17 +135,17 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     companyAddress: config?.address || '',
     companyPhone: config?.phone || '',
     companyEmail: config?.email || '',
-    taxId: config?.tax_id || config?.taxId || '', // Check both formats for backward compatibility
+    taxId: config?.tax_id || '', 
     currency: config?.currency || defaultReceiptConfig.currency,
-    taxRate: config?.tax_rate || config?.taxRate || 0, // Check both formats
-    thankYouMessage: config?.receipt_message || config?.receiptMessage || defaultReceiptConfig.thankYouMessage,
-    showLogo: config?.receipt_show_logo || config?.receiptShowLogo || defaultReceiptConfig.showLogo,
-    showSignature: config?.receipt_show_signature || config?.receiptShowSignature || defaultReceiptConfig.showSignature,
-    footerText: config?.receipt_footer_text || config?.receiptFooterText || defaultReceiptConfig.footerText,
-    additionalInfo: config?.receipt_additional_info || config?.receiptAdditionalInfo || '',
-    companyNeighborhood: config?.company_neighborhood || config?.companyNeighborhood || '',
-    companyCity: config?.company_city || config?.companyCity || '',
-    companySocialMedia: config?.company_social_media || config?.companySocialMedia || ''
+    taxRate: config?.tax_rate || 0,
+    thankYouMessage: config?.receipt_message || defaultReceiptConfig.thankYouMessage,
+    showLogo: config?.receipt_show_logo || defaultReceiptConfig.showLogo,
+    showSignature: config?.receipt_show_signature || defaultReceiptConfig.showSignature,
+    footerText: config?.receipt_footer_text || defaultReceiptConfig.footerText,
+    additionalInfo: config?.receipt_additional_info || '',
+    companyNeighborhood: config?.company_neighborhood || '',
+    companyCity: config?.company_city || '',
+    companySocialMedia: config?.company_social_media || ''
   };
   
   // Configurar margens e espaçamentos para evitar sobreposições
@@ -193,7 +190,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   currentYPos += 9; // Aumentado para dar mais espaço após o título
   
-  // NIF - Exibe o NIF personalizado pelo usuário (não usa valor estático)
+  // NIF - Exibe o NIF personalizado pelo usuário 
   if (receiptConfig.taxId) {
     doc.setFont('helvetica', 'bold');
     doc.text(`NIF: ${receiptConfig.taxId}`, pageCenter, currentYPos, { align: 'center' });
@@ -237,7 +234,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     }
   }
   
-  // Conta social
+  // INSS / Conta social
   if (receiptConfig.companySocialMedia) {
     const socialLines = wrapText(receiptConfig.companySocialMedia);
     for (const line of socialLines) {

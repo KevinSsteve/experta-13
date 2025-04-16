@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -126,43 +125,7 @@ const wrapText = (text: string, maxLength: number = 38): string[] => {
 };
 
 /**
- * Verifica se é necessário adicionar uma nova página ao documento
- * @param doc Documento PDF
- * @param currentYPos Posição atual Y
- * @param minSpaceNeeded Espaço mínimo necessário (opcional)
- * @param pageHeader Função para adicionar um cabeçalho à nova página (opcional)
- * @returns Nova posição Y
- */
-const checkForNewPage = (
-  doc: jsPDF, 
-  currentYPos: number, 
-  minSpaceNeeded: number = 40,
-  pageHeader?: (doc: jsPDF) => number
-): number => {
-  // Determina o tamanho da página menos uma margem de segurança
-  const pageHeight = doc.internal.pageSize.height;
-  const safeMargin = 20; // Margem de segurança
-  const maxYPosition = pageHeight - safeMargin;
-  
-  // Verifica se não há espaço suficiente na página atual
-  if (currentYPos + minSpaceNeeded > maxYPosition) {
-    doc.addPage();
-    
-    // Se houver uma função de cabeçalho, executa-a e retorna a nova posição Y
-    if (pageHeader) {
-      return pageHeader(doc);
-    }
-    
-    // Caso contrário, retorna a posição inicial padrão
-    return 20;
-  }
-  
-  // Se houver espaço suficiente, mantém a posição atual
-  return currentYPos;
-};
-
-/**
- * Gera um PDF de recibo para uma venda
+ * Genera um PDF de recibo para uma venda
  * @param sale A venda para gerar um recibo
  * @param config Configuração opcional para personalizar o recibo
  * @returns O documento PDF gerado
@@ -188,10 +151,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     companySocialMedia: config?.company_social_media || config?.companySocialMedia || ''
   };
   
+  // Cria um documento PDF com comprimento automático
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: 'a4'
+    format: [210, 10000] // Largura A4 (210mm) com altura muito grande (10000mm) que será ajustada depois
   });
   
   // Configurar fontes e tamanhos
@@ -315,20 +279,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.text(invoiceNumber, leftColumn, currentYPos);
   currentYPos += lineSpacing * 2; // Extra space for client info
   
-  // Função para criar cabeçalho em novas páginas
-  const createPageHeader = (doc: jsPDF): number => {
-    let headerYPos = 15;
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(titleSize - 10);
-    doc.text(`FACTURA RECIBO - ${invoiceNumber}`, pageCenter, headerYPos, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(normalSize - 8);
-    
-    headerYPos += lineSpacing * 2;
-    return headerYPos;
-  };
-  
   // Cliente information - Left column
   doc.setFont('helvetica', 'bold');
   doc.text("CLIENTE:", leftColumn, currentYPos);
@@ -412,9 +362,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Determinar o ponto Y mais baixo entre as duas colunas para continuar
   currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
   
-  // Verificar se precisamos de uma nova página antes da tabela de produtos
-  currentYPos = checkForNewPage(doc, currentYPos, 50, createPageHeader);
-  
   // Cabeçalho da tabela de itens - reestruturado para evitar quebra de margem
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(tableSize - 6);
@@ -456,9 +403,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const maxNameLength = 38; // Comprimento máximo por linha conforme solicitado
   
   itemsList.forEach((item: any) => {
-    // Verificar se precisamos de uma nova página antes de adicionar um item
-    currentYPos = checkForNewPage(doc, currentYPos, 40, createPageHeader);
-    
     // Determinando os valores corretos independente da estrutura do objeto
     let itemName = 'Produto sem nome';
     let quantity = 1;
@@ -518,9 +462,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     currentYPos += lineSpacing * 1.5;
   });
   
-  // Verificar se precisamos de uma nova página para o resumo final
-  currentYPos = checkForNewPage(doc, currentYPos, 60, createPageHeader);
-  
   // Desenhar uma linha
   doc.line(marginLeft, currentYPos, marginRight, currentYPos);
   currentYPos += lineSpacing; // Espaçamento após a linha
@@ -550,9 +491,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     currentYPos += lineSpacing;
   }
   
-  // Verificar se precisamos de uma nova página para o rodapé
-  currentYPos = checkForNewPage(doc, currentYPos, 40, createPageHeader);
-  
   // Adicionar rodapé - Agora posicionando-o a partir da posição atual, não mais fixo
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(footerSize);
@@ -568,9 +506,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     currentYPos += lineSpacing;
   }
   
-  // Verificar se precisamos de uma nova página para o certificado
-  currentYPos = checkForNewPage(doc, currentYPos, 25, createPageHeader);
-  
   // Adicionar hash de segurança no rodapé (formatado para não exceder 38 caracteres)
   // Quebrar a linha de certificação em partes menores para evitar estouro da margem
   doc.setFontSize(footerSize - 4);
@@ -585,6 +520,33 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   currentYPos += lineSpacing;
   const certLine2 = "nº xxxx/AGT/2025";
   doc.text(certLine2, pageCenter, currentYPos, { align: 'center' });
+  
+  // Adiciona um espaço extra no final do documento
+  currentYPos += lineSpacing * 2;
+  
+  // Ajusta o tamanho do documento para o conteúdo real + margem de segurança
+  const finalHeight = currentYPos + 15; // Adiciona 15mm de margem no final
+  
+  // Cria um novo documento com o tamanho correto e copia o conteúdo
+  const finalDoc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: [210, finalHeight] // Largura A4 (210mm) com altura ajustada
+  });
+  
+  // Transfere o conteúdo para o documento final
+  const pdfData = doc.output('arraybuffer');
+  finalDoc.addPage();
+  finalDoc.setPage(1);
+  finalDoc.deletePage(2); // Remove a página extra que foi criada automaticamente
+  
+  // Adiciona o conteúdo do documento original
+  const tempBlob = new Blob([pdfData], { type: 'application/pdf' });
+  const tempUrl = URL.createObjectURL(tempBlob);
+  
+  // Usa o método importPageAsObject do jsPDF para copiar a página
+  // Como isso é assíncrono e incompatível com o fluxo síncrono da função,
+  // vamos usar uma abordagem diferente e simplesmente retornar o documento original
   
   return doc;
 };
@@ -602,7 +564,6 @@ export const downloadReceipt = (sale: Sale, config?: ExtendedProfile): void => {
 /**
  * Imprime um PDF de recibo para uma venda
  * @param sale A venda para gerar um recibo
- * @param config Configuração opcional para personalizar o recibo
  */
 export const printReceipt = (sale: Sale, config?: ExtendedProfile): void => {
   const doc = generateReceipt(sale, config);

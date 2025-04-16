@@ -330,14 +330,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Determinar o ponto Y mais baixo entre as duas colunas para continuar
   currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
   
-  // Adicionar identificação do sistema de faturação
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(footerSize - 4);
-  doc.text("Processado por programa certificado MOLOJA nº xxxx/AGT/2025", marginLeft, currentYPos);
-  doc.setFontSize(normalSize - 8);
-  doc.setFont('helvetica', 'normal');
-  currentYPos += lineSpacing + 2;
-  
   // Cabeçalho da tabela de itens - reestruturado para evitar quebra de margem
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(tableSize - 6);
@@ -347,10 +339,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   currentYPos += lineSpacing;
   
   // Colocando as outras colunas na linha seguinte com espaço adequado entre elas
+  // Aumentando o espaço de três caracteres entre elementos de preço e quantidade
   doc.text('Preço', marginLeft, currentYPos);
-  doc.text('Qtd', marginLeft + 40, currentYPos);
-  doc.text('IVA', marginLeft + 60, currentYPos);
-  doc.text('Total', marginLeft + 80, currentYPos);
+  doc.text('Qtd', marginLeft + 50, currentYPos);  // Aumentado de 40 para 50
+  doc.text('IVA', marginLeft + 75, currentYPos);  // Aumentado de 60 para 75
+  doc.text('Total', marginLeft + 100, currentYPos); // Aumentado de 80 para 100
   
   // Linha divisória após cabeçalho
   currentYPos += 2;
@@ -409,7 +402,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     const taxValue = (total * taxRate) / 100;
     
     // Verificar se precisamos de uma nova página
-    if (currentYPos > 270) {
+    if (currentYPos > 250) { // Modificado para começar nova página mais cedo
       doc.addPage();
       currentYPos = 20;
       
@@ -441,10 +434,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     const priceFormatted = price.toFixed(2).replace('.', ',');
     const totalFormatted = total.toFixed(2).replace('.', ',');
     
+    // Ajustando o espaçamento para corresponder ao cabeçalho
     doc.text(`${receiptConfig.currency} ${priceFormatted}`, marginLeft, currentYPos);
-    doc.text(quantity.toString(), marginLeft + 40, currentYPos);
-    doc.text(`${taxRate}%`, marginLeft + 60, currentYPos);
-    doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 80, currentYPos);
+    doc.text(quantity.toString(), marginLeft + 50, currentYPos);  // Aumentado de 40 para 50
+    doc.text(`${taxRate}%`, marginLeft + 75, currentYPos);        // Aumentado de 60 para 75
+    doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 100, currentYPos);  // Aumentado de 80 para 100
     
     // Espaçamento extra após cada item
     currentYPos += lineSpacing;
@@ -478,13 +472,13 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const totalFormatted = totalSale.toFixed(2).replace('.', ',');
   
   // Usando receiptConfig.currency para formatação consistente
-  doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 80, currentYPos);
+  doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 100, currentYPos); // Aumentado para corresponder ao novo layout
   currentYPos += lineSpacing;
   
   // Alterando "Forma de Pagamento" para apenas "Pagamento"
   doc.text('Pagamento:', marginLeft, currentYPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 80, currentYPos);
+  doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 100, currentYPos); // Aumentado para corresponder ao novo layout
   
   // Adicionar rodapé
   const footerYPos = 280;
@@ -492,10 +486,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFontSize(footerSize);
   
   // Quebrar texto do rodapé em múltiplas linhas se necessário
-  const footerText = receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição';
+  const entregaData = formatDateTimeForReceipt(sale.date).split(' ')[0]; // Pega apenas a parte da data
+  const footerText = (receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição') + ` do adquirente/prestados em ${entregaData}.`;
   const footerLines = wrapText(footerText);
   
-  let footerY = footerYPos - ((footerLines.length - 1) * lineSpacing);
+  let footerY = footerYPos - ((footerLines.length + 2) * lineSpacing); // +2 para o certificado
   
   // Adicionar mensagem de agradecimento acima do rodapé
   if (receiptConfig.thankYouMessage) {
@@ -508,11 +503,18 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     footerY += lineSpacing;
   }
   
-  // Adicionar hash de segurança no rodapé (placeholder para AGT)
-  const hashText = "ABC1-Processado por programa validado nº xxxx/AGT/2025";
+  // Adicionar hash de segurança no rodapé (formatado para não exceder 38 caracteres)
+  // Quebrar a linha de certificação em partes menores para evitar estouro da margem
   doc.setFontSize(footerSize - 4);
   doc.setFont('helvetica', 'italic');
-  doc.text(hashText, pageCenter, footerY + lineSpacing * 2, { align: 'center' });
+  
+  // Primeira linha da certificação
+  const certLine1 = "ABC1-Processado por programa validado";
+  doc.text(certLine1, pageCenter, footerY + lineSpacing, { align: 'center' });
+  
+  // Segunda linha da certificação
+  const certLine2 = "nº xxxx/AGT/2025";
+  doc.text(certLine2, pageCenter, footerY + lineSpacing * 2, { align: 'center' });
   
   return doc;
 };

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -34,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
       
-      // Map database snake_case fields to camelCase profile properties
+      // Map database fields to profile properties using only snake_case as defined in ExtendedProfile
       const profileData: ExtendedProfile = {
         id: data.id,
         name: data.name,
@@ -44,29 +43,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         position: data.position || null,
         role: data.role,
         avatar_url: data.avatar_url,
-        // Map database snake_case fields to both snake_case and camelCase properties for backward compatibility
         tax_id: data.tax_id || null,
-        taxId: data.tax_id || null,
         currency: data.currency || null,
         tax_rate: data.tax_rate || null,
-        taxRate: data.tax_rate || null,
         receipt_message: data.receipt_message || null,
-        receiptMessage: data.receipt_message || null,
-        receiptLogo: data.receipt_logo || null,
-        receiptTitle: data.receipt_title || null,
+        receipt_logo: data.receipt_logo || null,
+        receipt_title: data.receipt_title || null,
         receipt_show_logo: data.receipt_show_logo || null,
-        receiptShowLogo: data.receipt_show_logo || null,
         receipt_show_signature: data.receipt_show_signature || null,
-        receiptShowSignature: data.receipt_show_signature || null,
         receipt_footer_text: data.receipt_footer_text || null,
-        receiptFooterText: data.receipt_footer_text || null,
-        receiptAdditionalInfo: data.receipt_additional_info || null,
+        receipt_additional_info: data.receipt_additional_info || null,
         company_neighborhood: data.company_neighborhood || null,
-        companyNeighborhood: data.company_neighborhood || null,
         company_city: data.company_city || null,
-        companyCity: data.company_city || null,
         company_social_media: data.company_social_media || null,
-        companySocialMedia: data.company_social_media || null,
       };
       
       return profileData;

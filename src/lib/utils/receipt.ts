@@ -1,3 +1,4 @@
+
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -285,7 +286,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   doc.setFont('helvetica', 'normal');
   
-  // Nome do cliente
+  // Nome do cliente - Fixed variable names to avoid redeclaration
   let customerName = 'Cliente não identificado';
   if (sale.customer) {
     if (typeof sale.customer === 'string') {
@@ -323,19 +324,19 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   doc.setFont('helvetica', 'normal');
   
-  // Nome do cliente
-  let customerName = 'Cliente não identificado';
+  // Nome do cliente - Using customerName2 to avoid redeclaration
+  let customerName2 = 'Cliente não identificado';
   if (sale.customer) {
     if (typeof sale.customer === 'string') {
-      customerName = sale.customer;
+      customerName2 = sale.customer;
     } else if (typeof sale.customer === 'object' && sale.customer !== null) {
-      customerName = sale.customer.name || 'Cliente não identificado';
+      customerName2 = sale.customer.name || 'Cliente não identificado';
     }
   }
   
   // Quebrar o nome do cliente em múltiplas linhas se necessário
-  const customerNameLines = wrapText(customerName);
-  for (const line of customerNameLines) {
+  const customerNameLines2 = wrapText(customerName2);
+  for (const line of customerNameLines2) {
     doc.text(line, rightColumn, rightColumnY);
     rightColumnY += lineSpacing;
   }

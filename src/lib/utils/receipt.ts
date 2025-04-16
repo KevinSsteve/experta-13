@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -139,17 +138,17 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     companyAddress: config?.address || '',
     companyPhone: config?.phone || '',
     companyEmail: config?.email || '',
-    taxId: config?.taxId || '',
+    taxId: config?.tax_id || config?.taxId || '', // Check both formats for backward compatibility
     currency: config?.currency || defaultReceiptConfig.currency,
-    taxRate: config?.taxRate || 0,
-    thankYouMessage: config?.receiptMessage || defaultReceiptConfig.thankYouMessage,
-    showLogo: config?.receiptShowLogo || defaultReceiptConfig.showLogo,
-    showSignature: config?.receiptShowSignature || defaultReceiptConfig.showSignature,
-    footerText: config?.receiptFooterText || defaultReceiptConfig.footerText,
+    taxRate: config?.tax_rate || config?.taxRate || 0, // Check both formats
+    thankYouMessage: config?.receipt_message || config?.receiptMessage || defaultReceiptConfig.thankYouMessage,
+    showLogo: config?.receipt_show_logo || config?.receiptShowLogo || defaultReceiptConfig.showLogo,
+    showSignature: config?.receipt_show_signature || config?.receiptShowSignature || defaultReceiptConfig.showSignature,
+    footerText: config?.receipt_footer_text || config?.receiptFooterText || defaultReceiptConfig.footerText,
     additionalInfo: config?.receiptAdditionalInfo || '',
-    companyNeighborhood: config?.companyNeighborhood || '',
-    companyCity: config?.companyCity || '',
-    companySocialMedia: config?.companySocialMedia || ''
+    companyNeighborhood: config?.company_neighborhood || config?.companyNeighborhood || '',
+    companyCity: config?.company_city || config?.companyCity || '',
+    companySocialMedia: config?.company_social_media || config?.companySocialMedia || ''
   };
   
   const doc = new jsPDF({
@@ -277,13 +276,45 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Número da factura seguindo o formato FT SÉRIE/NÚMERO
   const invoiceNumber = `FT MOLOJA/${sale.id?.substring(0, 8) || 'N/A'}`;
   doc.text(invoiceNumber, leftColumn, currentYPos);
+  currentYPos += lineSpacing * 2; // Extra space for client info
+  
+  // Cliente information - Added below the invoice number on the left column
+  doc.setFont('helvetica', 'bold');
+  doc.text("CLIENTE:", leftColumn, currentYPos);
+  currentYPos += lineSpacing;
+  
+  doc.setFont('helvetica', 'normal');
+  
+  // Nome do cliente
+  let customerName = 'Cliente não identificado';
+  if (sale.customer) {
+    if (typeof sale.customer === 'string') {
+      customerName = sale.customer;
+    } else if (typeof sale.customer === 'object' && sale.customer !== null) {
+      customerName = sale.customer.name || 'Cliente não identificado';
+    }
+  }
+  
+  // Quebrar o nome do cliente em múltiplas linhas se necessário
+  const customerNameLines = wrapText(customerName);
+  for (const line of customerNameLines) {
+    doc.text(line, leftColumn, currentYPos);
+    currentYPos += lineSpacing;
+  }
+  
+  // NIF do cliente
+  if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
+    doc.text(`NIF: ${(sale.customer as any).nif}`, leftColumn, currentYPos);
+  } else {
+    doc.text("NIF: Consumidor final", leftColumn, currentYPos); // Default para AGT
+  }
   currentYPos += lineSpacing;
   
   // Salvar o ponto Y da coluna esquerda para posterior comparação
-  const leftColumnEndY = currentYPos;
+  const leftColumnEndY = currentYPos + lineSpacing;
   
-  // Resetar para a coluna direita com posição Y adequada para evitar sobreposições
-  let rightColumnY = currentYPos - (3 + 4) * lineSpacing;
+  // Resetar para a coluna direita com posição Y adequada
+  let rightColumnY = currentYPos - (4 * lineSpacing); // Adjust right column position
   
   // Coluna direita - garantindo que sempre tenha espaço suficiente
   doc.setFont('helvetica', 'bold');
@@ -326,7 +357,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
       rightColumnY += lineSpacing;
     }
   }
-  
+
   // Determinar o ponto Y mais baixo entre as duas colunas para continuar
   currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
   
@@ -339,11 +370,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   currentYPos += lineSpacing;
   
   // Colocando as outras colunas na linha seguinte com espaço adequado entre elas
-  // Aumentando o espaço de três caracteres entre elementos de preço e quantidade
+  // Aumentando o espaço para três caracteres entre elementos de preço e quantidade
   doc.text('Preço', marginLeft, currentYPos);
-  doc.text('Qtd', marginLeft + 50, currentYPos);  // Aumentado de 40 para 50
-  doc.text('IVA', marginLeft + 75, currentYPos);  // Aumentado de 60 para 75
-  doc.text('Total', marginLeft + 100, currentYPos); // Aumentado de 80 para 100
+  doc.text('Qtd', marginLeft + 60, currentYPos);  // Aumentado para 60 para ter espaço de três caracteres
+  doc.text('IVA', marginLeft + 90, currentYPos);  // Aumentado proporcionalmente 
+  doc.text('Total', marginLeft + 120, currentYPos); // Aumentado proporcionalmente
   
   // Linha divisória após cabeçalho
   currentYPos += 2;
@@ -436,9 +467,9 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     
     // Ajustando o espaçamento para corresponder ao cabeçalho
     doc.text(`${receiptConfig.currency} ${priceFormatted}`, marginLeft, currentYPos);
-    doc.text(quantity.toString(), marginLeft + 50, currentYPos);  // Aumentado de 40 para 50
-    doc.text(`${taxRate}%`, marginLeft + 75, currentYPos);        // Aumentado de 60 para 75
-    doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 100, currentYPos);  // Aumentado de 80 para 100
+    doc.text(quantity.toString(), marginLeft + 60, currentYPos);  // Aumentado para 60
+    doc.text(`${taxRate}%`, marginLeft + 90, currentYPos);        // Aumentado para 90
+    doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 120, currentYPos);  // Aumentado para 120
     
     // Espaçamento extra após cada item
     currentYPos += lineSpacing;
@@ -490,7 +521,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const footerText = (receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição') + ` do adquirente/prestados em ${entregaData}.`;
   const footerLines = wrapText(footerText);
   
-  let footerY = footerYPos - ((footerLines.length + 2) * lineSpacing); // +2 para o certificado
+  let footerY = footerYPos - ((footerLines.length + 3) * lineSpacing); // +3 for certification text
   
   // Adicionar mensagem de agradecimento acima do rodapé
   if (receiptConfig.thankYouMessage) {
@@ -508,13 +539,14 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFontSize(footerSize - 4);
   doc.setFont('helvetica', 'italic');
   
-  // Primeira linha da certificação
+  // Primeira linha da certificação (movida para depois do texto do rodapé)
+  footerY += lineSpacing; // Add space between footer text and certification
   const certLine1 = "ABC1-Processado por programa validado";
-  doc.text(certLine1, pageCenter, footerY + lineSpacing, { align: 'center' });
+  doc.text(certLine1, pageCenter, footerY, { align: 'center' });
   
   // Segunda linha da certificação
   const certLine2 = "nº xxxx/AGT/2025";
-  doc.text(certLine2, pageCenter, footerY + lineSpacing * 2, { align: 'center' });
+  doc.text(certLine2, pageCenter, footerY + lineSpacing, { align: 'center' });
   
   return doc;
 };

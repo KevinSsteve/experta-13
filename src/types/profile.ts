@@ -8,19 +8,28 @@ export interface ExtendedProfile {
   position: string | null;
   role: string;
   avatar_url: string | null;
-  // Receipt customization fields - all optional
-  taxId?: string;
+  // Receipt customization fields with database names
+  tax_id?: string;
+  taxId?: string; // For backward compatibility
   currency?: string;
-  taxRate?: number;
-  receiptMessage?: string;
+  tax_rate?: number;
+  taxRate?: number; // For backward compatibility
+  receipt_message?: string;
+  receiptMessage?: string; // For backward compatibility
   receiptLogo?: string;
   receiptTitle?: string;
-  receiptShowLogo?: boolean;
-  receiptShowSignature?: boolean;
-  receiptFooterText?: string;
+  receipt_show_logo?: boolean;
+  receiptShowLogo?: boolean; // For backward compatibility
+  receipt_show_signature?: boolean;
+  receiptShowSignature?: boolean; // For backward compatibility
+  receipt_footer_text?: string;
+  receiptFooterText?: string; // For backward compatibility
   receiptAdditionalInfo?: string;
-  // Novos campos para informações sociais e localização
-  companyNeighborhood?: string;
-  companyCity?: string;
-  companySocialMedia?: string;
+  // Company location information
+  company_neighborhood?: string;
+  companyNeighborhood?: string; // For backward compatibility
+  company_city?: string;
+  companyCity?: string; // For backward compatibility
+  company_social_media?: string;
+  companySocialMedia?: string; // For backward compatibility
 }

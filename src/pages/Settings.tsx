@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -133,12 +132,13 @@ const Settings = () => {
           name: values.name,
           phone: values.phone,
           address: values.address,
-          // Removing fields that don't exist in the database schema
-          // taxId: values.taxId,
-          // receiptMessage: values.receiptMessage,
-          // receiptShowLogo: values.receiptShowLogo,
-          // receiptShowSignature: values.receiptShowSignature,
-          // receiptFooterText: values.receiptFooterText,
+          tax_id: values.taxId,
+          currency: values.currency,
+          tax_rate: values.taxRate,
+          receipt_message: values.receiptMessage,
+          receipt_show_logo: values.receiptShowLogo,
+          receipt_show_signature: values.receiptShowSignature,
+          receipt_footer_text: values.receiptFooterText,
           company_neighborhood: values.companyNeighborhood,
           company_city: values.companyCity,
           company_social_media: values.companySocialMedia,

@@ -44,6 +44,7 @@ const checkoutSchema = z.object({
   amountPaid: z.coerce.number().min(0, { 
     message: "O valor pago deve ser positivo" 
   }),
+  customerNif: z.string().optional(),
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -80,6 +81,7 @@ const Checkout = () => {
     defaultValues: {
       customerName: '',
       customerPhone: '',
+      customerNif: '',
       amountPaid: 0,
     },
   });
@@ -112,7 +114,7 @@ const Checkout = () => {
           name: data.customerName,
           phone: data.customerPhone || '',
           email: '',
-          nif: '',
+          nif: data.customerNif || '',
         },
         total: getTotalPrice(),
         amountPaid: data.amountPaid,
@@ -420,6 +422,20 @@ const Checkout = () => {
                             <FormLabel>Número de Telefone</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="Digite o número" type="tel" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="customerNif"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>NIF do Cliente</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Digite o NIF (opcional)" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

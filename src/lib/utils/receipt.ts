@@ -126,43 +126,7 @@ const wrapText = (text: string, maxLength: number = 38): string[] => {
 };
 
 /**
- * Verifica se é necessário adicionar uma nova página ao documento
- * @param doc Documento PDF
- * @param currentYPos Posição atual Y
- * @param minSpaceNeeded Espaço mínimo necessário (opcional)
- * @param pageHeader Função para adicionar um cabeçalho à nova página (opcional)
- * @returns Nova posição Y
- */
-const checkForNewPage = (
-  doc: jsPDF, 
-  currentYPos: number, 
-  minSpaceNeeded: number = 40,
-  pageHeader?: (doc: jsPDF) => number
-): number => {
-  // Determina o tamanho da página menos uma margem de segurança
-  const pageHeight = doc.internal.pageSize.height;
-  const safeMargin = 20; // Margem de segurança
-  const maxYPosition = pageHeight - safeMargin;
-  
-  // Verifica se não há espaço suficiente na página atual
-  if (currentYPos + minSpaceNeeded > maxYPosition) {
-    doc.addPage();
-    
-    // Se houver uma função de cabeçalho, executa-a e retorna a nova posição Y
-    if (pageHeader) {
-      return pageHeader(doc);
-    }
-    
-    // Caso contrário, retorna a posição inicial padrão
-    return 20;
-  }
-  
-  // Se houver espaço suficiente, mantém a posição atual
-  return currentYPos;
-};
-
-/**
- * Gera um PDF de recibo para uma venda
+ * Gera um PDF de recibo para uma venda com altura dinâmica
  * @param sale A venda para gerar um recibo
  * @param config Configuração opcional para personalizar o recibo
  * @returns O documento PDF gerado
@@ -188,10 +152,26 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     companySocialMedia: config?.company_social_media || config?.companySocialMedia || ''
   };
   
+  // Configurar margens e espaçamentos para evitar sobreposições
+  const marginLeft = 20;
+  const marginRight = 190;
+  const pageWidth = marginRight - marginLeft;
+  const pageCenter = marginLeft + pageWidth / 2;
+  
+  // Espaçamento entre linhas aumentado para 9 conforme solicitado
+  const lineSpacing = 9;
+  
+  // Inicializar a posição Y atual para seguir o fluxo do conteúdo
+  let currentYPos = 15;
+  
+  // Calcular a altura total necessária para o conteúdo (estimativa inicial)
+  const estimatedHeight = estimateContentHeight(sale, receiptConfig, lineSpacing);
+  
+  // Criar um documento PDF com altura dinâmica
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: 'a4'
+    format: [210, Math.max(297, estimatedHeight + 50)] // Largura fixa (A4), altura dinâmica
   });
   
   // Configurar fontes e tamanhos
@@ -201,27 +181,18 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const tableSize = receiptConfig.fontSize?.table || 30;
   const footerSize = receiptConfig.fontSize?.footer || 24;
   
-  // Definir margens e espaçamentos para evitar sobreposições
-  const marginLeft = 20;
-  const marginRight = 190;
-  const pageWidth = marginRight - marginLeft;
-  const pageCenter = marginLeft + pageWidth / 2;
-  
-  // Espaçamento entre linhas aumentado para 9 conforme solicitado
-  const lineSpacing = 9;
-  
   // Adicionar cabeçalho com informações da empresa
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(titleSize);
   
   // Título do recibo: Nome da empresa
-  doc.text(receiptConfig.companyName || 'MOLOJA', pageCenter, 15, { align: 'center' });
+  doc.text(receiptConfig.companyName || 'MOLOJA', pageCenter, currentYPos, { align: 'center' });
   
   // Adicionar informações da empresa centralizadas
   doc.setFontSize(normalSize - 6);
   doc.setFont('helvetica', 'normal');
   
-  let currentYPos = 24; // Aumentado para dar mais espaço após o título
+  currentYPos += 9; // Aumentado para dar mais espaço após o título
   
   // NIF - Destaque importante e adicionado no início para garantir visibilidade
   if (receiptConfig.taxId) {
@@ -315,20 +286,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.text(invoiceNumber, leftColumn, currentYPos);
   currentYPos += lineSpacing * 2; // Extra space for client info
   
-  // Função para criar cabeçalho em novas páginas
-  const createPageHeader = (doc: jsPDF): number => {
-    let headerYPos = 15;
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(titleSize - 10);
-    doc.text(`FACTURA RECIBO - ${invoiceNumber}`, pageCenter, headerYPos, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(normalSize - 8);
-    
-    headerYPos += lineSpacing * 2;
-    return headerYPos;
-  };
-  
   // Cliente information - Left column
   doc.setFont('helvetica', 'bold');
   doc.text("CLIENTE:", leftColumn, currentYPos);
@@ -412,9 +369,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Determinar o ponto Y mais baixo entre as duas colunas para continuar
   currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
   
-  // Verificar se precisamos de uma nova página antes da tabela de produtos
-  currentYPos = checkForNewPage(doc, currentYPos, 50, createPageHeader);
-  
   // Cabeçalho da tabela de itens - reestruturado para evitar quebra de margem
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(tableSize - 6);
@@ -456,9 +410,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const maxNameLength = 38; // Comprimento máximo por linha conforme solicitado
   
   itemsList.forEach((item: any) => {
-    // Verificar se precisamos de uma nova página antes de adicionar um item
-    currentYPos = checkForNewPage(doc, currentYPos, 40, createPageHeader);
-    
     // Determinando os valores corretos independente da estrutura do objeto
     let itemName = 'Produto sem nome';
     let quantity = 1;
@@ -518,9 +469,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     currentYPos += lineSpacing * 1.5;
   });
   
-  // Verificar se precisamos de uma nova página para o resumo final
-  currentYPos = checkForNewPage(doc, currentYPos, 60, createPageHeader);
-  
   // Desenhar uma linha
   doc.line(marginLeft, currentYPos, marginRight, currentYPos);
   currentYPos += lineSpacing; // Espaçamento após a linha
@@ -550,10 +498,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     currentYPos += lineSpacing;
   }
   
-  // Verificar se precisamos de uma nova página para o rodapé
-  currentYPos = checkForNewPage(doc, currentYPos, 40, createPageHeader);
-  
-  // Adicionar rodapé - Agora posicionando-o a partir da posição atual, não mais fixo
+  // Adicionar rodapé
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(footerSize);
   
@@ -567,9 +512,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     doc.text(line, pageCenter, currentYPos, { align: 'center' });
     currentYPos += lineSpacing;
   }
-  
-  // Verificar se precisamos de uma nova página para o certificado
-  currentYPos = checkForNewPage(doc, currentYPos, 25, createPageHeader);
   
   // Adicionar hash de segurança no rodapé (formatado para não exceder 38 caracteres)
   // Quebrar a linha de certificação em partes menores para evitar estouro da margem
@@ -588,6 +530,56 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   return doc;
 };
+
+/**
+ * Estima a altura do conteúdo baseado nos itens da venda e outras informações
+ * para criar um PDF com altura dinâmica
+ */
+function estimateContentHeight(sale: Sale, config: ReceiptConfig, lineSpacing: number): number {
+  let height = 150; // Altura base para cabeçalho, informações da empresa, etc.
+  
+  // Estimar altura para itens
+  let itemsList = [];
+  if (sale.items) {
+    if (Array.isArray(sale.items)) {
+      itemsList = sale.items;
+    } else if (typeof sale.items === 'object' && sale.items !== null) {
+      const productsObj = sale.items as any;
+      if ('products' in productsObj && Array.isArray(productsObj.products)) {
+        itemsList = productsObj.products;
+      }
+    }
+  }
+  
+  // Adicionar altura para cada item (com espaço extra para nomes de produtos longos)
+  itemsList.forEach((item: any) => {
+    let itemName = '';
+    if (item.product) {
+      itemName = item.product.name || '';
+    } else if (item.productName) {
+      itemName = item.productName || '';
+    } else {
+      itemName = item.name || '';
+    }
+    
+    // Calcular linhas adicionais para nomes longos (38 caracteres por linha)
+    const additionalLines = Math.ceil(itemName.length / 38) - 1;
+    height += (2 + additionalLines) * lineSpacing + 10; // 2 linhas padrão + linhas adicionais + margem
+  });
+  
+  // Adicionar altura para rodapé, total, pagamento e outros elementos
+  height += 100;
+  
+  // Adicionar espaço extra para informações da empresa, se presentes
+  if (config.companyAddress) height += (Math.ceil(config.companyAddress.length / 38) * lineSpacing);
+  if (config.companyEmail) height += lineSpacing;
+  if (config.companyPhone) height += lineSpacing;
+  if (config.companyNeighborhood) height += lineSpacing;
+  if (config.companyCity) height += lineSpacing;
+  if (config.companySocialMedia) height += lineSpacing;
+  
+  return height;
+}
 
 /**
  * Gera e baixa um PDF de recibo para uma venda

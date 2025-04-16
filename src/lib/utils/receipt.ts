@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -194,7 +193,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   currentYPos += 9; // Aumentado para dar mais espaço após o título
   
-  // NIF - Destaque importante e adicionado no início para garantir visibilidade
+  // NIF - Exibe o NIF personalizado pelo usuário (não usa valor estático)
   if (receiptConfig.taxId) {
     doc.setFont('helvetica', 'bold');
     doc.text(`NIF: ${receiptConfig.taxId}`, pageCenter, currentYPos, { align: 'center' });
@@ -255,17 +254,16 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   // Informações da fatura com melhor alinhamento
   doc.setFontSize(normalSize - 8);
   
-  // Seção de detalhes do documento com layout em duas colunas
+  // Seção de detalhes do documento com layout de apenas uma coluna
   const leftColumn = marginLeft;
-  const rightColumn = marginLeft + 90; // Aumentado para melhor separação das colunas
   
-  // Coluna esquerda
+  // Detalhes do documento
   doc.setFont('helvetica', 'bold');
   doc.text("DOCUMENTO:", leftColumn, currentYPos);
   currentYPos += lineSpacing;
   
   doc.setFont('helvetica', 'normal');
-  doc.text("Original: FT", leftColumn, currentYPos); // Corrigido para "FT" no formato AGT
+  doc.text("Original: FT", leftColumn, currentYPos); 
   currentYPos += lineSpacing;
   
   // Data de emissão
@@ -286,88 +284,37 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.text(invoiceNumber, leftColumn, currentYPos);
   currentYPos += lineSpacing * 2; // Extra space for client info
   
-  // Cliente information - Left column
+  // Cliente information - apenas uma vez, sem duplicação
   doc.setFont('helvetica', 'bold');
   doc.text("CLIENTE:", leftColumn, currentYPos);
   currentYPos += lineSpacing;
   
   doc.setFont('helvetica', 'normal');
   
-  // Nome do cliente - primeira coluna
-  let customerName1 = 'Cliente não identificado';
+  // Nome do cliente
+  let customerName = 'Cliente não identificado';
   if (sale.customer) {
     if (typeof sale.customer === 'string') {
-      customerName1 = sale.customer;
+      customerName = sale.customer;
     } else if (typeof sale.customer === 'object' && sale.customer !== null) {
-      customerName1 = sale.customer.name || 'Cliente não identificado';
+      customerName = sale.customer.name || 'Cliente não identificado';
     }
   }
   
   // Quebrar o nome do cliente em múltiplas linhas se necessário
-  const customerNameLines1 = wrapText(customerName1);
-  for (const line of customerNameLines1) {
+  const customerNameLines = wrapText(customerName);
+  for (const line of customerNameLines) {
     doc.text(line, leftColumn, currentYPos);
     currentYPos += lineSpacing;
   }
   
-  // NIF do cliente - primeira coluna
+  // NIF do cliente
   if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
     doc.text(`NIF: ${(sale.customer as any).nif}`, leftColumn, currentYPos);
   } else {
     doc.text("NIF: Consumidor final", leftColumn, currentYPos); // Default para AGT
   }
-  currentYPos += lineSpacing;
-  
-  // Salvar o ponto Y da coluna esquerda para posterior comparação
-  const leftColumnEndY = currentYPos;
-  
-  // Resetar para a coluna direita com posição Y adequada
-  let rightColumnY = currentYPos - (4 * lineSpacing); // Adjust right column position
-  
-  // Coluna direita - garantindo que sempre tenha espaço suficiente
-  doc.setFont('helvetica', 'bold');
-  doc.text("CLIENTE:", rightColumn, rightColumnY);
-  rightColumnY += lineSpacing;
-  
-  doc.setFont('helvetica', 'normal');
-  
-  // Nome do cliente - coluna direita
-  let customerName2 = 'Cliente não identificado';
-  if (sale.customer) {
-    if (typeof sale.customer === 'string') {
-      customerName2 = sale.customer;
-    } else if (typeof sale.customer === 'object' && sale.customer !== null) {
-      customerName2 = sale.customer.name || 'Cliente não identificado';
-    }
-  }
-  
-  // Quebrar o nome do cliente em múltiplas linhas se necessário
-  const customerNameLines2 = wrapText(customerName2);
-  for (const line of customerNameLines2) {
-    doc.text(line, rightColumn, rightColumnY);
-    rightColumnY += lineSpacing;
-  }
-  
-  // NIF do cliente - coluna direita
-  if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
-    doc.text(`NIF: ${(sale.customer as any).nif}`, rightColumn, rightColumnY);
-  } else {
-    doc.text("NIF: Consumidor final", rightColumn, rightColumnY); // Default para AGT
-  }
-  rightColumnY += lineSpacing;
-  
-  // Endereço do cliente
-  if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).address) {
-    const address = (sale.customer as any).address;
-    const addressLines = wrapText(`Endereço: ${address}`, 30);
-    for (const line of addressLines) {
-      doc.text(line, rightColumn, rightColumnY);
-      rightColumnY += lineSpacing;
-    }
-  }
-
-  // Determinar o ponto Y mais baixo entre as duas colunas para continuar
-  currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
+  currentYPos += lineSpacing * 2; // Espaço extra após informações do cliente
   
   // Cabeçalho da tabela de itens - reestruturado para evitar quebra de margem
   doc.setFont('helvetica', 'bold');

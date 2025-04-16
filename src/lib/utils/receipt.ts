@@ -126,6 +126,42 @@ const wrapText = (text: string, maxLength: number = 38): string[] => {
 };
 
 /**
+ * Verifica se é necessário adicionar uma nova página ao documento
+ * @param doc Documento PDF
+ * @param currentYPos Posição atual Y
+ * @param minSpaceNeeded Espaço mínimo necessário (opcional)
+ * @param pageHeader Função para adicionar um cabeçalho à nova página (opcional)
+ * @returns Nova posição Y
+ */
+const checkForNewPage = (
+  doc: jsPDF, 
+  currentYPos: number, 
+  minSpaceNeeded: number = 40,
+  pageHeader?: (doc: jsPDF) => number
+): number => {
+  // Determina o tamanho da página menos uma margem de segurança
+  const pageHeight = doc.internal.pageSize.height;
+  const safeMargin = 20; // Margem de segurança
+  const maxYPosition = pageHeight - safeMargin;
+  
+  // Verifica se não há espaço suficiente na página atual
+  if (currentYPos + minSpaceNeeded > maxYPosition) {
+    doc.addPage();
+    
+    // Se houver uma função de cabeçalho, executa-a e retorna a nova posição Y
+    if (pageHeader) {
+      return pageHeader(doc);
+    }
+    
+    // Caso contrário, retorna a posição inicial padrão
+    return 20;
+  }
+  
+  // Se houver espaço suficiente, mantém a posição atual
+  return currentYPos;
+};
+
+/**
  * Gera um PDF de recibo para uma venda
  * @param sale A venda para gerar um recibo
  * @param config Configuração opcional para personalizar o recibo
@@ -146,7 +182,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     showLogo: config?.receipt_show_logo || config?.receiptShowLogo || defaultReceiptConfig.showLogo,
     showSignature: config?.receipt_show_signature || config?.receiptShowSignature || defaultReceiptConfig.showSignature,
     footerText: config?.receipt_footer_text || config?.receiptFooterText || defaultReceiptConfig.footerText,
-    additionalInfo: config?.receiptAdditionalInfo || '',
+    additionalInfo: config?.receipt_additional_info || config?.receiptAdditionalInfo || '',
     companyNeighborhood: config?.company_neighborhood || config?.companyNeighborhood || '',
     companyCity: config?.company_city || config?.companyCity || '',
     companySocialMedia: config?.company_social_media || config?.companySocialMedia || ''
@@ -279,31 +315,45 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.text(invoiceNumber, leftColumn, currentYPos);
   currentYPos += lineSpacing * 2; // Extra space for client info
   
-  // Cliente information - Added below the invoice number on the left column
+  // Função para criar cabeçalho em novas páginas
+  const createPageHeader = (doc: jsPDF): number => {
+    let headerYPos = 15;
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(titleSize - 10);
+    doc.text(`FACTURA RECIBO - ${invoiceNumber}`, pageCenter, headerYPos, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(normalSize - 8);
+    
+    headerYPos += lineSpacing * 2;
+    return headerYPos;
+  };
+  
+  // Cliente information - Left column
   doc.setFont('helvetica', 'bold');
   doc.text("CLIENTE:", leftColumn, currentYPos);
   currentYPos += lineSpacing;
   
   doc.setFont('helvetica', 'normal');
   
-  // Nome do cliente - Fixed variable names to avoid redeclaration
-  let customerName = 'Cliente não identificado';
+  // Nome do cliente - primeira coluna
+  let customerName1 = 'Cliente não identificado';
   if (sale.customer) {
     if (typeof sale.customer === 'string') {
-      customerName = sale.customer;
+      customerName1 = sale.customer;
     } else if (typeof sale.customer === 'object' && sale.customer !== null) {
-      customerName = sale.customer.name || 'Cliente não identificado';
+      customerName1 = sale.customer.name || 'Cliente não identificado';
     }
   }
   
   // Quebrar o nome do cliente em múltiplas linhas se necessário
-  const customerNameLines = wrapText(customerName);
-  for (const line of customerNameLines) {
+  const customerNameLines1 = wrapText(customerName1);
+  for (const line of customerNameLines1) {
     doc.text(line, leftColumn, currentYPos);
     currentYPos += lineSpacing;
   }
   
-  // NIF do cliente
+  // NIF do cliente - primeira coluna
   if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
     doc.text(`NIF: ${(sale.customer as any).nif}`, leftColumn, currentYPos);
   } else {
@@ -312,7 +362,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   currentYPos += lineSpacing;
   
   // Salvar o ponto Y da coluna esquerda para posterior comparação
-  const leftColumnEndY = currentYPos + lineSpacing;
+  const leftColumnEndY = currentYPos;
   
   // Resetar para a coluna direita com posição Y adequada
   let rightColumnY = currentYPos - (4 * lineSpacing); // Adjust right column position
@@ -324,7 +374,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   doc.setFont('helvetica', 'normal');
   
-  // Nome do cliente - Using customerName2 to avoid redeclaration
+  // Nome do cliente - coluna direita
   let customerName2 = 'Cliente não identificado';
   if (sale.customer) {
     if (typeof sale.customer === 'string') {
@@ -341,7 +391,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     rightColumnY += lineSpacing;
   }
   
-  // NIF do cliente
+  // NIF do cliente - coluna direita
   if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
     doc.text(`NIF: ${(sale.customer as any).nif}`, rightColumn, rightColumnY);
   } else {
@@ -361,6 +411,9 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
 
   // Determinar o ponto Y mais baixo entre as duas colunas para continuar
   currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
+  
+  // Verificar se precisamos de uma nova página antes da tabela de produtos
+  currentYPos = checkForNewPage(doc, currentYPos, 50, createPageHeader);
   
   // Cabeçalho da tabela de itens - reestruturado para evitar quebra de margem
   doc.setFont('helvetica', 'bold');
@@ -403,6 +456,9 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const maxNameLength = 38; // Comprimento máximo por linha conforme solicitado
   
   itemsList.forEach((item: any) => {
+    // Verificar se precisamos de uma nova página antes de adicionar um item
+    currentYPos = checkForNewPage(doc, currentYPos, 40, createPageHeader);
+    
     // Determinando os valores corretos independente da estrutura do objeto
     let itemName = 'Produto sem nome';
     let quantity = 1;
@@ -433,20 +489,6 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     const taxRate = receiptConfig.taxRate || 0;
     const taxValue = (total * taxRate) / 100;
     
-    // Verificar se precisamos de uma nova página
-    if (currentYPos > 250) { // Modificado para começar nova página mais cedo
-      doc.addPage();
-      currentYPos = 20;
-      
-      // Adicionar cabeçalho na nova página - requisito AGT
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(titleSize - 10);
-      doc.text(`FACTURA RECIBO - ${invoiceNumber}`, pageCenter, 15, { align: 'center' });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(normalSize - 8);
-      currentYPos += lineSpacing * 2;
-    }
-    
     // Quebrar nome do produto em múltiplas linhas se necessário
     const productNameLines = wrapText(itemName, maxNameLength);
     
@@ -473,22 +515,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     doc.text(`${receiptConfig.currency} ${totalFormatted}`, marginLeft + 120, currentYPos);  // Aumentado para 120
     
     // Espaçamento extra após cada item
-    currentYPos += lineSpacing;
+    currentYPos += lineSpacing * 1.5;
   });
   
   // Verificar se precisamos de uma nova página para o resumo final
-  if (currentYPos > 250) {
-    doc.addPage();
-    currentYPos = 20;
-    
-    // Adicionar cabeçalho na nova página - requisito AGT
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(titleSize - 10);
-    doc.text(`FACTURA RECIBO - ${invoiceNumber}`, pageCenter, 15, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(normalSize - 8);
-    currentYPos += lineSpacing * 2;
-  }
+  currentYPos = checkForNewPage(doc, currentYPos, 60, createPageHeader);
   
   // Desenhar uma linha
   doc.line(marginLeft, currentYPos, marginRight, currentYPos);
@@ -512,8 +543,17 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFont('helvetica', 'normal');
   doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 100, currentYPos); // Aumentado para corresponder ao novo layout
   
-  // Adicionar rodapé
-  const footerYPos = 280;
+  // Adicionar mensagem de agradecimento 
+  currentYPos += lineSpacing * 2;
+  if (receiptConfig.thankYouMessage) {
+    doc.text(receiptConfig.thankYouMessage, pageCenter, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
+  }
+  
+  // Verificar se precisamos de uma nova página para o rodapé
+  currentYPos = checkForNewPage(doc, currentYPos, 40, createPageHeader);
+  
+  // Adicionar rodapé - Agora posicionando-o a partir da posição atual, não mais fixo
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(footerSize);
   
@@ -522,32 +562,29 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const footerText = (receiptConfig.footerText || 'Os bens/serviços prestados foram colocados à disposição') + ` do adquirente/prestados em ${entregaData}.`;
   const footerLines = wrapText(footerText);
   
-  let footerY = footerYPos - ((footerLines.length + 3) * lineSpacing); // +3 for certification text
-  
-  // Adicionar mensagem de agradecimento acima do rodapé
-  if (receiptConfig.thankYouMessage) {
-    doc.text(receiptConfig.thankYouMessage, pageCenter, footerY - lineSpacing, { align: 'center' });
-  }
-  
   // Escrever as linhas do rodapé
   for (const line of footerLines) {
-    doc.text(line, pageCenter, footerY, { align: 'center' });
-    footerY += lineSpacing;
+    doc.text(line, pageCenter, currentYPos, { align: 'center' });
+    currentYPos += lineSpacing;
   }
+  
+  // Verificar se precisamos de uma nova página para o certificado
+  currentYPos = checkForNewPage(doc, currentYPos, 25, createPageHeader);
   
   // Adicionar hash de segurança no rodapé (formatado para não exceder 38 caracteres)
   // Quebrar a linha de certificação em partes menores para evitar estouro da margem
   doc.setFontSize(footerSize - 4);
   doc.setFont('helvetica', 'italic');
   
-  // Primeira linha da certificação (movida para depois do texto do rodapé)
-  footerY += lineSpacing; // Add space between footer text and certification
+  // Linhas da certificação
+  currentYPos += lineSpacing; // Add space between footer text and certification
   const certLine1 = "ABC1-Processado por programa validado";
-  doc.text(certLine1, pageCenter, footerY, { align: 'center' });
+  doc.text(certLine1, pageCenter, currentYPos, { align: 'center' });
   
   // Segunda linha da certificação
+  currentYPos += lineSpacing;
   const certLine2 = "nº xxxx/AGT/2025";
-  doc.text(certLine2, pageCenter, footerY + lineSpacing, { align: 'center' });
+  doc.text(certLine2, pageCenter, currentYPos, { align: 'center' });
   
   return doc;
 };

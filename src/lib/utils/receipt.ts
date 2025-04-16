@@ -56,11 +56,11 @@ const defaultReceiptConfig: ReceiptConfig = {
     table: 30,
     footer: 24
   },
-  receiptTitle: 'RECIBO DE VENDA',
+  receiptTitle: 'FACTURA RECIBO',
   thankYouMessage: 'Obrigado pela preferência!',
   footerText: 'Os bens/serviços prestados foram colocados à disposição',
   showTaxInfo: true,
-  currency: 'AKZ', // Alterado para AKZ conforme solicitado
+  currency: 'AOA',
   showLogo: false,
   showSignature: false,
   showBarcode: false
@@ -73,7 +73,7 @@ const formatDateTimeForReceipt = (date: string | Date): string => {
   const d = new Date(date);
   const day = d.getDate().toString().padStart(2, '0');
   const month = (d.getMonth() + 1).toString().padStart(2, '0');
-  const year = d.getFullYear().toString().slice(2);
+  const year = d.getFullYear(); // Formato completo de ano: AAAA
   const hours = d.getHours().toString().padStart(2, '0');
   const minutes = d.getMinutes().toString().padStart(2, '0');
   const seconds = d.getSeconds().toString().padStart(2, '0');
@@ -258,10 +258,15 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   currentYPos += lineSpacing;
   
   doc.setFont('helvetica', 'normal');
-  doc.text("Original: F", leftColumn, currentYPos);
+  doc.text("Original: FT", leftColumn, currentYPos); // Corrigido para "FT" no formato AGT
   currentYPos += lineSpacing;
   
-  doc.text(`Data: ${formatDateTimeForReceipt(sale.date)}`, leftColumn, currentYPos);
+  // Data de emissão
+  doc.text(`Data Emissão: ${formatDateTimeForReceipt(sale.date)}`, leftColumn, currentYPos);
+  currentYPos += lineSpacing;
+  
+  // Adicionar data que os bens/serviços foram disponibilizados (mesma da venda)
+  doc.text(`Data Entrega: ${formatDateTimeForReceipt(sale.date)}`, leftColumn, currentYPos);
   currentYPos += lineSpacing;
   
   doc.setFont('helvetica', 'bold');
@@ -269,19 +274,16 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFont('helvetica', 'normal');
   currentYPos += lineSpacing;
   
-  // Verificar se o ID é muito longo e quebrá-lo em múltiplas linhas
-  const saleIdText = sale.id || 'N/A';
-  const saleIdLines = wrapText(saleIdText, 30);
-  for (const line of saleIdLines) {
-    doc.text(line, leftColumn, currentYPos);
-    currentYPos += lineSpacing;
-  }
+  // Número da factura seguindo o formato FT SÉRIE/NÚMERO
+  const invoiceNumber = `FT MOLOJA/${sale.id?.substring(0, 8) || 'N/A'}`;
+  doc.text(invoiceNumber, leftColumn, currentYPos);
+  currentYPos += lineSpacing;
   
   // Salvar o ponto Y da coluna esquerda para posterior comparação
   const leftColumnEndY = currentYPos;
   
   // Resetar para a coluna direita com posição Y adequada para evitar sobreposições
-  let rightColumnY = currentYPos - (saleIdLines.length + 4) * lineSpacing;
+  let rightColumnY = currentYPos - (3 + 4) * lineSpacing;
   
   // Coluna direita - garantindo que sempre tenha espaço suficiente
   doc.setFont('helvetica', 'bold');
@@ -311,7 +313,7 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
     doc.text(`NIF: ${(sale.customer as any).nif}`, rightColumn, rightColumnY);
   } else {
-    doc.text("NIF: Não fornecido", rightColumn, rightColumnY);
+    doc.text("NIF: Consumidor final", rightColumn, rightColumnY); // Default para AGT
   }
   rightColumnY += lineSpacing;
   
@@ -327,6 +329,14 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   
   // Determinar o ponto Y mais baixo entre as duas colunas para continuar
   currentYPos = Math.max(leftColumnEndY, rightColumnY) + lineSpacing;
+  
+  // Adicionar identificação do sistema de faturação
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(footerSize - 4);
+  doc.text("Processado por programa certificado MOLOJA nº xxxx/AGT/2025", marginLeft, currentYPos);
+  doc.setFontSize(normalSize - 8);
+  doc.setFont('helvetica', 'normal');
+  currentYPos += lineSpacing + 2;
   
   // Cabeçalho da tabela de itens - reestruturado para evitar quebra de margem
   doc.setFont('helvetica', 'bold');
@@ -402,6 +412,14 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     if (currentYPos > 270) {
       doc.addPage();
       currentYPos = 20;
+      
+      // Adicionar cabeçalho na nova página - requisito AGT
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(titleSize - 10);
+      doc.text(`FACTURA RECIBO - ${invoiceNumber}`, pageCenter, 15, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(normalSize - 8);
+      currentYPos += lineSpacing * 2;
     }
     
     // Quebrar nome do produto em múltiplas linhas se necessário
@@ -436,6 +454,14 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   if (currentYPos > 250) {
     doc.addPage();
     currentYPos = 20;
+    
+    // Adicionar cabeçalho na nova página - requisito AGT
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(titleSize - 10);
+    doc.text(`FACTURA RECIBO - ${invoiceNumber}`, pageCenter, 15, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(normalSize - 8);
+    currentYPos += lineSpacing * 2;
   }
   
   // Desenhar uma linha
@@ -481,6 +507,12 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     doc.text(line, pageCenter, footerY, { align: 'center' });
     footerY += lineSpacing;
   }
+  
+  // Adicionar hash de segurança no rodapé (placeholder para AGT)
+  const hashText = "ABC1-Processado por programa validado nº xxxx/AGT/2025";
+  doc.setFontSize(footerSize - 4);
+  doc.setFont('helvetica', 'italic');
+  doc.text(hashText, pageCenter, footerY + lineSpacing * 2, { align: 'center' });
   
   return doc;
 };

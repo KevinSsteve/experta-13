@@ -163,12 +163,22 @@ export type Database = {
           company_neighborhood: string | null
           company_social_media: string | null
           created_at: string | null
+          currency: string | null
           email: string
           id: string
           name: string | null
           phone: string | null
           position: string | null
+          receipt_additional_info: string | null
+          receipt_footer_text: string | null
+          receipt_logo: string | null
+          receipt_message: string | null
+          receipt_show_logo: boolean | null
+          receipt_show_signature: boolean | null
+          receipt_title: string | null
           role: Database["public"]["Enums"]["user_role"]
+          tax_id: string | null
+          tax_rate: number | null
           updated_at: string | null
         }
         Insert: {
@@ -178,12 +188,22 @@ export type Database = {
           company_neighborhood?: string | null
           company_social_media?: string | null
           created_at?: string | null
+          currency?: string | null
           email: string
           id: string
           name?: string | null
           phone?: string | null
           position?: string | null
+          receipt_additional_info?: string | null
+          receipt_footer_text?: string | null
+          receipt_logo?: string | null
+          receipt_message?: string | null
+          receipt_show_logo?: boolean | null
+          receipt_show_signature?: boolean | null
+          receipt_title?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          tax_id?: string | null
+          tax_rate?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -193,12 +213,22 @@ export type Database = {
           company_neighborhood?: string | null
           company_social_media?: string | null
           created_at?: string | null
+          currency?: string | null
           email?: string
           id?: string
           name?: string | null
           phone?: string | null
           position?: string | null
+          receipt_additional_info?: string | null
+          receipt_footer_text?: string | null
+          receipt_logo?: string | null
+          receipt_message?: string | null
+          receipt_show_logo?: boolean | null
+          receipt_show_signature?: boolean | null
+          receipt_title?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          tax_id?: string | null
+          tax_rate?: number | null
           updated_at?: string | null
         }
         Relationships: []

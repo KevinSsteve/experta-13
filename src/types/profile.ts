@@ -8,28 +8,34 @@ export interface ExtendedProfile {
   position: string | null;
   role: string;
   avatar_url: string | null;
-  // Receipt customization fields with database names
-  tax_id?: string;
-  taxId?: string; // For backward compatibility
-  currency?: string;
-  tax_rate?: number;
-  taxRate?: number; // For backward compatibility
-  receipt_message?: string;
-  receiptMessage?: string; // For backward compatibility
-  receiptLogo?: string;
-  receiptTitle?: string;
-  receipt_show_logo?: boolean;
-  receiptShowLogo?: boolean; // For backward compatibility
-  receipt_show_signature?: boolean;
-  receiptShowSignature?: boolean; // For backward compatibility
-  receipt_footer_text?: string;
-  receiptFooterText?: string; // For backward compatibility
-  receiptAdditionalInfo?: string;
-  // Company location information
-  company_neighborhood?: string;
-  companyNeighborhood?: string; // For backward compatibility
-  company_city?: string;
-  companyCity?: string; // For backward compatibility
-  company_social_media?: string;
-  companySocialMedia?: string; // For backward compatibility
+  
+  // Receipt customization fields with both database names (snake_case) and JavaScript names (camelCase)
+  // Database column names (snake_case)
+  tax_id?: string | null;
+  currency?: string | null;
+  tax_rate?: number | null;
+  receipt_message?: string | null;
+  receipt_logo?: string | null;
+  receipt_title?: string | null;
+  receipt_show_logo?: boolean | null;
+  receipt_show_signature?: boolean | null;
+  receipt_footer_text?: string | null;
+  receipt_additional_info?: string | null;
+  company_neighborhood?: string | null;
+  company_city?: string | null;
+  company_social_media?: string | null;
+  
+  // JavaScript property names (camelCase) for backward compatibility
+  taxId?: string | null;
+  taxRate?: number | null;
+  receiptMessage?: string | null;
+  receiptLogo?: string | null;
+  receiptTitle?: string | null;
+  receiptShowLogo?: boolean | null;
+  receiptShowSignature?: boolean | null;
+  receiptFooterText?: string | null;
+  receiptAdditionalInfo?: string | null;
+  companyNeighborhood?: string | null;
+  companyCity?: string | null;
+  companySocialMedia?: string | null;
 }

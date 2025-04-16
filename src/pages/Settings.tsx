@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -61,7 +62,7 @@ const formSchema = z.object({
   receiptFooterText: z.string().optional(),
   companyNeighborhood: z.string().optional(),
   companyCity: z.string().optional(),
-  companySocialMedia: z.string().optional(),
+  companySocialSecurity: z.string().optional(), // Alterado de companySocialMedia para companySocialSecurity
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -92,7 +93,7 @@ const Settings = () => {
       receiptFooterText: '',
       companyNeighborhood: '',
       companyCity: '',
-      companySocialMedia: '',
+      companySocialSecurity: '', // Alterado de companySocialMedia para companySocialSecurity
     },
   });
 
@@ -103,16 +104,16 @@ const Settings = () => {
         email: profile.email,
         phone: profile.phone || '922 123 456',
         address: profile.address || 'Rua das Mercearias, 123, Luanda',
-        taxId: profile.taxId || '5417623490',
+        taxId: profile.tax_id || '5417623490', // Garantindo que está usando o campo tax_id do perfil
         currency: profile.currency || 'AOA',
-        taxRate: profile.taxRate || 14,
-        receiptMessage: profile.receiptMessage || 'Obrigado pela preferência!',
-        receiptShowLogo: profile.receiptShowLogo || false,
-        receiptShowSignature: profile.receiptShowSignature || false,
-        receiptFooterText: profile.receiptFooterText || '',
-        companyNeighborhood: profile.companyNeighborhood || '',
-        companyCity: profile.companyCity || '',
-        companySocialMedia: profile.companySocialMedia || '',
+        taxRate: profile.tax_rate || 14,
+        receiptMessage: profile.receipt_message || 'Obrigado pela preferência!',
+        receiptShowLogo: profile.receipt_show_logo || false,
+        receiptShowSignature: profile.receipt_show_signature || false,
+        receiptFooterText: profile.receipt_footer_text || '',
+        companyNeighborhood: profile.company_neighborhood || '',
+        companyCity: profile.company_city || '',
+        companySocialSecurity: profile.company_social_media || '', // Usamos o mesmo campo do banco, mas mudamos o nome na interface
       });
     }
   }, [profile, form]);
@@ -132,7 +133,7 @@ const Settings = () => {
           name: values.name,
           phone: values.phone,
           address: values.address,
-          tax_id: values.taxId,
+          tax_id: values.taxId, // Garantindo que o NIF seja armazenado no campo tax_id
           currency: values.currency,
           tax_rate: values.taxRate,
           receipt_message: values.receiptMessage,
@@ -141,7 +142,7 @@ const Settings = () => {
           receipt_footer_text: values.receiptFooterText,
           company_neighborhood: values.companyNeighborhood,
           company_city: values.companyCity,
-          company_social_media: values.companySocialMedia,
+          company_social_media: values.companySocialSecurity, // Armazenando INSS no mesmo campo, mas com significado diferente
         })
         .eq('id', profile.id);
       
@@ -363,12 +364,12 @@ const Settings = () => {
                       
                       <FormField
                         control={form.control}
-                        name="companySocialMedia"
+                        name="companySocialSecurity"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Conta Social</FormLabel>
+                            <FormLabel>INSS (Instituto Nacional de Segurança Social)</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Instagram, Facebook ou outra rede social" />
+                              <Input {...field} placeholder="Número do INSS" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

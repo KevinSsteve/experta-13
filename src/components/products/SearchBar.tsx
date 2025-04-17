@@ -3,6 +3,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { VoiceSearchButton } from './VoiceSearchButton';
+import { useToast } from '@/components/ui/use-toast';
 
 interface SearchBarProps {
   value: string;
@@ -10,6 +11,8 @@ interface SearchBarProps {
 }
 
 export const SearchBar = ({ value, onChange }: SearchBarProps) => {
+  const { toast } = useToast();
+
   // Função para atualizar o valor da busca quando o reconhecimento de voz retornar um resultado
   const handleVoiceResult = (text: string) => {
     // Simulando um evento de alteração para manter a compatibilidade com o handler atual
@@ -18,6 +21,22 @@ export const SearchBar = ({ value, onChange }: SearchBarProps) => {
     } as React.ChangeEvent<HTMLInputElement>;
     
     onChange(syntheticEvent);
+  };
+
+  // Função para lidar com múltiplas buscas de produtos
+  const handleMultiSearch = (products: string[]) => {
+    if (products.length > 0) {
+      // Primeiro produto vai para o campo de busca
+      handleVoiceResult(products[0]);
+      
+      // Se houver mais de um produto, mostra toast informativo
+      if (products.length > 1) {
+        toast({
+          title: "Múltiplos produtos",
+          description: `Use comandos como "adicionar ao carrinho" para processar múltiplos produtos de uma vez.`,
+        });
+      }
+    }
   };
   
   return (
@@ -30,7 +49,10 @@ export const SearchBar = ({ value, onChange }: SearchBarProps) => {
         value={value}
         onChange={onChange}
       />
-      <VoiceSearchButton onResult={handleVoiceResult} />
+      <VoiceSearchButton 
+        onResult={handleVoiceResult} 
+        onMultiSearch={handleMultiSearch}
+      />
     </div>
   );
 };

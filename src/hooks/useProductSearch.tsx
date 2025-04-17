@@ -9,6 +9,8 @@ export function useProductSearch(products: Product[] | undefined) {
   const [displayCount, setDisplayCount] = useState(20);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(false);
+  // Adicionado para rastrear produtos para busca em lote
+  const [pendingSearches, setPendingSearches] = useState<string[]>([]);
 
   // Handle scroll events
   useEffect(() => {
@@ -40,6 +42,15 @@ export function useProductSearch(products: Product[] | undefined) {
     }
   }, [products, searchQuery]);
 
+  // Processar próxima busca pendente quando houver
+  useEffect(() => {
+    if (pendingSearches.length > 0) {
+      const nextSearch = pendingSearches[0];
+      setSearchQuery(nextSearch);
+      setPendingSearches(prev => prev.slice(1));
+    }
+  }, [pendingSearches]);
+
   // Debounced filter function
   const debouncedUpdateProducts = debounce(() => {
     if (products) {
@@ -59,6 +70,21 @@ export function useProductSearch(products: Product[] | undefined) {
     debouncedUpdateProducts();
   };
 
+  // Adiciona função para pesquisar múltiplos produtos em sequência
+  const searchMultipleProducts = (productQueries: string[]) => {
+    if (productQueries.length > 0) {
+      // Define o primeiro como busca atual
+      setSearchQuery(productQueries[0]);
+      
+      // Guarda os demais para processamento sequencial
+      if (productQueries.length > 1) {
+        setPendingSearches(productQueries.slice(1));
+      }
+      
+      debouncedUpdateProducts();
+    }
+  };
+
   // Visible products based on current display count
   const visibleProducts = filteredProducts.slice(0, displayCount);
 
@@ -68,5 +94,7 @@ export function useProductSearch(products: Product[] | undefined) {
     visibleProducts,
     showBackToTop,
     handleSearch,
+    searchMultipleProducts,
+    pendingSearches,
   };
 }

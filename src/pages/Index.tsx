@@ -42,7 +42,8 @@ const Index = () => {
     filteredProducts, 
     visibleProducts, 
     showBackToTop, 
-    handleSearch 
+    handleSearch,
+    searchMultipleProducts
   } = useProductSearch(userProducts);
 
   return (
@@ -51,7 +52,10 @@ const Index = () => {
         <div className="flex flex-col space-y-6">
           {/* Search section */}
           <section className="mt-4 mb-6">
-            <SearchBar value={searchQuery} onChange={handleSearch} />
+            <SearchBar 
+              value={searchQuery} 
+              onChange={handleSearch} 
+            />
           </section>
           
           {/* Products grid */}

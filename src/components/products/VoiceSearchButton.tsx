@@ -35,6 +35,7 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
     
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
+      console.log(`Transcrição de voz recebida: "${transcript}"`);
       
       // Verifica se a transcrição contém palavras-chave para lista
       const productListKeywords = ['buscar', 'busque', 'procurar', 'procure', 'encontrar', 'encontre', 'lista', 'liste'];
@@ -44,17 +45,21 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
       const lowerTranscript = transcript.toLowerCase();
       const containsListKeyword = productListKeywords.some(keyword => lowerTranscript.includes(keyword));
       
-      if (containsListKeyword && onMultiSearch) {
+      // Inicialmente, considere o texto completo como um produto
+      let products: string[] = [transcript];
+      
+      // Se contiver palavras-chave de lista ou espaços (que indicam potencialmente múltiplos produtos)
+      if (containsListKeyword || transcript.includes(' ')) {
         // Extrai produtos da frase
         let productsText = lowerTranscript;
         
-        // Remove palavras-chave de busca
+        // Remove palavras-chave de busca se presentes
         for (const keyword of productListKeywords) {
           productsText = productsText.replace(keyword, '');
         }
         
         // Separa os produtos baseados nos separadores
-        let products: string[] = [productsText];
+        products = [productsText];
         
         for (const separator of separators) {
           const tempProducts: string[] = [];
@@ -62,6 +67,17 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
             tempProducts.push(...prod.split(` ${separator} `));
           }
           products = tempProducts;
+        }
+        
+        // Se tiver apenas espaços, considere como potencialmente múltiplos produtos
+        if (!containsListKeyword && productsText.includes(' ')) {
+          // Dividir por espaços para detectar potenciais produtos separados
+          const spaceProducts = productsText.split(' ').filter(p => p.length > 2);
+          
+          // Se tivermos mais de um produto após a divisão por espaço
+          if (spaceProducts.length > 1) {
+            products = spaceProducts;
+          }
         }
         
         // Limpa os produtos (remove espaços extras e tokens vazios)
@@ -80,24 +96,18 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
            .replace(/^as\s+/i, '')
            .trim()
         );
+      }
+      
+      console.log(`Produtos identificados na busca por voz:`, products);
+      
+      if (products.length > 1 && onMultiSearch) {
+        // Chama o callback para busca múltipla
+        onMultiSearch(products);
         
-        if (products.length > 0) {
-          // Chama o callback para busca múltipla
-          onMultiSearch(products);
-          
-          toast({
-            title: "Busca por voz - Lista de Produtos",
-            description: `Buscando: ${products.join(', ')}`,
-          });
-        } else {
-          // Se não conseguiu separar produtos, usa o texto completo
-          onResult(transcript);
-          
-          toast({
-            title: "Busca por voz",
-            description: `"${transcript}"`,
-          });
-        }
+        toast({
+          title: "Busca por voz - Múltiplos Produtos",
+          description: `Buscando: ${products.join(', ')}`,
+        });
       } else {
         // Busca simples de um único produto
         onResult(transcript);

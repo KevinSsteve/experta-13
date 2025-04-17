@@ -1,3 +1,4 @@
+
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format, parseISO } from "date-fns";
@@ -105,6 +106,26 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
+// Função para determinar se um produto corresponde a uma consulta de pesquisa específica
+export const productMatchesQuery = (product: any, query: string): boolean => {
+  if (!query || query.trim() === '') {
+    return true;
+  }
+  
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  // Verificar nome do produto
+  const nameMatch = product.name?.toLowerCase().includes(normalizedQuery);
+  
+  // Verificar código do produto (se existir)
+  const codeMatch = product.code?.toLowerCase().includes(normalizedQuery);
+  
+  // Verificar categoria (se existir)
+  const categoryMatch = product.category?.toLowerCase().includes(normalizedQuery);
+  
+  return nameMatch || codeMatch || categoryMatch;
+};
+
 // Function to filter products based on search query
 export const filterProducts = (products: any[], query: string): any[] => {
   if (!query || query.trim() === '') {
@@ -114,16 +135,39 @@ export const filterProducts = (products: any[], query: string): any[] => {
   const normalizedQuery = query.toLowerCase().trim();
   console.log(`Filtrando produtos com query normalizada: "${normalizedQuery}"`);
   
-  return products.filter(product => {
-    // Verificar nome do produto
-    const nameMatch = product.name?.toLowerCase().includes(normalizedQuery);
-    
-    // Verificar código do produto (se existir)
-    const codeMatch = product.code?.toLowerCase().includes(normalizedQuery);
-    
-    // Verificar categoria (se existir)
-    const categoryMatch = product.category?.toLowerCase().includes(normalizedQuery);
-    
-    return nameMatch || codeMatch || categoryMatch;
-  });
+  // Dividir a consulta em termos individuais para busca parcial
+  const queryTerms = normalizedQuery.split(/\s+/);
+  console.log(`Termos de busca: ${queryTerms.join(', ')}`);
+  
+  // Se houver vários termos, qualquer correspondência parcial deve retornar o produto
+  if (queryTerms.length > 1) {
+    return products.filter(product => {
+      // Para cada produto, verificamos se algum termo corresponde
+      return queryTerms.some(term => {
+        if (!term) return false;
+        
+        // Verificar correspondência em qualquer campo relevante
+        const nameMatch = product.name?.toLowerCase().includes(term);
+        const codeMatch = product.code?.toLowerCase().includes(term);
+        const categoryMatch = product.category?.toLowerCase().includes(term);
+        
+        return nameMatch || codeMatch || categoryMatch;
+      });
+    });
+  } else {
+    // Para consulta de termo único, usamos a lógica original
+    return products.filter(product => {
+      // Verificar nome do produto
+      const nameMatch = product.name?.toLowerCase().includes(normalizedQuery);
+      
+      // Verificar código do produto (se existir)
+      const codeMatch = product.code?.toLowerCase().includes(normalizedQuery);
+      
+      // Verificar categoria (se existir)
+      const categoryMatch = product.category?.toLowerCase().includes(normalizedQuery);
+      
+      return nameMatch || codeMatch || categoryMatch;
+    });
+  }
 };
+

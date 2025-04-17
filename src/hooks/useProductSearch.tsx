@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Product } from '@/contexts/CartContext';
-import { debounce, filterProducts } from '@/lib/utils';
+import { debounce, filterProducts, productMatchesQuery } from '@/lib/utils';
 
 export function useProductSearch(products: Product[] | undefined) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,9 +45,14 @@ export function useProductSearch(products: Product[] | undefined) {
   // Processar próxima busca pendente quando houver
   useEffect(() => {
     if (pendingSearches.length > 0) {
-      const nextSearch = pendingSearches[0];
-      setSearchQuery(nextSearch);
-      setPendingSearches(prev => prev.slice(1));
+      // Pequena pausa entre pesquisas sequenciais para permitir que a UI atualize
+      const timeoutId = setTimeout(() => {
+        const nextSearch = pendingSearches[0];
+        setSearchQuery(nextSearch);
+        setPendingSearches(prev => prev.slice(1));
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [pendingSearches]);
 
@@ -71,15 +76,23 @@ export function useProductSearch(products: Product[] | undefined) {
   // Função para pesquisar múltiplos produtos em sequência
   const searchMultipleProducts = (productQueries: string[]) => {
     console.log(`Recebendo múltipla busca: ${productQueries.join(', ')}`);
-    if (productQueries.length > 0) {
-      // Define o primeiro como busca atual
+    
+    if (productQueries.length === 0) return;
+    
+    // Se for apenas um produto, definimos diretamente
+    if (productQueries.length === 1) {
       setSearchQuery(productQueries[0]);
-      
-      // Guarda os demais para processamento sequencial
-      if (productQueries.length > 1) {
-        setPendingSearches(productQueries.slice(1));
-      }
+      return;
     }
+    
+    // Para múltiplos produtos, criamos uma query combinada
+    // usando espaços para permitir correspondência parcial
+    const combinedQuery = productQueries.join(' ');
+    console.log(`Criando busca combinada: "${combinedQuery}"`);
+    setSearchQuery(combinedQuery);
+    
+    // Limpamos as buscas pendentes para evitar sobreposição
+    setPendingSearches([]);
   };
 
   // Visible products based on current display count

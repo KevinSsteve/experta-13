@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -76,7 +75,7 @@ export function SidebarNav() {
         <div className="flex h-14 items-center justify-center rounded-md bg-primary/10 px-4">
           <img 
             src="/logo.png" 
-            alt="Conta Comigo" 
+            alt="Contascom" 
             className={`h-8 ${theme === 'dark' ? 'invert' : ''} transition-all`}
           />
         </div>

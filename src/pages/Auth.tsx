@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -138,7 +137,6 @@ export default function Auth() {
         description: "Você já pode fazer login com suas credenciais.",
       });
 
-      // Muda para a aba de login após registro bem-sucedido
       loginForm.setValue("email", values.email);
       setActiveTab("login");
     } catch (error: any) {
@@ -158,7 +156,7 @@ export default function Auth() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Moloja</CardTitle>
+          <CardTitle className="text-2xl">Contascom</CardTitle>
           <CardDescription>Sistema de Gerenciamento de Loja</CardDescription>
         </CardHeader>
         <CardContent>
@@ -317,7 +315,7 @@ export default function Auth() {
           </Tabs>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Moloja - Todos os direitos reservados
+          &copy; {new Date().getFullYear()} Contascom - Todos os direitos reservados
         </CardFooter>
       </Card>
     </div>

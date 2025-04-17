@@ -29,7 +29,7 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
           <div className="lg:hidden flex items-center">
             <img 
               src="/logo.png" 
-              alt="Conta Comigo" 
+              alt="Contascom" 
               className={`h-8 ${theme === 'dark' ? 'invert' : ''} transition-all`}
             />
           </div>

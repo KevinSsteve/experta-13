@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -21,6 +22,7 @@ import { SalesCardList } from '@/components/sales/SalesCardList';
 import { SalesSearch } from '@/components/sales/SalesSearch';
 import { SalesPagination } from '@/components/sales/SalesPagination';
 import { SalesHistorySkeleton } from '@/components/sales/SalesHistorySkeleton';
+import { SalesCleanupButton } from '@/components/sales/SalesCleanupButton';
 
 const SalesHistory = () => {
   const { user } = useAuth();
@@ -30,7 +32,7 @@ const SalesHistory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 10;
   
-  const { data: sales, isLoading } = useQuery({
+  const { data: sales, isLoading, refetch } = useQuery({
     queryKey: ['sales', user?.id],
     queryFn: () => getSalesData(user?.id),
     enabled: !!user?.id,
@@ -89,6 +91,11 @@ const SalesHistory = () => {
     linkElement.click();
   };
   
+  const handleCleanupComplete = () => {
+    setCurrentPage(1);
+    refetch();
+  };
+  
   if (isLoading) {
     return (
       <MainLayout>
@@ -111,14 +118,22 @@ const SalesHistory = () => {
                   Visualize e gerencie o histórico de vendas da sua loja.
                 </CardDescription>
               </div>
-              <SalesSearch 
-                searchTerm={searchTerm} 
-                onSearchChange={(value) => {
-                  setSearchTerm(value);
-                  setCurrentPage(1);
-                }}
-                onExport={handleExportSales}
-              />
+              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                <SalesSearch 
+                  searchTerm={searchTerm} 
+                  onSearchChange={(value) => {
+                    setSearchTerm(value);
+                    setCurrentPage(1);
+                  }}
+                  onExport={handleExportSales}
+                />
+                <div className="flex-shrink-0">
+                  <SalesCleanupButton 
+                    userId={user?.id} 
+                    onCleanupComplete={handleCleanupComplete}
+                  />
+                </div>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

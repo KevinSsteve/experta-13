@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,7 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Check, Trash2, Calculator, Printer, Download, Share2, BarChart3 } from 'lucide-react';
+import { Check, Trash2, Calculator, Printer, Download, Share2, BarChart3, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, generateSalesReport } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -101,6 +102,15 @@ const Checkout = () => {
     
     if (data.amountPaid < getTotalPrice()) {
       toast.error('O valor pago é insuficiente para cobrir o total da compra.');
+      return;
+    }
+    
+    // Validar se a data não é futura
+    const currentDate = new Date();
+    const saleDate = new Date();
+    
+    if (saleDate > currentDate) {
+      toast.error('Não é permitido criar faturas com data futura.');
       return;
     }
     
@@ -282,6 +292,9 @@ const Checkout = () => {
                     <p className="text-sm text-center text-green-700 dark:text-green-300 mb-2">
                       Pagamento concluído
                     </p>
+                    <p className="text-xs text-center text-green-600 dark:text-green-400 mb-3">
+                      FT MOLOJA/{completedSale.id.substring(0, 8) || 'N/A'}
+                    </p>
                     <div className="grid grid-cols-2 gap-2">
                       <Button 
                         variant="outline" 
@@ -395,6 +408,12 @@ const Checkout = () => {
               <Card className="mx-auto max-w-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg text-center">Dados da Venda</CardTitle>
+                  <CardDescription className="text-center text-amber-600">
+                    <div className="flex items-center justify-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      <span>Os campos com * são obrigatórios</span>
+                    </div>
+                  </CardDescription>
                 </CardHeader>
                 
                 <CardContent>
@@ -405,7 +424,7 @@ const Checkout = () => {
                         name="customerName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Nome do Cliente</FormLabel>
+                            <FormLabel>Nome do Cliente *</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="Digite o nome" />
                             </FormControl>
@@ -453,7 +472,7 @@ const Checkout = () => {
                           name="amountPaid"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Valor Pago</FormLabel>
+                              <FormLabel>Valor Pago *</FormLabel>
                               <FormControl>
                                 <Input 
                                   type="number" 

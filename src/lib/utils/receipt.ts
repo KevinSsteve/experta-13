@@ -37,12 +37,15 @@ export interface ReceiptConfig {
   showTaxInfo?: boolean;
   taxRate?: number;
   currency?: string;
+  taxExemptionReason?: string; // Motivo de isenção de imposto
   
   // Configurações extras
   showLogo?: boolean;
   showSignature?: boolean;
   showBarcode?: boolean;
   additionalInfo?: string;
+  systemInfo?: string; // Nome e certificação do software
+  certificateNumber?: string; // Número de certificação AGT
 }
 
 // Configuração padrão para o recibo
@@ -62,7 +65,10 @@ const defaultReceiptConfig: ReceiptConfig = {
   currency: 'AOA',
   showLogo: false,
   showSignature: false,
-  showBarcode: false
+  showBarcode: false,
+  systemInfo: 'Contascom - Sistema de Gestão',
+  certificateNumber: 'Aguardando certificação AGT',
+  taxExemptionReason: 'Artigo 12.º, n.º 1, alínea c) do CIVA'
 };
 
 /**
@@ -145,7 +151,10 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     additionalInfo: config?.receipt_additional_info || '',
     companyNeighborhood: config?.company_neighborhood || '',
     companyCity: config?.company_city || '',
-    companySocialMedia: config?.company_social_media || ''
+    companySocialMedia: config?.company_social_media || '',
+    systemInfo: 'Contascom - Sistema de Gestão de Faturação v1.0',
+    certificateNumber: 'Aguardando certificação AGT',
+    taxExemptionReason: 'Artigo 12.º, n.º 1, alínea c) do CIVA'
   };
   
   // Configurar margens e espaçamentos para evitar sobreposições
@@ -435,6 +444,13 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   doc.setFont('helvetica', 'normal');
   doc.text(sale.paymentMethod || 'Dinheiro', marginLeft + 100, currentYPos); // Aumentado para corresponder ao novo layout
   
+  // Adicionar motivo de isenção de imposto (novo)
+  currentYPos += lineSpacing * 1.5;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Motivo de Isenção:', marginLeft, currentYPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(receiptConfig.taxExemptionReason || 'N/A', marginLeft + 100, currentYPos);
+  
   // Adicionar mensagem de agradecimento 
   currentYPos += lineSpacing * 2;
   if (receiptConfig.thankYouMessage) {
@@ -457,6 +473,11 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     currentYPos += lineSpacing;
   }
   
+  // Adicionar informação do sistema (novo)
+  currentYPos += lineSpacing;
+  doc.text(receiptConfig.systemInfo || 'Sistema de Faturação', pageCenter, currentYPos, { align: 'center' });
+  currentYPos += lineSpacing;
+  
   // Adicionar hash de segurança no rodapé (formatado para não exceder 38 caracteres)
   // Quebrar a linha de certificação em partes menores para evitar estouro da margem
   doc.setFontSize(footerSize - 4);
@@ -467,9 +488,9 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
   const certLine1 = "ABC1-Processado por programa validado";
   doc.text(certLine1, pageCenter, currentYPos, { align: 'center' });
   
-  // Segunda linha da certificação
+  // Segunda linha da certificação com número de certificado
   currentYPos += lineSpacing;
-  const certLine2 = "nº xxxx/AGT/2025";
+  const certLine2 = `nº ${receiptConfig.certificateNumber || "xxxx/AGT/2025"}`;
   doc.text(certLine2, pageCenter, currentYPos, { align: 'center' });
   
   return doc;

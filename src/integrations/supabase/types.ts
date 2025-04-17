@@ -167,7 +167,6 @@ export type Database = {
           email: string
           id: string
           name: string | null
-          needs_password_change: boolean | null
           phone: string | null
           position: string | null
           receipt_additional_info: string | null
@@ -193,7 +192,6 @@ export type Database = {
           email: string
           id: string
           name?: string | null
-          needs_password_change?: boolean | null
           phone?: string | null
           position?: string | null
           receipt_additional_info?: string | null
@@ -219,7 +217,6 @@ export type Database = {
           email?: string
           id?: string
           name?: string | null
-          needs_password_change?: boolean | null
           phone?: string | null
           position?: string | null
           receipt_additional_info?: string | null

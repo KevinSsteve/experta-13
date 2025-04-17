@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
       
+      // Map database fields to profile properties using only snake_case as defined in ExtendedProfile
       const profileData: ExtendedProfile = {
         id: data.id,
         name: data.name,

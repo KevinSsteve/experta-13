@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -43,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         position: data.position || null,
         role: data.role,
         avatar_url: data.avatar_url,
+        needs_password_change: data.needs_password_change || null,
         tax_id: data.tax_id || null,
         currency: data.currency || null,
         tax_rate: data.tax_rate || null,

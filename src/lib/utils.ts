@@ -1,4 +1,3 @@
-
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format, parseISO } from "date-fns";
@@ -106,25 +105,25 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-// Filter products function
-export function filterProducts(products: any[], query: string): any[] {
+// Function to filter products based on search query
+export const filterProducts = (products: any[], query: string): any[] => {
   if (!query || query.trim() === '') {
     return products;
   }
   
-  const searchTerms = query.toLowerCase().split(' ');
+  const normalizedQuery = query.toLowerCase().trim();
+  console.log(`Filtrando produtos com query normalizada: "${normalizedQuery}"`);
   
   return products.filter(product => {
-    const productName = (product.name || '').toLowerCase();
-    const productDesc = (product.description || '').toLowerCase();
-    const productCategory = (product.category || '').toLowerCase();
-    const productCode = (product.code || '').toLowerCase();
+    // Verificar nome do produto
+    const nameMatch = product.name?.toLowerCase().includes(normalizedQuery);
     
-    return searchTerms.every(term => 
-      productName.includes(term) || 
-      productDesc.includes(term) || 
-      productCategory.includes(term) || 
-      productCode.includes(term)
-    );
+    // Verificar código do produto (se existir)
+    const codeMatch = product.code?.toLowerCase().includes(normalizedQuery);
+    
+    // Verificar categoria (se existir)
+    const categoryMatch = product.category?.toLowerCase().includes(normalizedQuery);
+    
+    return nameMatch || codeMatch || categoryMatch;
   });
-}
+};

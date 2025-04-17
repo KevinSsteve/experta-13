@@ -9,7 +9,7 @@ export function useProductSearch(products: Product[] | undefined) {
   const [displayCount, setDisplayCount] = useState(20);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(false);
-  // Adicionado para rastrear produtos para busca em lote
+  // Lista de buscas pendentes para processamento sequencial
   const [pendingSearches, setPendingSearches] = useState<string[]>([]);
 
   // Handle scroll events
@@ -51,27 +51,26 @@ export function useProductSearch(products: Product[] | undefined) {
     }
   }, [pendingSearches]);
 
-  // Debounced filter function
-  const debouncedUpdateProducts = debounce(() => {
-    if (products) {
-      updateFilteredProducts(products);
-    }
-  }, 300);
-
-  // Update filtered products based on search query
+  // Função para filtrar produtos baseado na query atual
   const updateFilteredProducts = (productsToFilter: Product[] = []) => {
+    if (!productsToFilter) return;
+    
     const filtered = filterProducts(productsToFilter, searchQuery);
+    console.log(`Filtrando produtos com a query "${searchQuery}"`, filtered.length, "resultados encontrados");
     setFilteredProducts(filtered);
   };
   
   // Handle search input
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    debouncedUpdateProducts();
+    const newSearchQuery = e.target.value;
+    console.log(`Atualizando busca para: "${newSearchQuery}"`);
+    setSearchQuery(newSearchQuery);
+    // O efeito vai cuidar da filtragem
   };
 
-  // Adiciona função para pesquisar múltiplos produtos em sequência
+  // Função para pesquisar múltiplos produtos em sequência
   const searchMultipleProducts = (productQueries: string[]) => {
+    console.log(`Recebendo múltipla busca: ${productQueries.join(', ')}`);
     if (productQueries.length > 0) {
       // Define o primeiro como busca atual
       setSearchQuery(productQueries[0]);
@@ -80,8 +79,6 @@ export function useProductSearch(products: Product[] | undefined) {
       if (productQueries.length > 1) {
         setPendingSearches(productQueries.slice(1));
       }
-      
-      debouncedUpdateProducts();
     }
   };
 

@@ -8,13 +8,16 @@ import { useToast } from '@/components/ui/use-toast';
 interface SearchBarProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onMultiSearch?: (products: string[]) => void;
 }
 
-export const SearchBar = ({ value, onChange }: SearchBarProps) => {
+export const SearchBar = ({ value, onChange, onMultiSearch }: SearchBarProps) => {
   const { toast } = useToast();
 
   // Função para atualizar o valor da busca quando o reconhecimento de voz retornar um resultado
   const handleVoiceResult = (text: string) => {
+    console.log(`Busca por voz: "${text}"`);
+    
     // Simulando um evento de alteração para manter a compatibilidade com o handler atual
     const syntheticEvent = {
       target: { value: text },
@@ -25,16 +28,23 @@ export const SearchBar = ({ value, onChange }: SearchBarProps) => {
 
   // Função para lidar com múltiplas buscas de produtos
   const handleMultiSearch = (products: string[]) => {
+    console.log(`Múltiplos produtos detectados: ${products.join(', ')}`);
+    
     if (products.length > 0) {
-      // Primeiro produto vai para o campo de busca
-      handleVoiceResult(products[0]);
-      
-      // Se houver mais de um produto, mostra toast informativo
-      if (products.length > 1) {
-        toast({
-          title: "Múltiplos produtos",
-          description: `Use comandos como "adicionar ao carrinho" para processar múltiplos produtos de uma vez.`,
-        });
+      // Se tivermos a prop onMultiSearch, usamos ela
+      if (onMultiSearch) {
+        onMultiSearch(products);
+        
+        // Mostrar toast informativo para múltiplos produtos
+        if (products.length > 1) {
+          toast({
+            title: "Múltiplos produtos",
+            description: `Buscando: ${products.join(', ')}`,
+          });
+        }
+      } else {
+        // Fallback: primeira busca vai para o campo de busca se não tiver onMultiSearch
+        handleVoiceResult(products[0]);
       }
     }
   };

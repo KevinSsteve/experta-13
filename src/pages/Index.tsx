@@ -30,6 +30,7 @@ const Index = () => {
         
       if (error) throw error;
       
+      console.log(`Produtos carregados: ${data?.length || 0}`);
       return data as Product[];
     },
     enabled: !!user,
@@ -46,6 +47,8 @@ const Index = () => {
     searchMultipleProducts
   } = useProductSearch(userProducts);
 
+  console.log(`Renderizando Index: Query="${searchQuery}", Filtrados=${filteredProducts?.length || 0}, Visíveis=${visibleProducts?.length || 0}`);
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
@@ -54,7 +57,8 @@ const Index = () => {
           <section className="mt-4 mb-6">
             <SearchBar 
               value={searchQuery} 
-              onChange={handleSearch} 
+              onChange={handleSearch}
+              onMultiSearch={searchMultipleProducts}
             />
           </section>
           

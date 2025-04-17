@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,8 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Pencil, ShieldCheck, Store, UserRound, Loader2, AlertTriangle, LockKeyhole } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { User, Pencil, ShieldCheck, Store, UserRound, Loader2 } from 'lucide-react';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -52,26 +50,10 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-const passwordChangeSchema = z.object({
-  currentPassword: z.string().min(1, "A senha atual é obrigatória"),
-  newPassword: z.string()
-    .min(8, "A nova senha deve ter pelo menos 8 caracteres")
-    .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
-    .regex(/[0-9]/, "A senha deve conter pelo menos um número")
-    .regex(/[^a-zA-Z0-9]/, "A senha deve conter pelo menos um caractere especial"),
-  confirmPassword: z.string().min(1, "A confirmação de senha é obrigatória"),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "As senhas não coincidem",
-  path: ["confirmPassword"],
-});
-
-type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>;
-
 const translateRole = (role: string): string => {
   const roleMap: Record<string, string> = {
     'admin': 'Administrador',
     'vendedor': 'Vendedor',
-    'seller': 'Vendedor',
     'gerente': 'Gerente'
   };
   return roleMap[role] || role;
@@ -82,15 +64,6 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [passwordChanged, setPasswordChanged] = useState(false);
-  const [showSecurityInfo, setShowSecurityInfo] = useState(false);
-  
-  // Se o usuário precisar trocar a senha, vamos abrir o diálogo automaticamente
-  useEffect(() => {
-    if (profile?.needs_password_change && !passwordChanged) {
-      setIsPasswordDialogOpen(true);
-    }
-  }, [profile?.needs_password_change, passwordChanged]);
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -101,15 +74,6 @@ const Profile = () => {
       address: '',
       position: '',
     },
-  });
-  
-  const passwordForm = useForm<PasswordChangeFormValues>({
-    resolver: zodResolver(passwordChangeSchema),
-    defaultValues: {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    }
   });
 
   useEffect(() => {
@@ -162,44 +126,93 @@ const Profile = () => {
     }
   };
 
-  const handleChangePassword = async (values: PasswordChangeFormValues) => {
+  const handleChangePassword = async (currentPassword: string, newPassword: string) => {
     setIsSaving(true);
     
     try {
-      // Primeiro atualize a senha
       const { error } = await supabase.auth.updateUser({
-        password: values.newPassword
+        password: newPassword
       });
       
       if (error) throw error;
       
-      // Se a atualização da senha for bem-sucedida e o usuário precisava trocar a senha,
-      // atualize o perfil para remover a flag needs_password_change
-      if (user && profile?.needs_password_change) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            needs_password_change: false
-          })
-          .eq('id', user.id);
-        
-        if (profileError) {
-          console.error('Erro ao atualizar o status de troca de senha:', profileError);
-        }
-        
-        // Atualiza o perfil do usuário
-        await refreshProfile();
-      }
-      
       toast.success('Senha alterada com sucesso');
       setIsPasswordDialogOpen(false);
-      setPasswordChanged(true); // Marca que a senha foi alterada
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
       toast.error(`Erro ao alterar senha: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const PasswordChangeForm = () => {
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
+    
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (newPassword.length < 6) {
+        setError('A nova senha deve ter pelo menos 6 caracteres');
+        return;
+      }
+      
+      if (newPassword !== confirmPassword) {
+        setError('As senhas não coincidem');
+        return;
+      }
+      
+      handleChangePassword(currentPassword, newPassword);
+    };
+    
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="new-password" className="text-sm font-medium">Nova senha</label>
+          <Input
+            id="new-password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="confirm-password" className="text-sm font-medium">Confirmar nova senha</label>
+          <Input
+            id="confirm-password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </div>
+        
+        {error && (
+          <p className="text-sm text-red-500">{error}</p>
+        )}
+        
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              'Salvar'
+            )}
+          </Button>
+        </DialogFooter>
+      </form>
+    );
   };
 
   if (isLoading) {
@@ -224,16 +237,6 @@ const Profile = () => {
               Visualize e atualize suas informações pessoais
             </p>
           </div>
-          
-          {profile?.needs_password_change && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Troca de senha obrigatória</AlertTitle>
-              <AlertDescription>
-                Para cumprir os requisitos de segurança da AGT, você deve alterar sua senha no primeiro acesso ao sistema.
-              </AlertDescription>
-            </Alert>
-          )}
           
           <div className="grid gap-6">
             <Card>
@@ -342,13 +345,7 @@ const Profile = () => {
                         </div>
                       </div>
                       
-                      <Dialog open={isPasswordDialogOpen} onOpenChange={(open) => {
-                        // Não permitir fechar o diálogo se a troca de senha for obrigatória
-                        if (!open && profile?.needs_password_change) {
-                          return;
-                        }
-                        setIsPasswordDialogOpen(open);
-                      }}>
+                      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
                         <DialogTrigger asChild>
                           <Button variant="outline" type="button">
                             <Pencil className="h-4 w-4 mr-2" />
@@ -357,108 +354,12 @@ const Profile = () => {
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>
-                              {profile?.needs_password_change 
-                                ? "Troca de senha obrigatória" 
-                                : "Alterar senha"}
-                            </DialogTitle>
+                            <DialogTitle>Alterar senha</DialogTitle>
                             <DialogDescription>
-                              {profile?.needs_password_change
-                                ? "Para cumprir os requisitos de segurança da AGT, você deve criar uma nova senha no primeiro acesso."
-                                : "Criar uma nova senha para sua conta"}
+                              Criar uma nova senha para sua conta
                             </DialogDescription>
                           </DialogHeader>
-                          
-                          <Form {...passwordForm}>
-                            <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
-                              {!profile?.needs_password_change && (
-                                <FormField
-                                  control={passwordForm.control}
-                                  name="currentPassword"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Senha atual</FormLabel>
-                                      <FormControl>
-                                        <Input type="password" {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              )}
-                              
-                              <FormField
-                                control={passwordForm.control}
-                                name="newPassword"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="flex items-center justify-between">
-                                      <span>Nova senha</span>
-                                      <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        className="h-auto p-0 text-xs text-muted-foreground"
-                                        onClick={() => setShowSecurityInfo(!showSecurityInfo)}
-                                      >
-                                        <LockKeyhole className="h-3 w-3 mr-1" />
-                                        Requisitos
-                                      </Button>
-                                    </FormLabel>
-                                    <FormControl>
-                                      <Input type="password" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              
-                              {showSecurityInfo && (
-                                <Alert className="text-xs">
-                                  <AlertTitle>Requisitos de segurança (AGT)</AlertTitle>
-                                  <AlertDescription>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                      <li>Mínimo de 8 caracteres</li>
-                                      <li>Pelo menos uma letra maiúscula</li>
-                                      <li>Pelo menos um número</li>
-                                      <li>Pelo menos um caractere especial</li>
-                                    </ul>
-                                  </AlertDescription>
-                                </Alert>
-                              )}
-                              
-                              <FormField
-                                control={passwordForm.control}
-                                name="confirmPassword"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Confirmar nova senha</FormLabel>
-                                    <FormControl>
-                                      <Input type="password" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              
-                              <DialogFooter>
-                                {!profile?.needs_password_change && (
-                                  <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
-                                    Cancelar
-                                  </Button>
-                                )}
-                                <Button type="submit" disabled={isSaving}>
-                                  {isSaving ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Salvando...
-                                    </>
-                                  ) : (
-                                    'Alterar senha'
-                                  )}
-                                </Button>
-                              </DialogFooter>
-                            </form>
-                          </Form>
+                          <PasswordChangeForm />
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -490,7 +391,7 @@ const Profile = () => {
                   <div className="flex items-start space-x-4">
                     <Store className="h-5 w-5 text-primary mt-0.5" />
                     <div>
-                      <p className="font-medium">Loja Contascom</p>
+                      <p className="font-medium">Loja Moloja</p>
                       <p className="text-sm text-muted-foreground">
                         Gerenciamento de produtos e vendas
                       </p>
@@ -503,16 +404,6 @@ const Profile = () => {
                       <p className="font-medium">Usuário desde</p>
                       <p className="text-sm text-muted-foreground">
                         {user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start space-x-4">
-                    <ShieldCheck className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="font-medium">Certificação AGT</p>
-                      <p className="text-sm text-muted-foreground">
-                        Software certificado #00345
                       </p>
                     </div>
                   </div>

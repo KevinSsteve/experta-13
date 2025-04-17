@@ -9,9 +9,6 @@ export interface ExtendedProfile {
   role: string;
   avatar_url: string | null;
   
-  // Campo para indicar se o usuário precisa trocar a senha (primeiro acesso)
-  needs_password_change: boolean | null;
-  
   // Campos personalizados para as faturas (apenas em snake_case)
   tax_id: string | null;
   currency: string | null;

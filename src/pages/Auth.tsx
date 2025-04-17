@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -24,13 +23,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { LogIn, UserPlus, AlertCircle, LockKeyhole, KeyRound } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LogIn, UserPlus, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
@@ -41,13 +35,7 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
-  password: z
-    .string()
-    .min(8, "A senha deve ter pelo menos 8 caracteres")
-    .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
-    .regex(/[0-9]/, "A senha deve conter pelo menos um número")
-    .regex(/[^a-zA-Z0-9]/, "A senha deve conter pelo menos um caractere especial"),
-  taxId: z.string().optional(),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
 });
 
 export default function Auth() {
@@ -56,19 +44,6 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [authError, setAuthError] = useState<string | null>(null);
-  const [showSecurityInfo, setShowSecurityInfo] = useState(false);
-
-  useEffect(() => {
-    // Verificar se o usuário já está autenticado
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        navigate("/dashboard");
-      }
-    };
-    
-    checkAuth();
-  }, [navigate]);
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
@@ -84,7 +59,6 @@ export default function Auth() {
       name: "",
       email: "",
       password: "",
-      taxId: "",
     },
   });
 
@@ -141,9 +115,7 @@ export default function Auth() {
         options: {
           data: {
             name: values.name,
-            role: "seller",
-            tax_id: values.taxId || null,
-            needs_password_change: true // Define que é necessário trocar a senha no primeiro acesso
+            role: "seller"
           }
         }
       });
@@ -184,11 +156,8 @@ export default function Auth() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex items-center justify-center mb-2">
-            <img src="/logo.png" alt="Contascom" className="h-10" />
-          </div>
           <CardTitle className="text-2xl">Contascom</CardTitle>
-          <CardDescription>Sistema de Gerenciamento com Certificação AGT</CardDescription>
+          <CardDescription>Sistema de Gerenciamento de Loja</CardDescription>
         </CardHeader>
         <CardContent>
           {authError && (
@@ -315,39 +284,10 @@ export default function Auth() {
                   
                   <FormField
                     control={signupForm.control}
-                    name="taxId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>NIF (Opcional)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Seu NIF" 
-                            disabled={isLoading}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={signupForm.control}
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="flex items-center justify-between">
-                          <span>Senha</span>
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            className="h-auto p-0 text-xs text-muted-foreground"
-                            onClick={() => setShowSecurityInfo(!showSecurityInfo)}
-                          >
-                            <KeyRound className="h-3 w-3 mr-1" />
-                            Requisitos de segurança
-                          </Button>
-                        </FormLabel>
+                        <FormLabel>Senha</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="******" 
@@ -360,22 +300,6 @@ export default function Auth() {
                       </FormItem>
                     )}
                   />
-                  
-                  {showSecurityInfo && (
-                    <Alert>
-                      <LockKeyhole className="h-4 w-4" />
-                      <AlertTitle>Requisitos de segurança (AGT)</AlertTitle>
-                      <AlertDescription className="text-xs">
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>Mínimo de 8 caracteres</li>
-                          <li>Pelo menos uma letra maiúscula</li>
-                          <li>Pelo menos um número</li>
-                          <li>Pelo menos um caractere especial</li>
-                          <li>A senha deverá ser alterada no primeiro acesso</li>
-                        </ul>
-                      </AlertDescription>
-                    </Alert>
-                  )}
                   
                   <Button 
                     type="submit" 
@@ -391,10 +315,7 @@ export default function Auth() {
           </Tabs>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-muted-foreground">
-          <div className="text-center">
-            <p>&copy; {new Date().getFullYear()} Contascom - Todos os direitos reservados</p>
-            <p className="text-xs mt-1">Software certificado para conformidade AGT #00345</p>
-          </div>
+          &copy; {new Date().getFullYear()} Contascom - Todos os direitos reservados
         </CardFooter>
       </Card>
     </div>

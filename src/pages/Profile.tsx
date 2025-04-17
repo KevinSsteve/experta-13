@@ -192,8 +192,13 @@ const Profile = () => {
       }
       
       toast.success('Senha alterada com sucesso');
-      setIsPasswordDialogOpen(false);
+      setIsPasswordDialogOpen(false); // Fechar o diálogo após sucesso
       setPasswordChanged(true); // Marca que a senha foi alterada
+      
+      // Forçar atualização do perfil para garantir que needs_password_change seja atualizado
+      setTimeout(() => {
+        refreshProfile();
+      }, 500);
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
       toast.error(`Erro ao alterar senha: ${error.message}`);
@@ -225,7 +230,7 @@ const Profile = () => {
             </p>
           </div>
           
-          {profile?.needs_password_change && (
+          {profile?.needs_password_change && !passwordChanged && (
             <Alert variant="destructive" className="mb-6">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Troca de senha obrigatória</AlertTitle>
@@ -342,13 +347,17 @@ const Profile = () => {
                         </div>
                       </div>
                       
-                      <Dialog open={isPasswordDialogOpen} onOpenChange={(open) => {
-                        // Não permitir fechar o diálogo se a troca de senha for obrigatória
-                        if (!open && profile?.needs_password_change) {
-                          return;
-                        }
-                        setIsPasswordDialogOpen(open);
-                      }}>
+                      <Dialog 
+                        open={isPasswordDialogOpen} 
+                        onOpenChange={(open) => {
+                          // Só permite fechar o diálogo se a troca de senha NÃO for obrigatória
+                          // ou se a senha já foi alterada com sucesso
+                          if (!open && (profile?.needs_password_change && !passwordChanged)) {
+                            return;
+                          }
+                          setIsPasswordDialogOpen(open);
+                        }}
+                      >
                         <DialogTrigger asChild>
                           <Button variant="outline" type="button">
                             <Pencil className="h-4 w-4 mr-2" />
@@ -358,12 +367,12 @@ const Profile = () => {
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>
-                              {profile?.needs_password_change 
+                              {profile?.needs_password_change && !passwordChanged
                                 ? "Troca de senha obrigatória" 
                                 : "Alterar senha"}
                             </DialogTitle>
                             <DialogDescription>
-                              {profile?.needs_password_change
+                              {profile?.needs_password_change && !passwordChanged
                                 ? "Para cumprir os requisitos de segurança da AGT, você deve criar uma nova senha no primeiro acesso."
                                 : "Criar uma nova senha para sua conta"}
                             </DialogDescription>
@@ -441,7 +450,8 @@ const Profile = () => {
                               />
                               
                               <DialogFooter>
-                                {!profile?.needs_password_change && (
+                                {/* Só mostra o botão de cancelar se a troca de senha NÃO for obrigatória ou se a senha já foi alterada */}
+                                {(!profile?.needs_password_change || passwordChanged) && (
                                   <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
                                     Cancelar
                                   </Button>

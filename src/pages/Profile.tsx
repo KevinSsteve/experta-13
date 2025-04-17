@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -84,8 +84,8 @@ const Profile = () => {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   
-  // Se o usuário precisar trocar a senha, vamos abrir o diálogo automaticamente
   useEffect(() => {
     if (profile?.needs_password_change && !passwordChanged) {
       setIsPasswordDialogOpen(true);
@@ -164,17 +164,15 @@ const Profile = () => {
 
   const handleChangePassword = async (values: PasswordChangeFormValues) => {
     setIsSaving(true);
+    setIsChangingPassword(true);
     
     try {
-      // Primeiro atualize a senha
       const { error } = await supabase.auth.updateUser({
         password: values.newPassword
       });
       
       if (error) throw error;
       
-      // Se a atualização da senha for bem-sucedida e o usuário precisava trocar a senha,
-      // atualize o perfil para remover a flag needs_password_change
       if (user && profile?.needs_password_change) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -185,25 +183,23 @@ const Profile = () => {
         
         if (profileError) {
           console.error('Erro ao atualizar o status de troca de senha:', profileError);
+          toast.error('Erro ao atualizar status da troca de senha');
+          return;
         }
-        
-        // Atualiza o perfil do usuário
-        await refreshProfile();
       }
       
       toast.success('Senha alterada com sucesso');
-      setIsPasswordDialogOpen(false); // Fechar o diálogo após sucesso
-      setPasswordChanged(true); // Marca que a senha foi alterada
+      setPasswordChanged(true);
       
-      // Forçar atualização do perfil para garantir que needs_password_change seja atualizado
-      setTimeout(() => {
-        refreshProfile();
-      }, 500);
+      await refreshProfile();
+      
+      setIsPasswordDialogOpen(false);
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
       toast.error(`Erro ao alterar senha: ${error.message}`);
     } finally {
       setIsSaving(false);
+      setIsChangingPassword(false);
     }
   };
 
@@ -350,9 +346,7 @@ const Profile = () => {
                       <Dialog 
                         open={isPasswordDialogOpen} 
                         onOpenChange={(open) => {
-                          // Só permite fechar o diálogo se a troca de senha NÃO for obrigatória
-                          // ou se a senha já foi alterada com sucesso
-                          if (!open && (profile?.needs_password_change && !passwordChanged)) {
+                          if (!open && (profile?.needs_password_change && !passwordChanged) && !isChangingPassword) {
                             return;
                           }
                           setIsPasswordDialogOpen(open);
@@ -450,8 +444,7 @@ const Profile = () => {
                               />
                               
                               <DialogFooter>
-                                {/* Só mostra o botão de cancelar se a troca de senha NÃO for obrigatória ou se a senha já foi alterada */}
-                                {(!profile?.needs_password_change || passwordChanged) && (
+                                {(!profile?.needs_password_change || passwordChanged) && !isChangingPassword && (
                                   <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
                                     Cancelar
                                   </Button>
@@ -469,6 +462,13 @@ const Profile = () => {
                               </DialogFooter>
                             </form>
                           </Form>
+                          
+                          {(!profile?.needs_password_change || passwordChanged) && !isChangingPassword && (
+                            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+                              <X className="h-4 w-4" />
+                              <span className="sr-only">Fechar</span>
+                            </DialogClose>
+                          )}
                         </DialogContent>
                       </Dialog>
                     </div>

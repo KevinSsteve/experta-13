@@ -128,6 +128,157 @@ const wrapText = (text: string, maxLength: number = 38): string[] => {
 };
 
 /**
+ * Gera um texto formatado para impressoras térmicas
+ * @param sale A venda para gerar um recibo
+ * @param config Configuração opcional para personalizar o recibo
+ * @returns String formatada para impressão térmica
+ */
+const generateThermalReceipt = (sale: Sale, config?: ExtendedProfile): string => {
+  const width = 32; // Largura padrão para impressoras térmicas (32 caracteres)
+  let output = '';
+  
+  // Função helper para centralizar texto
+  const center = (text: string): string => {
+    const spaces = Math.max(0, Math.floor((width - text.length) / 2));
+    return ' '.repeat(spaces) + text + '\n';
+  };
+  
+  // Função helper para criar linhas
+  const line = () => '-'.repeat(width) + '\n';
+  
+  // Função helper para alinhar texto à direita
+  const alignRight = (text: string): string => {
+    const spaces = Math.max(0, width - text.length);
+    return ' '.repeat(spaces) + text + '\n';
+  };
+  
+  // Função helper para formatar item
+  const formatItem = (name: string, qty: number, price: number, total: number): string => {
+    let result = name + '\n';
+    result += `${qty}x ${formatCurrency(price)} = ${formatCurrency(total)}\n`;
+    return result;
+  };
+  
+  // Cabeçalho
+  output += center(config?.name || 'MOLOJA');
+  output += '\n';
+  
+  if (config?.tax_id) {
+    output += center(`NIF: ${config.tax_id}`);
+  }
+  
+  if (config?.address) {
+    output += center(config.address);
+  }
+  
+  if (config?.company_neighborhood) {
+    output += center(config.company_neighborhood);
+  }
+  
+  if (config?.company_city) {
+    output += center(config.company_city);
+  }
+  
+  if (config?.phone) {
+    output += center(`Tel: ${config.phone}`);
+  }
+  
+  // Linha divisória
+  output += line();
+  
+  // Informações do documento
+  output += 'DOCUMENTO:\n';
+  output += 'Original: FT\n';
+  output += `Data Emissão: ${formatDateTimeForReceipt(sale.date)}\n`;
+  output += `Data Entrega: ${formatDateTimeForReceipt(sale.date)}\n\n`;
+  
+  output += 'FACTURA RECIBO:\n';
+  output += `FT MOLOJA/${sale.id?.substring(0, 8) || 'N/A'}\n\n`;
+  
+  // Informações do cliente
+  output += 'CLIENTE:\n';
+  let customerName = 'Cliente não identificado';
+  if (sale.customer) {
+    if (typeof sale.customer === 'object') {
+      customerName = (sale.customer as any).name || 'Cliente não identificado';
+    } else if (typeof sale.customer === 'string') {
+      customerName = sale.customer;
+    }
+  }
+  output += `${customerName}\n`;
+  
+  if (typeof sale.customer === 'object' && sale.customer && (sale.customer as any).nif) {
+    output += `NIF: ${(sale.customer as any).nif}\n`;
+  } else {
+    output += 'NIF: Consumidor final\n';
+  }
+  
+  output += line();
+  
+  // Itens
+  output += 'ITEMS:\n';
+  output += line();
+  
+  let itemsList = [];
+  if (sale.items) {
+    if (Array.isArray(sale.items)) {
+      itemsList = sale.items;
+    } else if (typeof sale.items === 'object' && sale.items !== null) {
+      const productsObj = sale.items as any;
+      if ('products' in productsObj && Array.isArray(productsObj.products)) {
+        itemsList = productsObj.products;
+      }
+    }
+  }
+  
+  itemsList.forEach((item: any) => {
+    let itemName = 'Produto sem nome';
+    let quantity = 1;
+    let price = 0;
+    
+    if (item.product) {
+      itemName = item.product.name || 'Produto sem nome';
+      price = parseFloat(item.product.price) || 0;
+      quantity = parseInt(item.quantity) || 1;
+    } else if (item.productName) {
+      itemName = item.productName || 'Produto sem nome';
+      price = parseFloat(item.price) || 0;
+      quantity = parseInt(item.quantity) || 1;
+    }
+    
+    const total = price * quantity;
+    output += formatItem(itemName, quantity, price, total);
+  });
+  
+  output += line();
+  
+  // Total e pagamento
+  const total = parseFloat(String(sale.total)) || 0;
+  output += alignRight(`TOTAL: ${formatCurrency(total)}`);
+  output += `Pagamento: ${sale.paymentMethod || 'Dinheiro'}\n`;
+  
+  // Isenção
+  const taxExemptionReason = config?.receipt_additional_info || 'Artigo 12.º, n.º 1, alínea c) do CIVA';
+  output += `\nMotivo de Isenção:\n${taxExemptionReason}\n`;
+  
+  // Mensagem de agradecimento
+  output += '\n' + center(config?.receipt_message || 'Obrigado pela preferência!');
+  
+  // Rodapé
+  const entregaData = formatDateTimeForReceipt(sale.date).split(' ')[0];
+  const footerText = (config?.receipt_footer_text || 'Os bens/serviços prestados foram colocados à disposição') + 
+    ` do adquirente/prestados em ${entregaData}.`;
+  
+  output += '\n' + footerText + '\n\n';
+  
+  // Informação do sistema
+  output += center('Contascom - Sistema de Gestão');
+  output += center('Aguardando certificação AGT');
+  
+  return output;
+};
+
+/**
  * Gera um PDF de recibo para uma venda com altura dinâmica
  * @param sale A venda para gerar um recibo
  * @param config Configuração opcional para personalizar o recibo
@@ -547,6 +698,33 @@ function estimateContentHeight(sale: Sale, config: ReceiptConfig, lineSpacing: n
 }
 
 /**
+ * Imprime um recibo em formato texto para uma venda
+ * @param sale A venda para gerar um recibo
+ * @param config Configuração opcional para personalizar o recibo
+ */
+export const printThermalReceipt = (sale: Sale, config?: ExtendedProfile): void => {
+  const receiptText = generateThermalReceipt(sale, config);
+  
+  // Criar um iframe invisível para impressão
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+  
+  // Escrever o conteúdo do recibo no iframe usando fonte monoespaçada
+  iframe.contentDocument?.write(`
+    <pre style="font-family: monospace; font-size: 12px; white-space: pre;">
+      ${receiptText}
+    </pre>
+  `);
+  
+  // Imprimir e remover o iframe
+  iframe.contentWindow?.print();
+  iframe.onload = () => {
+    document.body.removeChild(iframe);
+  };
+};
+
+/**
  * Gera e baixa um PDF de recibo para uma venda
  * @param sale A venda para gerar um recibo
  * @param config Configuração opcional para personalizar o recibo
@@ -562,9 +740,7 @@ export const downloadReceipt = (sale: Sale, config?: ExtendedProfile): void => {
  * @param config Configuração opcional para personalizar o recibo
  */
 export const printReceipt = (sale: Sale, config?: ExtendedProfile): void => {
-  const doc = generateReceipt(sale, config);
-  doc.autoPrint();
-  doc.output('dataurlnewwindow');
+  printThermalReceipt(sale, config);
 };
 
 /**

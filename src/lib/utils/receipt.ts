@@ -258,7 +258,7 @@ const generateThermalReceipt = (sale: Sale, config?: ExtendedProfile): string =>
   output += `Pagamento: ${sale.paymentMethod || 'Dinheiro'}\n`;
   
   // Isenção
-  const taxExemptionReason = config?.receipt_additional_info || 'Artigo 12.º, n.º 1, alínea c) do CIVA';
+  const taxExemptionReason = config?.receipt_additional_info || 'Artigo 12.º, n.º 1, al��nea c) do CIVA';
   output += `\nMotivo de Isenção:\n${taxExemptionReason}\n`;
   
   // Mensagem de agradecimento
@@ -775,4 +775,19 @@ export const shareReceipt = async (sale: Sale, config?: ExtendedProfile): Promis
     downloadReceipt(sale, config);
     return false;
   }
+};
+
+/**
+ * Baixa um recibo em formato texto para uma venda
+ * @param sale A venda para gerar um recibo
+ * @param config Configuração opcional para personalizar o recibo
+ */
+export const downloadThermalReceipt = (sale: Sale, config?: ExtendedProfile): void => {
+  const receiptText = generateThermalReceipt(sale, config);
+  const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `recibo-termico-${sale.id || Date.now()}.txt`;
+  link.click();
+  URL.revokeObjectURL(link.href);
 };

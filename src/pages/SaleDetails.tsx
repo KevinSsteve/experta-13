@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getSalesData } from '@/lib/sales';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
+import { downloadReceipt, printReceipt, shareReceipt, downloadThermalReceipt } from '@/lib/utils/receipt';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomerInfo } from '@/lib/sales/types';
+import { ExtendedProfile } from '@/types/profile';
 
 const SaleDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ const SaleDetails = () => {
   const [isSharing, setIsSharing] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [companyProfile, setCompanyProfile] = useState<ExtendedProfile | undefined>(undefined);
   
   const { data: sales, isLoading } = useQuery({
     queryKey: ['sales', user?.id],
@@ -46,7 +48,7 @@ const SaleDetails = () => {
     
     setIsPrinting(true);
     try {
-      printReceipt(sale);
+      printReceipt(sale, companyProfile);
       toast.success('Recibo enviado para impressão');
     } catch (error) {
       console.error('Erro ao imprimir recibo:', error);
@@ -61,10 +63,10 @@ const SaleDetails = () => {
     
     setIsDownloading(true);
     try {
-      downloadReceipt(sale);
-      toast.success('Recibo baixado com sucesso');
+      downloadThermalReceipt(sale, companyProfile);
+      toast.success('Recibo térmico baixado com sucesso');
     } catch (error) {
-      console.error('Erro ao baixar recibo:', error);
+      console.error('Erro ao baixar recibo térmico:', error);
       toast.error('Erro ao baixar recibo');
     } finally {
       setIsDownloading(false);
@@ -76,7 +78,7 @@ const SaleDetails = () => {
     
     setIsSharing(true);
     try {
-      const shared = await shareReceipt(sale);
+      const shared = await shareReceipt(sale, companyProfile);
       
       if (shared) {
         toast.success('Recibo compartilhado com sucesso');

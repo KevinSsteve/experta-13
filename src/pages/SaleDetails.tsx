@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { useQuery } from '@tanstack/react-query';
@@ -63,7 +64,9 @@ const SaleDetails = () => {
     
     setIsDownloading(true);
     try {
+      console.log('Iniciando download do recibo térmico...');
       downloadThermalReceipt(sale, companyProfile);
+      console.log('Função downloadThermalReceipt executada');
       toast.success('Recibo térmico baixado com sucesso');
     } catch (error) {
       console.error('Erro ao baixar recibo térmico:', error);
@@ -345,3 +348,4 @@ const SaleDetails = () => {
 };
 
 export default SaleDetails;
+

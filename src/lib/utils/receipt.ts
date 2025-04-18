@@ -258,7 +258,7 @@ const generateThermalReceipt = (sale: Sale, config?: ExtendedProfile): string =>
   output += `Pagamento: ${sale.paymentMethod || 'Dinheiro'}\n`;
   
   // Isenção
-  const taxExemptionReason = config?.receipt_additional_info || 'Artigo 12.º, n.º 1, al��nea c) do CIVA';
+  const taxExemptionReason = config?.receipt_additional_info || 'Artigo 12.º, n.º 1, alínea c) do CIVA';
   output += `\nMotivo de Isenção:\n${taxExemptionReason}\n`;
   
   // Mensagem de agradecimento
@@ -784,10 +784,29 @@ export const shareReceipt = async (sale: Sale, config?: ExtendedProfile): Promis
  */
 export const downloadThermalReceipt = (sale: Sale, config?: ExtendedProfile): void => {
   const receiptText = generateThermalReceipt(sale, config);
+  
+  // Create the Blob with proper encoding
   const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+  
+  // Create a download link
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
+  
+  // Set link properties
+  link.href = url;
   link.download = `recibo-termico-${sale.id || Date.now()}.txt`;
+  
+  // Append link to body to ensure it works across browsers
+  document.body.appendChild(link);
+  
+  // Trigger click event
   link.click();
-  URL.revokeObjectURL(link.href);
+  
+  // Clean up
+  setTimeout(() => {
+    // Remove the link from DOM
+    document.body.removeChild(link);
+    // Revoke object URL to free memory
+    URL.revokeObjectURL(url);
+  }, 100);
 };

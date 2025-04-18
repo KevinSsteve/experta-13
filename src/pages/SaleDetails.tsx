@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -17,11 +16,13 @@ import {
   Download,
   Printer,
   Share2,
+  FileText,
   Info
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomerInfo } from '@/lib/sales/types';
 import { ExtendedProfile } from '@/types/profile';
+import { supabase } from '@/integrations/supabase/client';
 
 const SaleDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +41,28 @@ const SaleDetails = () => {
   
   const sale = sales?.find(s => s.id === id);
   
+  useEffect(() => {
+    const loadCompanyProfile = async () => {
+      if (user?.id) {
+        console.log("Loading company profile for user:", user.id);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (!error && data) {
+          console.log("Company profile loaded:", data);
+          setCompanyProfile(data as ExtendedProfile);
+        } else {
+          console.error("Error loading company profile:", error);
+        }
+      }
+    };
+    
+    loadCompanyProfile();
+  }, [user]);
+  
   const handleBack = () => {
     navigate('/sales-history');
   };
@@ -49,6 +72,7 @@ const SaleDetails = () => {
     
     setIsPrinting(true);
     try {
+      console.log("Printing receipt with company profile:", companyProfile);
       printReceipt(sale, companyProfile);
       toast.success('Recibo enviado para impressão');
     } catch (error) {
@@ -64,13 +88,28 @@ const SaleDetails = () => {
     
     setIsDownloading(true);
     try {
-      console.log('Iniciando download do recibo térmico...');
+      console.log("Downloading receipt with company profile:", companyProfile);
+      downloadReceipt(sale, companyProfile);
+      toast.success('Recibo baixado com sucesso');
+    } catch (error) {
+      console.error('Erro ao baixar recibo:', error);
+      toast.error('Erro ao baixar recibo');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+  
+  const handleDownloadThermal = () => {
+    if (!sale) return;
+    
+    setIsDownloading(true);
+    try {
+      console.log("Downloading thermal receipt with company profile:", companyProfile);
       downloadThermalReceipt(sale, companyProfile);
-      console.log('Função downloadThermalReceipt executada');
       toast.success('Recibo térmico baixado com sucesso');
     } catch (error) {
       console.error('Erro ao baixar recibo térmico:', error);
-      toast.error('Erro ao baixar recibo');
+      toast.error('Erro ao baixar recibo térmico');
     } finally {
       setIsDownloading(false);
     }
@@ -81,6 +120,7 @@ const SaleDetails = () => {
     
     setIsSharing(true);
     try {
+      console.log("Sharing receipt with company profile:", companyProfile);
       const shared = await shareReceipt(sale, companyProfile);
       
       if (shared) {
@@ -332,6 +372,16 @@ const SaleDetails = () => {
               </Button>
               
               <Button
+                variant="outline"
+                onClick={handleDownloadThermal}
+                disabled={isDownloading}
+                className="flex-1 sm:flex-initial"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Baixar Texto
+              </Button>
+              
+              <Button
                 onClick={handleShare}
                 disabled={isSharing}
                 className="flex-1 sm:flex-initial"
@@ -348,4 +398,3 @@ const SaleDetails = () => {
 };
 
 export default SaleDetails;
-

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,6 +62,7 @@ const Checkout = () => {
   useEffect(() => {
     const loadCompanyProfile = async () => {
       if (user?.id) {
+        console.log("Loading company profile for user:", user.id);
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -68,7 +70,10 @@ const Checkout = () => {
           .single();
           
         if (!error && data) {
+          console.log("Company profile loaded:", data);
           setCompanyProfile(data as ExtendedProfile);
+        } else {
+          console.error("Error loading company profile:", error);
         }
       }
     };
@@ -224,9 +229,11 @@ const Checkout = () => {
   const handlePrintReceipt = () => {
     if (!completedSale) return;
     try {
+      console.log("Printing receipt with company profile:", companyProfile);
       printReceipt(completedSale, companyProfile);
       toast.success('Recibo enviado para impressão');
     } catch (error) {
+      console.error('Error printing receipt:', error);
       toast.error('Erro ao imprimir recibo');
     }
   };
@@ -234,9 +241,11 @@ const Checkout = () => {
   const handleDownloadReceipt = () => {
     if (!completedSale) return;
     try {
+      console.log("Downloading receipt with company profile:", companyProfile);
       downloadReceipt(completedSale, companyProfile);
       toast.success('Recibo baixado com sucesso');
     } catch (error) {
+      console.error('Error downloading receipt:', error);
       toast.error('Erro ao baixar recibo');
     }
   };
@@ -244,9 +253,11 @@ const Checkout = () => {
   const handleDownloadThermalReceipt = () => {
     if (!completedSale) return;
     try {
+      console.log("Downloading thermal receipt with company profile:", companyProfile);
       downloadThermalReceipt(completedSale, companyProfile);
       toast.success('Recibo térmico baixado com sucesso');
     } catch (error) {
+      console.error('Error downloading thermal receipt:', error);
       toast.error('Erro ao baixar recibo térmico');
     }
   };
@@ -254,6 +265,7 @@ const Checkout = () => {
   const handleShareReceipt = async () => {
     if (!completedSale) return;
     try {
+      console.log("Sharing receipt with company profile:", companyProfile);
       const shared = await shareReceipt(completedSale, companyProfile);
       if (shared) {
         toast.success('Recibo compartilhado com sucesso');
@@ -261,6 +273,7 @@ const Checkout = () => {
         toast.info('O recibo foi baixado porque o compartilhamento não está disponível');
       }
     } catch (error) {
+      console.error('Error sharing receipt:', error);
       toast.error('Erro ao compartilhar recibo');
     }
   };

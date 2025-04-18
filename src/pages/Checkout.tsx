@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +8,7 @@ import {
   saveSaleToStorage, 
   updateProductStockAfterSale 
 } from '@/lib/utils';
-import { downloadReceipt, printReceipt, shareReceipt } from '@/lib/utils/receipt';
+import { downloadReceipt, printReceipt, shareReceipt, downloadThermalReceipt } from '@/lib/utils/receipt';
 import { 
   Card, 
   CardContent,
@@ -31,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Check, Trash2, Calculator, Printer, Download, Share2, BarChart3, AlertCircle } from 'lucide-react';
+import { Check, Trash2, Calculator, Printer, Download, FileText, Share2, BarChart3, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, generateSalesReport } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -242,6 +241,16 @@ const Checkout = () => {
     }
   };
   
+  const handleDownloadThermalReceipt = () => {
+    if (!completedSale) return;
+    try {
+      downloadThermalReceipt(completedSale, companyProfile);
+      toast.success('Recibo térmico baixado com sucesso');
+    } catch (error) {
+      toast.error('Erro ao baixar recibo térmico');
+    }
+  };
+  
   const handleShareReceipt = async () => {
     if (!completedSale) return;
     try {
@@ -314,15 +323,24 @@ const Checkout = () => {
                         <Download className="mr-1 h-4 w-4" />
                         PDF
                       </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleDownloadThermalReceipt}
+                        size="sm"
+                        className="w-full"
+                      >
+                        <FileText className="mr-1 h-4 w-4" />
+                        Texto
+                      </Button>
+                      <Button
+                        onClick={handleShareReceipt}
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Share2 className="mr-1 h-4 w-4" />
+                        Compartilhar
+                      </Button>
                     </div>
-                    <Button
-                      onClick={handleShareReceipt}
-                      size="sm"
-                      className="w-full mt-2"
-                    >
-                      <Share2 className="mr-1 h-4 w-4" />
-                      Compartilhar
-                    </Button>
                   </div>
                   
                   <Button 

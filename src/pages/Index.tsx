@@ -2,51 +2,31 @@
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/contexts/CartContext';
 import { SearchBar } from '@/components/products/SearchBar';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { BackToTopButton } from '@/components/ui/back-to-top';
 import { useProductSearch } from '@/hooks/useProductSearch';
-import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useInfiniteProducts } from '@/hooks/useInfiniteProducts';
+import { useEffect, useRef, useCallback } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
   const { addItem } = useCart();
   const { user } = useAuth();
-  const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 20; // Número de produtos por página
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Use React Query to fetch user products
-  const { data: userProducts, isLoading, error } = useQuery({
-    queryKey: ['userProducts', currentPage],
-    queryFn: async () => {
-      if (!user) {
-        return [];
-      }
-      
-      // Agora buscamos apenas uma página de produtos de cada vez
-      // to reduzir o consumo de dados
-      console.log(`Buscando produtos da página ${currentPage}`);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name')
-        .range((currentPage - 1) * productsPerPage, currentPage * productsPerPage - 1);
-        
-      if (error) throw error;
-      
-      console.log(`Produtos carregados: ${data?.length || 0}`);
-      return data as Product[];
-    },
-    enabled: !!user,
-    refetchOnWindowFocus: false, // Evita recarregar os dados ao voltar para a janela
-    placeholderData: (previousData) => previousData, // Substitui keepPreviousData que foi removido na versão 5
-  });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error
+  } = useInfiniteProducts(user?.id);
 
-  // Use the product search hook
+  const allProducts = data?.pages.flatMap(page => page.products) ?? [];
+
   const { 
     searchQuery, 
     filteredProducts, 
@@ -54,45 +34,30 @@ const Index = () => {
     showBackToTop, 
     handleSearch,
     searchMultipleProducts
-  } = useProductSearch(userProducts);
+  } = useProductSearch(allProducts);
 
-  // Total de páginas - precisamos buscar o total
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  // Configurar o observador de interseção para o scroll infinito
+  const onIntersect = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const first = entries[0];
+      if (first.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage]
+  );
 
-  // Buscar o total de produtos para calcular o total de páginas
   useEffect(() => {
-    if (!user) return;
+    const observer = new IntersectionObserver(onIntersect, {
+      rootMargin: '200px',
+    });
 
-    const fetchTotalProducts = async () => {
-      const { count, error } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-        
-      if (error) {
-        console.error("Erro ao buscar o total de produtos:", error);
-        return;
-      }
-      
-      if (count !== null) {
-        setTotalProducts(count);
-        setTotalPages(Math.ceil(count / productsPerPage));
-        console.log(`Total de produtos: ${count}, Total de páginas: ${Math.ceil(count / productsPerPage)}`);
-      }
-    };
-    
-    fetchTotalProducts();
-  }, [user]);
-
-  console.log(`Renderizando Index: Página=${currentPage}, Query="${searchQuery}", Filtrados=${filteredProducts?.length || 0}, Visíveis=${visibleProducts?.length || 0}`);
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-      window.scrollTo(0, 0);
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
     }
-  };
+
+    return () => observer.disconnect();
+  }, [onIntersect]);
 
   return (
     <MainLayout>
@@ -116,34 +81,19 @@ const Index = () => {
               error={error as Error}
               onAddToCart={addItem}
             />
+            
+            {/* Loading indicator */}
+            {isFetchingNextPage && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 mt-4">
+                {[...Array(6)].map((_, i) => (
+                  <Skeleton key={i} className="h-48 rounded-lg" />
+                ))}
+              </div>
+            )}
+            
+            {/* Intersection observer target */}
+            <div ref={loadMoreRef} className="h-4" />
           </section>
-          
-          {/* Pagination */}
-          {!searchQuery && totalPages > 1 && (
-            <div className="flex justify-center mt-6 gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                size="sm"
-              >
-                Anterior
-              </Button>
-              
-              <span className="flex items-center px-3">
-                Página {currentPage} de {totalPages}
-              </span>
-              
-              <Button 
-                variant="outline" 
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                size="sm"
-              >
-                Próxima
-              </Button>
-            </div>
-          )}
         </div>
       </div>
       

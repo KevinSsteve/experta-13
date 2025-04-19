@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getProduct } from '@/lib/products';
@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, ShoppingCart, Package, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Edit, ShoppingCart, Package, AlertTriangle, ImageIcon } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,6 +28,8 @@ const ProductDetails = () => {
   const { user } = useAuth();
   const { addItem } = useCart();
   const { toast } = useToast();
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
   const { 
     data: product, 
@@ -120,6 +122,14 @@ const ProductDetails = () => {
       description: `${product.name} foi adicionado ao carrinho.`,
     });
   };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
   
   return (
     <MainLayout>
@@ -134,12 +144,21 @@ const ProductDetails = () => {
         </Button>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-background rounded-lg overflow-hidden border">
-            <img 
-              src={product.image || '/placeholder.svg'} 
-              alt={product.name}
-              className="w-full h-auto object-contain aspect-square"
-            />
+          <div className="bg-background rounded-lg overflow-hidden border flex items-center justify-center">
+            {!imageError ? (
+              <img 
+                src={product.image || '/placeholder.svg'} 
+                alt={product.name}
+                className="w-full h-auto object-contain aspect-square"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+                loading="eager" // Carrega imediata pois é a imagem principal
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center aspect-square bg-muted/20">
+                <ImageIcon className="h-16 w-16 text-muted-foreground" />
+              </div>
+            )}
           </div>
           
           <div className="space-y-6">

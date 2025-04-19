@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { StockStatusIndicator } from './StockStatusIndicator';
 import { getProductImageUrl } from '@/integrations/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ProductQRCode } from './ProductQRCode';
 
 interface ProductCardProps {
@@ -29,15 +29,42 @@ interface ProductCardProps {
 export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
   const [imageUrl, setImageUrl] = useState<string>("/placeholder.svg");
   const [imageError, setImageError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Get the image URL from the product
-    if (product.image) {
-      const url = getProductImageUrl(product.image);
-      setImageUrl(url);
-      console.log(`Inventory product ${product.name}, image path: ${product.image}, resolved URL: ${url}`);
+    // Create a new IntersectionObserver
+    const observer = new IntersectionObserver((entries) => {
+      // If the image container is intersecting with the viewport
+      if (entries[0].isIntersecting && product.image && !isLoaded) {
+        // Get the image URL from the product
+        const url = getProductImageUrl(product.image);
+        setImageUrl(url);
+        setIsLoaded(true);
+        console.log(`Loading image for inventory product ${product.name}, image path: ${product.image}`);
+        
+        // Stop observing once we've loaded the image
+        if (imgRef.current) {
+          observer.unobserve(imgRef.current);
+        }
+      }
+    }, {
+      rootMargin: '200px', // Load images when they're within 200px of viewport
+      threshold: 0.1
+    });
+    
+    // Start observing the image element container
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
     }
-  }, [product.image]);
+    
+    // Cleanup function to unobserve when component unmounts
+    return () => {
+      if (imgRef.current) {
+        observer.unobserve(imgRef.current);
+      }
+    };
+  }, [product.image, isLoaded]);
 
   const handleImageError = () => {
     console.error(`Failed to load image for inventory product: ${product.name}, URL: ${imageUrl}`);
@@ -59,20 +86,21 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
   };
 
   const profitInfo = getProfitInfo();
-  const hasImage = !imageError && imageUrl !== "/placeholder.svg";
+  const hasImage = !imageError && imageUrl !== "/placeholder.svg" && isLoaded;
 
   return (
     <Card key={product.id} className="mb-4">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           {/* Imagem do produto */}
-          <div className="h-16 w-16 rounded-md overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
+          <div ref={imgRef} className="h-16 w-16 rounded-md overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
             {hasImage ? (
               <img 
                 src={imageUrl} 
                 alt={product.name} 
                 className="h-full w-full object-cover"
                 onError={handleImageError}
+                loading="lazy"
               />
             ) : (
               <Image className="h-6 w-6 text-muted-foreground" />

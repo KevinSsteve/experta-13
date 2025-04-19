@@ -1,5 +1,5 @@
 
-import React, { memo } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { Product } from '@/contexts/CartContext';
 import { ProductCard } from './ProductCard';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,10 @@ export const ProductGrid = memo(({
   error, 
   onAddToCart 
 }: ProductGridProps) => {
+  // Ref para o container da grade para medições
+  const gridRef = useRef<HTMLDivElement>(null);
+  
+  // Renderização condicional para estados de carregamento, erro e vazio
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -63,12 +67,16 @@ export const ProductGrid = memo(({
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-      {visibleProducts.map(product => (
+    <div 
+      ref={gridRef} 
+      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2"
+    >
+      {visibleProducts.map((product, index) => (
         <ProductCard 
           key={product.id} 
           product={product} 
-          onAddToCart={onAddToCart} 
+          onAddToCart={onAddToCart}
+          priority={index < 6} // Prioriza o carregamento das primeiras 6 imagens
         />
       ))}
     </div>

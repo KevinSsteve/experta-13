@@ -1,5 +1,5 @@
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Product } from '@/contexts/CartContext';
 import { formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -10,24 +10,45 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
+  priority?: boolean;
 }
 
-const ProductCard = memo(({ product, onAddToCart }: ProductCardProps) => {
+const ProductCard = memo(({ product, onAddToCart, priority = false }: ProductCardProps) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Função para lidar com o carregamento da imagem
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  // Função para lidar com erros de imagem
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   return (
     <Card className="overflow-hidden group h-full flex flex-col">
       <AspectRatio ratio={1} className="bg-muted relative overflow-hidden">
-        {product.image ? (
+        {!imageError && product.image ? (
           <img
             src={product.image}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-            loading="lazy"
+            className={`h-full w-full object-cover transition-transform group-hover:scale-105 ${
+              !imageLoaded ? 'opacity-0' : 'opacity-100'
+            }`}
+            loading={priority ? "eager" : "lazy"}
             decoding="async"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center">
             <ImageIcon className="h-10 w-10 text-muted-foreground" />
           </div>
+        )}
+        {!imageLoaded && !imageError && product.image && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
         {product.stock === 0 && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">

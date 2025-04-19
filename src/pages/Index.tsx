@@ -43,7 +43,7 @@ const Index = () => {
     },
     enabled: !!user,
     refetchOnWindowFocus: false, // Evita recarregar os dados ao voltar para a janela
-    keepPreviousData: true, // Mantém os dados anteriores enquanto carrega novos
+    placeholderData: (previousData) => previousData, // Substitui keepPreviousData que foi removido na versão 5
   });
 
   // Use the product search hook

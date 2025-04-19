@@ -5,19 +5,26 @@ import { Product } from '@/contexts/CartContext';
 
 const PRODUCTS_PER_PAGE = 12;
 
-export function useInfiniteProducts(userId: string | undefined) {
+export function useInfiniteProducts(userId: string | undefined, searchQuery: string = '') {
   return useInfiniteQuery({
-    queryKey: ['infiniteProducts', userId],
+    queryKey: ['infiniteProducts', userId, searchQuery],
     queryFn: async ({ pageParam = 0 }) => {
       if (!userId) return { products: [], nextCursor: null };
 
       const from = pageParam * PRODUCTS_PER_PAGE;
       const to = from + PRODUCTS_PER_PAGE - 1;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId);
+
+      // Se houver uma busca, aplicar o filtro
+      if (searchQuery) {
+        query = query.or(`name.ilike.%${searchQuery}%,code.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error } = await query
         .order('name')
         .range(from, to);
 

@@ -2,7 +2,6 @@
 import { useCart } from '@/contexts/CartContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { Product } from '@/contexts/CartContext';
 import { SearchBar } from '@/components/products/SearchBar';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { BackToTopButton } from '@/components/ui/back-to-top';
@@ -15,6 +14,7 @@ const Index = () => {
   const { addItem } = useCart();
   const { user } = useAuth();
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const {
     data,
@@ -23,15 +23,13 @@ const Index = () => {
     isFetchingNextPage,
     isLoading,
     error
-  } = useInfiniteProducts(user?.id);
+  } = useInfiniteProducts(user?.id, searchQuery);
 
   const allProducts = data?.pages.flatMap(page => page.products) ?? [];
 
   const { 
-    searchQuery, 
-    filteredProducts, 
     visibleProducts, 
-    showBackToTop, 
+    showBackToTop,
     handleSearch,
     searchMultipleProducts
   } = useProductSearch(allProducts);
@@ -59,6 +57,11 @@ const Index = () => {
     return () => observer.disconnect();
   }, [onIntersect]);
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    handleSearch(e);
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
@@ -67,7 +70,7 @@ const Index = () => {
           <section className="mt-4 mb-6">
             <SearchBar 
               value={searchQuery} 
-              onChange={handleSearch}
+              onChange={handleSearchChange}
               onMultiSearch={searchMultipleProducts}
             />
           </section>
@@ -75,7 +78,7 @@ const Index = () => {
           {/* Products grid */}
           <section>
             <ProductGrid
-              products={filteredProducts}
+              products={allProducts}
               visibleProducts={visibleProducts}
               isLoading={isLoading}
               error={error as Error}

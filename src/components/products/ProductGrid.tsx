@@ -1,8 +1,7 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Product } from '@/contexts/CartContext';
 import { ProductCard } from './ProductCard';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 interface ProductGridProps {
@@ -13,14 +12,13 @@ interface ProductGridProps {
   onAddToCart: (product: Product) => void;
 }
 
-export const ProductGrid = ({ 
+export const ProductGrid = memo(({ 
   products, 
   visibleProducts, 
   isLoading, 
   error, 
   onAddToCart 
 }: ProductGridProps) => {
-  // Loading skeleton
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -31,7 +29,6 @@ export const ProductGrid = ({
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
@@ -43,7 +40,6 @@ export const ProductGrid = ({
     );
   }
 
-  // Empty state
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
@@ -51,16 +47,10 @@ export const ProductGrid = ({
         <p className="text-muted-foreground mb-6">
           Você ainda não tem produtos em seu estoque.
         </p>
-        <Link to="/products">
-          <Button>
-            Adicionar produtos ao estoque
-          </Button>
-        </Link>
       </div>
     );
   }
 
-  // No search results
   if (products.length > 0 && visibleProducts.length === 0) {
     return (
       <div className="text-center py-12">
@@ -72,7 +62,6 @@ export const ProductGrid = ({
     );
   }
 
-  // Product grid
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
       {visibleProducts.map(product => (
@@ -84,4 +73,6 @@ export const ProductGrid = ({
       ))}
     </div>
   );
-};
+});
+
+ProductGrid.displayName = 'ProductGrid';

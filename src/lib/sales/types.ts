@@ -1,4 +1,3 @@
-
 import { CartItem } from "@/contexts/CartContext";
 
 // Interface para informações do cliente
@@ -68,4 +67,17 @@ export interface SalesKPIs {
   revenueChange: number;
   salesChange: number;
   ticketChange: number;
+}
+
+// Interface para notas de crédito
+export interface CreditNote {
+  id: string;
+  originalSaleId: string;
+  date: string;
+  reason: string;
+  total: number;
+  items: CartItem[];
+  user_id?: string;
+  customer: string | CustomerInfo;
+  status: 'pending' | 'approved' | 'rejected';
 }

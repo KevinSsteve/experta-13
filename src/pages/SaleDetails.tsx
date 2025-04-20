@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { CustomerInfo } from '@/lib/sales/types';
 import { ExtendedProfile } from '@/types/profile';
 import { supabase } from '@/integrations/supabase/client';
+import { CreateCreditNoteDialog } from '@/components/credit-notes/CreateCreditNoteDialog';
 
 const SaleDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -135,7 +136,37 @@ const SaleDetails = () => {
       setIsSharing(false);
     }
   };
-  
+
+  const handleCreateCreditNote = async (data: { reason: string; observations?: string }) => {
+    if (!sale || !user?.id) return;
+
+    try {
+      const creditNote = {
+        id: crypto.randomUUID(),
+        originalSaleId: sale.id,
+        date: new Date().toISOString(),
+        reason: data.reason,
+        observations: data.observations,
+        total: sale.total,
+        items: sale.items,
+        user_id: user.id,
+        customer: sale.customer,
+        status: 'pending'
+      };
+
+      const { error } = await supabase
+        .from('credit_notes')
+        .insert(creditNote);
+
+      if (error) throw error;
+
+      toast.success('Nota de crédito criada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao criar nota de crédito:', error);
+      toast.error('Erro ao criar nota de crédito');
+    }
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -351,6 +382,11 @@ const SaleDetails = () => {
             </CardContent>
             
             <CardFooter className="flex flex-wrap gap-2">
+              <CreateCreditNoteDialog 
+                sale={sale} 
+                onCreateCreditNote={handleCreateCreditNote}
+              />
+              
               <Button 
                 variant="outline" 
                 onClick={handlePrint}

@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Sale } from '@/lib/sales';
@@ -811,4 +810,3 @@ export const downloadThermalReceipt = (sale: Sale, config?: ExtendedProfile): vo
     URL.revokeObjectURL(url);
   }, 100);
 };
-

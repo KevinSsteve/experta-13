@@ -16,7 +16,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const { theme } = useTheme();
-
+  
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -29,7 +29,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="relative h-full">
+        <div className="relative h-full pt-16"> {/* Adicionado pt-16 para compensar o header */}
           {isMobile && (
             <button 
               onClick={toggleSidebar} 
@@ -54,7 +54,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="flex flex-col flex-1 overflow-x-hidden">
         <TopBar toggleSidebar={toggleSidebar} />
         
-        <main className="flex-1 p-3 md:p-4 lg:p-6 overflow-y-auto overflow-x-hidden pb-20 lg:pb-6">
+        <main className="flex-1 p-3 md:p-4 lg:p-6 overflow-y-auto overflow-x-hidden pb-20 lg:pb-6 pt-16"> {/* Adicionado pt-16 */}
           {children}
         </main>
         

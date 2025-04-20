@@ -1,4 +1,3 @@
-
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
@@ -20,10 +19,10 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
   const { theme, toggleTheme } = useTheme();
   const { openCart, getTotalItems } = useCart();
   const totalItems = getTotalItems();
-  const [alertCount] = useState(1); // Simulando alertas de conformidade
+  const [alertCount] = useState(1);
 
   return (
-    <header className="sticky top-0 z-10 w-full bg-background/80 backdrop-blur border-b border-border overflow-x-hidden">
+    <header className="fixed top-0 z-50 w-full bg-background/95 backdrop-blur border-b border-border overflow-x-hidden">
       <div className="px-2 sm:px-4 h-16 flex items-center justify-between">
         <div className="flex items-center">
           <Button 

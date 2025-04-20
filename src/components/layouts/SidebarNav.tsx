@@ -1,116 +1,111 @@
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
+
+import { NavLink } from "react-router-dom";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { cn } from "@/lib/utils";
+
 import {
-  BarChart4,
+  LayoutDashboard,
   ShoppingCart,
   Package,
-  Store,
-  Settings,
-  LogOut,
-  Home,
-  User,
+  BarChart3,
+  ClipboardList,
   Receipt,
-  Scan,
+  Settings,
+  ScanLine,
+  FileText
 } from "lucide-react";
 
 const navItems = [
   {
-    title: "Início",
-    href: "/",
-    icon: Home,
-  },
-  {
     title: "Dashboard",
     href: "/dashboard",
-    icon: BarChart4,
+    icon: <LayoutDashboard className="h-5 w-5" />,
+    variant: "ghost" as const,
+  },
+  {
+    title: "Vender",
+    href: "/checkout",
+    icon: <ShoppingCart className="h-5 w-5" />,
+    variant: "ghost" as const,
   },
   {
     title: "Produtos",
     href: "/products",
-    icon: Package,
-  },
-  {
-    title: "Scanner QR",
-    href: "/scan",
-    icon: Scan,
-  },
-  {
-    title: "Checkout",
-    href: "/checkout",
-    icon: ShoppingCart,
+    icon: <Package className="h-5 w-5" />,
+    variant: "ghost" as const,
   },
   {
     title: "Inventário",
     href: "/inventory",
-    icon: Store,
+    icon: <BarChart3 className="h-5 w-5" />,
+    variant: "ghost" as const,
   },
   {
     title: "Histórico de Vendas",
     href: "/sales-history",
-    icon: Receipt,
+    icon: <Receipt className="h-5 w-5" />,
+    variant: "ghost" as const,
   },
   {
-    title: "Perfil",
-    href: "/profile",
-    icon: User,
+    title: "Notas de Crédito",
+    href: "/credit-notes",
+    icon: <FileText className="h-5 w-5" />,
+    variant: "ghost" as const,
+  },
+  {
+    title: "Scanner",
+    href: "/scan",
+    icon: <ScanLine className="h-5 w-5" />,
+    variant: "ghost" as const,
   },
   {
     title: "Configurações",
     href: "/settings",
-    icon: Settings,
+    icon: <Settings className="h-5 w-5" />,
+    variant: "ghost" as const,
   },
 ];
 
 export function SidebarNav() {
-  const location = useLocation();
-  const { signOut } = useAuth();
-  const { theme } = useTheme();
-
   return (
-    <div className="group flex h-screen w-full flex-col gap-4 bg-background p-2">
-      <div className="flex flex-1 flex-col gap-2">
-        <div className="flex h-14 items-center justify-center rounded-md bg-primary/10 px-4">
-          <img 
-            src="/logo.png" 
-            alt="Contascom" 
-            className={`h-8 ${theme === 'dark' ? 'invert' : ''} transition-all`}
-          />
+    <div className="h-screen border-r pt-16">
+      <div className="h-full flex-col flex">
+        <div className="flex-1">
+          <ScrollArea className="h-full">
+            <div className="py-2">
+              {navItems.map((item, index) => (
+                <NavLink
+                  key={index}
+                  to={item.href}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-2 px-4 py-2",
+                      isActive ? "bg-muted" : "hover:bg-muted/50"
+                    )
+                  }
+                >
+                  {({ isActive }) => (
+                    <Button
+                      variant={item.variant}
+                      size="sm"
+                      className={cn(
+                        "w-full justify-start",
+                        isActive
+                          ? "bg-secondary font-medium text-secondary-foreground hover:bg-secondary/80"
+                          : ""
+                      )}
+                    >
+                      {item.icon}
+                      {item.title}
+                    </Button>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
-        
-        <nav className="grid gap-1 px-2">
-          {navItems.map((item, index) => {
-            const isActive = location.pathname === item.href;
-            
-            return (
-              <Link
-                key={index}
-                to={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="text-sm font-medium">{item.title}</span>
-              </Link>
-            );
-          })}
-        </nav>
       </div>
-      
-      <Button
-        variant="outline"
-        className="flex w-full items-center justify-start gap-3"
-        onClick={signOut}
-      >
-        <LogOut className="h-5 w-5" />
-        <span className="text-sm font-medium">Sair</span>
-      </Button>
     </div>
   );
 }

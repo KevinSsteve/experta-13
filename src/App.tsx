@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import SalesHistory from "./pages/SalesHistory";
 import SaleDetails from "./pages/SaleDetails";
+import CreditNotes from "./pages/CreditNotes";
 import ScanProducts from "./pages/ScanProducts";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +48,7 @@ const App = () => (
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/sales-history" element={<SalesHistory />} />
                   <Route path="/sales-history/:id" element={<SaleDetails />} />
+                  <Route path="/credit-notes" element={<CreditNotes />} />
                   <Route path="/scan" element={<ScanProducts />} />
                 </Route>
                 

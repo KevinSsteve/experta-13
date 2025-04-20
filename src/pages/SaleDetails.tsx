@@ -24,6 +24,7 @@ import { CustomerInfo } from '@/lib/sales/types';
 import { ExtendedProfile } from '@/types/profile';
 import { supabase } from '@/integrations/supabase/client';
 import { CreateCreditNoteDialog } from '@/components/credit-notes/CreateCreditNoteDialog';
+import { SaleCreditNotesList } from '@/components/credit-notes/SaleCreditNotesList';
 import { Json } from '@/integrations/supabase/types';
 
 const SaleDetails = () => {
@@ -385,6 +386,10 @@ const SaleDetails = () => {
                     </p>
                   )}
                 </div>
+                
+                <Separator />
+                
+                <SaleCreditNotesList saleId={sale.id} />
               </div>
             </CardContent>
             

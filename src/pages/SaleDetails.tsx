@@ -142,15 +142,13 @@ const SaleDetails = () => {
 
     try {
       const creditNote = {
-        id: crypto.randomUUID(),
-        originalSaleId: sale.id,
-        date: new Date().toISOString(),
+        original_sale_id: sale.id,
         reason: data.reason,
         observations: data.observations,
         total: sale.total,
         items: sale.items,
         user_id: user.id,
-        customer: sale.customer,
+        customer: typeof sale.customer === 'string' ? sale.customer : JSON.stringify(sale.customer),
         status: 'pending'
       };
 

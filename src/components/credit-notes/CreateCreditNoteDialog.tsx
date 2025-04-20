@@ -58,3 +58,4 @@ export function CreateCreditNoteDialog({ sale, onCreateCreditNote }: CreateCredi
     </Dialog>
   );
 }
+

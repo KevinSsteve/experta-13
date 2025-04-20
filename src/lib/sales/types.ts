@@ -72,12 +72,13 @@ export interface SalesKPIs {
 // Interface para notas de crédito
 export interface CreditNote {
   id: string;
-  originalSaleId: string;
+  original_sale_id: string;
   date: string;
   reason: string;
+  observations?: string;
   total: number;
-  items: CartItem[];
-  user_id?: string;
-  customer: string | CustomerInfo;
+  items: any;
+  user_id: string;
+  customer: any;
   status: 'pending' | 'approved' | 'rejected';
 }

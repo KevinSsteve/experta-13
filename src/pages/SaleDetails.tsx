@@ -24,6 +24,7 @@ import { CustomerInfo } from '@/lib/sales/types';
 import { ExtendedProfile } from '@/types/profile';
 import { supabase } from '@/integrations/supabase/client';
 import { CreateCreditNoteDialog } from '@/components/credit-notes/CreateCreditNoteDialog';
+import { Json } from '@/integrations/supabase/types';
 
 const SaleDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -141,15 +142,23 @@ const SaleDetails = () => {
     if (!sale || !user?.id) return;
 
     try {
+      const itemsJson: Json = typeof sale.items === 'number' 
+        ? sale.items as unknown as Json
+        : JSON.parse(JSON.stringify(sale.items)) as Json;
+
+      const customerJson: Json = typeof sale.customer === 'string' 
+        ? sale.customer as unknown as Json 
+        : JSON.parse(JSON.stringify(sale.customer)) as Json;
+
       const creditNote = {
         original_sale_id: sale.id,
         reason: data.reason,
-        observations: data.observations,
+        observations: data.observations || null,
         total: sale.total,
-        items: sale.items,
+        items: itemsJson,
         user_id: user.id,
-        customer: typeof sale.customer === 'string' ? sale.customer : JSON.stringify(sale.customer),
-        status: 'pending'
+        customer: customerJson,
+        status: 'pending' as const
       };
 
       const { error } = await supabase

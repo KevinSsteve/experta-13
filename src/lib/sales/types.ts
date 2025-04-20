@@ -1,4 +1,6 @@
+
 import { CartItem } from "@/contexts/CartContext";
+import { Json } from "@/integrations/supabase/types";
 
 // Interface para informações do cliente
 export interface CustomerInfo {
@@ -75,10 +77,10 @@ export interface CreditNote {
   original_sale_id: string;
   date: string;
   reason: string;
-  observations?: string;
+  observations?: string | null;
   total: number;
-  items: any;
+  items: Json;
   user_id: string;
-  customer: any;
+  customer: Json | null;
   status: 'pending' | 'approved' | 'rejected';
 }

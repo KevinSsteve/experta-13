@@ -1,8 +1,9 @@
 
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef, useState, useCallback } from 'react';
 import { Product } from '@/contexts/CartContext';
 import { ProductCard } from './ProductCard';
 import { Button } from '@/components/ui/button';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface ProductGridProps {
   products: Product[];
@@ -19,10 +20,40 @@ export const ProductGrid = memo(({
   error, 
   onAddToCart 
 }: ProductGridProps) => {
-  // Ref para o container da grade para medições
-  const gridRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(2); // Default para mobile
   
-  // Renderização condicional para estados de carregamento, erro e vazio
+  // Função para verificar e atualizar o número de colunas com base na largura da tela
+  const updateColumnCount = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const containerWidth = containerRef.current.clientWidth;
+    let newColumnCount = 2; // Default para telas pequenas
+    
+    if (containerWidth >= 1280) {
+      newColumnCount = 6; // lg: grid-cols-6
+    } else if (containerWidth >= 768) {
+      newColumnCount = 4; // md: grid-cols-4
+    } else if (containerWidth >= 640) {
+      newColumnCount = 3; // sm: grid-cols-3
+    }
+    
+    setColumns(newColumnCount);
+  }, []);
+  
+  // Atualizar colunas quando o componente montar e quando a janela for redimensionada
+  useEffect(() => {
+    updateColumnCount();
+    
+    const handleResize = () => {
+      updateColumnCount();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateColumnCount]);
+  
+  // Fallbacks de estado
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -65,18 +96,22 @@ export const ProductGrid = memo(({
       </div>
     );
   }
-
+  
+  // Calcular as linhas para a virtualização
+  const rows = Math.ceil(visibleProducts.length / columns);
+  
+  // Renderização padrão quando temos produtos para mostrar
   return (
     <div 
-      ref={gridRef} 
-      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2"
+      ref={containerRef} 
+      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 w-full"
     >
       {visibleProducts.map((product, index) => (
         <ProductCard 
           key={product.id} 
           product={product} 
           onAddToCart={onAddToCart}
-          priority={index < 6} // Prioriza o carregamento das primeiras 6 imagens
+          priority={index < 12} // Prioriza o carregamento das primeiras 12 imagens
         />
       ))}
     </div>

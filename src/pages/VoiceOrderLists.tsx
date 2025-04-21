@@ -51,6 +51,18 @@ export default function VoiceOrderLists() {
     setLists(lists.map(l => l.id === id ? { ...l, status: "enviado" } : l));
   };
 
+  // NEW: Edit individual product in a list
+  const editProductInList = (listId: string, itemIndex: number, newValue: string) => {
+    setLists(lists =>
+      lists.map(list => {
+        if (list.id !== listId) return list;
+        const updatedProducts = [...list.products];
+        updatedProducts[itemIndex] = newValue;
+        return { ...list, products: updatedProducts };
+      })
+    );
+  };
+
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto py-8 px-4 space-y-8">
@@ -61,8 +73,10 @@ export default function VoiceOrderLists() {
           onRemove={removeList}
           onClear={clearLists}
           onToCheckout={setToCheckout}
+          onEditItem={editProductInList}
         />
       </div>
     </MainLayout>
   );
 }
+

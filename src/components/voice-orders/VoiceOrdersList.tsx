@@ -1,13 +1,16 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, ShoppingCart } from "lucide-react";
+import { Trash2, ShoppingCart, Edit, Check, X } from "lucide-react";
 import type { OrderList } from "@/pages/VoiceOrderLists";
+import { Input } from "@/components/ui/input";
 
 interface VoiceOrdersListProps {
   lists: OrderList[];
   onRemove: (id: string) => void;
   onClear: () => void;
   onToCheckout: (id: string) => void;
+  onEditItem: (listId: string, itemIndex: number, newValue: string) => void;
 }
 
 export function VoiceOrdersList({
@@ -15,7 +18,13 @@ export function VoiceOrdersList({
   onRemove,
   onClear,
   onToCheckout,
+  onEditItem,
 }: VoiceOrdersListProps) {
+  // Track which item is being edited: { [listId_itemIndex]: true }
+  const [editing, setEditing] = useState<{ [k: string]: boolean }>({});
+  // Track new value for editing
+  const [editValue, setEditValue] = useState<{ [k: string]: string }>({});
+
   if (lists.length === 0) {
     return (
       <div className="text-center text-muted-foreground">
@@ -23,6 +32,8 @@ export function VoiceOrdersList({
       </div>
     );
   }
+
+  const getKey = (listId: string, idx: number) => `${listId}_${idx}`;
 
   return (
     <div className="space-y-4">
@@ -61,9 +72,63 @@ export function VoiceOrdersList({
             </div>
           </div>
           <ul className="list-disc px-4 text-primary">
-            {l.products.map((prod, idx) => (
-              <li key={idx}>{prod}</li>
-            ))}
+            {l.products.map((prod, idx) => {
+              const key = getKey(l.id, idx);
+              const isEditing = editing[key] === true;
+              return (
+                <li key={idx} className="relative flex items-center gap-2 group">
+                  {isEditing ? (
+                    <>
+                      <Input
+                        value={editValue[key] ?? prod}
+                        onChange={e =>
+                          setEditValue(v => ({ ...v, [key]: e.target.value }))
+                        }
+                        className="h-7 px-2 text-sm"
+                        autoFocus
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          onEditItem(l.id, idx, editValue[key] ?? prod);
+                          setEditing(ed => ({ ...ed, [key]: false }));
+                        }}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => setEditing(ed => ({ ...ed, [key]: false }))}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span>{prod}</span>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 opacity-50 group-hover:opacity-100"
+                        onClick={() => {
+                          setEditing(ed => ({ ...ed, [key]: true }));
+                          setEditValue(v => ({ ...v, [key]: prod }));
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}

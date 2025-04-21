@@ -13,7 +13,8 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   const [products, setProducts] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const handleListen = () => {
+  // Esta função, agora, pode aceitar um callback para adicionar itens (append) ou substituir (default)
+  const handleListen = (append: boolean = false) => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
       toast({
         title: "Não suportado!",
@@ -38,11 +39,22 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
         .split(/,| e | mais | também | com |;/gi)
         .map((item) => item.trim())
         .filter((item) => item.length > 1);
-      setProducts(items);
-      toast({
-        title: "Produtos reconhecidos:",
-        description: items.join(", "),
-      });
+
+      if (append) {
+        // Adiciona aos produtos já existentes, evitando duplicados exatos
+        const newItems = items.filter(item => !products.includes(item));
+        setProducts(prev => [...prev, ...newItems]);
+        toast({
+          title: "Mais produtos adicionados:",
+          description: newItems.length > 0 ? newItems.join(", ") : "Nenhum novo item reconhecido.",
+        });
+      } else {
+        setProducts(items);
+        toast({
+          title: "Produtos reconhecidos:",
+          description: items.join(", "),
+        });
+      }
     };
     recognition.onerror = (e) => {
       toast({
@@ -67,7 +79,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
     <div className="flex flex-col gap-2 p-4 border border-muted rounded-lg shadow bg-background">
       <div className="flex gap-2 items-center">
         <Button
-          onClick={handleListen}
+          onClick={() => handleListen(false)}
           variant={isListening ? "secondary" : "outline"}
           size="icon"
           disabled={isListening}
@@ -84,9 +96,22 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
             <List className="h-4 w-4" /><b>Itens a adicionar:</b>
           </div>
           <ul className="list-disc pl-8 text-primary">{products.map((p, i) => <li key={i}>{p}</li>)}</ul>
-          <Button onClick={handleAdd} className="mt-2" size="sm">
-            Salvar lista
-          </Button>
+          <div className="flex gap-2 mt-2">
+            <Button onClick={handleAdd} size="sm">
+              Salvar lista
+            </Button>
+            <Button
+              onClick={() => handleListen(true)}
+              size="sm"
+              variant="ghost"
+              type="button"
+              disabled={isListening}
+              title="Adicionar item"
+            >
+              <Mic className="h-5 w-5 mr-1" />
+              Adicionar item
+            </Button>
+          </div>
         </div>
       )}
     </div>

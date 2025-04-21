@@ -18,7 +18,9 @@ export function VoiceOrdersList({
 }: VoiceOrdersListProps) {
   if (lists.length === 0) {
     return (
-      <div className="text-center text-muted-foreground">Nenhuma lista criada ainda.</div>
+      <div className="text-center text-muted-foreground">
+        Nenhuma lista criada ainda.
+      </div>
     );
   }
 
@@ -30,17 +32,30 @@ export function VoiceOrdersList({
           <Trash2 className="w-4 h-4 mr-1" /> Limpar todas
         </Button>
       </div>
-      {lists.map(l => (
-        <div key={l.id} className="border rounded-lg p-3 flex flex-col gap-2 relative bg-card">
+      {lists.map((l) => (
+        <div
+          key={l.id}
+          className="border rounded-lg p-3 flex flex-col gap-2 relative bg-card"
+        >
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">
               Criada em: {new Date(l.createdAt).toLocaleString()}
             </span>
             <div className="flex gap-2">
-              <Button onClick={() => onToCheckout(l.id)} size="xs" variant={l.status === "enviado" ? "secondary" : "default"} disabled={l.status === "enviado"}>
-                <ShoppingCart className="w-4 h-4 mr-1" /> {l.status === "enviado" ? "Enviado" : "Enviar p/ Checkout"}
+              <Button
+                onClick={() => onToCheckout(l.id)}
+                size="sm"
+                variant={l.status === "enviado" ? "secondary" : "default"}
+                disabled={l.status === "enviado"}
+              >
+                <ShoppingCart className="w-4 h-4 mr-1" />{" "}
+                {l.status === "enviado" ? "Enviado" : "Enviar p/ Checkout"}
               </Button>
-              <Button onClick={() => onRemove(l.id)} size="xs" variant="outline">
+              <Button
+                onClick={() => onRemove(l.id)}
+                size="sm"
+                variant="outline"
+              >
                 <Trash2 className="w-4 h-4" /> Remover
               </Button>
             </div>
@@ -55,3 +70,4 @@ export function VoiceOrdersList({
     </div>
   );
 }
+

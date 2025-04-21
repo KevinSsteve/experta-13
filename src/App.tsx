@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +21,7 @@ import SaleDetails from "./pages/SaleDetails";
 import CreditNotes from "./pages/CreditNotes";
 import ScanProducts from "./pages/ScanProducts";
 import NotFound from "./pages/NotFound";
+import VoiceOrderLists from "./pages/VoiceOrderLists";
 
 const App = () => (
   <QueryProvider>
@@ -50,6 +50,7 @@ const App = () => (
                   <Route path="/sales-history/:id" element={<SaleDetails />} />
                   <Route path="/credit-notes" element={<CreditNotes />} />
                   <Route path="/scan" element={<ScanProducts />} />
+                  <Route path="/listas-voz" element={<VoiceOrderLists />} />
                 </Route>
                 
                 {/* Rota para página não encontrada */}

@@ -1,4 +1,3 @@
-
 import { NavLink } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,8 @@ import {
   Receipt,
   Settings,
   ScanLine,
-  FileText
+  FileText,
+  List
 } from "lucide-react";
 
 const navItems = [
@@ -63,6 +63,12 @@ const navItems = [
     title: "Configurações",
     href: "/settings",
     icon: <Settings className="h-5 w-5" />,
+    variant: "ghost" as const,
+  },
+  {
+    title: "Listas por Voz",
+    href: "/listas-voz",
+    icon: <List className="h-5 w-5" />,
     variant: "ghost" as const,
   },
 ];

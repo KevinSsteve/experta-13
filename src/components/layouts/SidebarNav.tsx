@@ -1,3 +1,4 @@
+
 import { NavLink } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,8 @@ import {
   Settings,
   ScanLine,
   FileText,
-  List
+  List,
+  BadgeDollarSign,
 } from "lucide-react";
 
 const navItems = [
@@ -45,6 +47,12 @@ const navItems = [
     title: "Histórico de Vendas",
     href: "/sales-history",
     icon: <Receipt className="h-5 w-5" />,
+    variant: "ghost" as const,
+  },
+  {
+    title: "Despesas",
+    href: "/expenses",
+    icon: <BadgeDollarSign className="h-5 w-5" />,
     variant: "ghost" as const,
   },
   {

@@ -1,8 +1,14 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, List } from "lucide-react";
+import { Mic, MicOff, List, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface VoiceOrdersCreatorProps {
   onListCreated: (products: string[]) => void;
@@ -89,6 +95,23 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
         <span>
           Pressione <b>microfone</b> e fale a lista de produtos.
         </span>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p>
+                Fale naturalmente os produtos que deseja adicionar à lista. 
+                Ex: "arroz, feijão, óleo de cozinha e açúcar".
+                Depois de salvar, expanda cada item para ver sugestões de produtos correspondentes.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       {products.length > 0 && (
         <div className="flex flex-col gap-1 mt-2">

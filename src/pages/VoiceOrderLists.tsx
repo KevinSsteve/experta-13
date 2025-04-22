@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export interface OrderList {
   id: string;
@@ -195,7 +197,17 @@ export default function VoiceOrderLists() {
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto py-8 px-4 space-y-8">
-        <h1 className="text-2xl font-bold mb-4">Criar Listas de Pedidos por Voz</h1>
+        <h1 className="text-2xl font-bold mb-4">Listas de Compras por Voz</h1>
+        
+        <Alert className="bg-muted/50 border-muted">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Nova funcionalidade!</AlertTitle>
+          <AlertDescription>
+            Agora você pode ver sugestões de produtos do seu inventário para cada item da lista.
+            Basta clicar no ícone ▼ ao lado de cada item para expandir as sugestões e adicioná-las diretamente ao carrinho.
+          </AlertDescription>
+        </Alert>
+        
         <VoiceOrdersCreator onListCreated={addList} />
         {loading ? (
           <div className="text-center text-muted-foreground">Carregando listas...</div>

@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProductSuggestionsProps {
   productName: string;
@@ -35,6 +36,7 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
   const [noResults, setNoResults] = useState(false);
   const { addItem } = useCart();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -133,11 +135,11 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
           {suggestions.map((product) => (
             <div 
               key={product.id} 
-              className="flex justify-between items-center p-2 border rounded-md hover:bg-accent/20"
+              className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 border rounded-md hover:bg-accent/20"
             >
-              <div className="flex-1">
+              <div className="flex-1 mb-2 sm:mb-0">
                 <div className="font-medium">{product.name}</div>
-                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className="text-xs">{product.category}</Badge>
                   {product.stock > 0 ? (
                     <span className="text-xs">Em estoque: {product.stock}</span>
@@ -147,12 +149,13 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
                 </div>
               </div>
               <Button 
-                size="sm" 
+                size={isMobile ? "sm" : "default"}
                 onClick={() => handleAddToCart(product)}
                 disabled={product.stock <= 0}
-                className="ml-2"
+                className="w-full sm:w-auto"
               >
-                <ShoppingCart className="h-4 w-4 mr-1" /> Adicionar
+                <ShoppingCart className="h-4 w-4 mr-1" /> 
+                {isMobile ? "+" : "Adicionar"}
               </Button>
             </div>
           ))}

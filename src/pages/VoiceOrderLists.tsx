@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface OrderList {
   id: string;
@@ -21,6 +22,7 @@ export default function VoiceOrderLists() {
   const [lists, setLists] = useState<OrderList[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Busca listas no Supabase
   useEffect(() => {
@@ -196,8 +198,8 @@ export default function VoiceOrderLists() {
 
   return (
     <MainLayout>
-      <div className="max-w-2xl mx-auto py-8 px-4 space-y-8">
-        <h1 className="text-2xl font-bold mb-4">Listas de Compras por Voz</h1>
+      <div className={`mx-auto py-6 px-3 ${isMobile ? 'w-full' : 'max-w-2xl'} space-y-6`}>
+        <h1 className="text-xl sm:text-2xl font-bold mb-4">Listas de Compras por Voz</h1>
         
         <Alert className="bg-muted/50 border-muted">
           <AlertCircle className="h-4 w-4" />

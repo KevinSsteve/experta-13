@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface VoiceOrdersCreatorProps {
   onListCreated: (products: string[]) => void;
@@ -18,6 +19,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   const [isListening, setIsListening] = useState(false);
   const [products, setProducts] = useState<string[]>([]);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Esta função, agora, pode aceitar um callback para adicionar itens (append) ou substituir (default)
   const handleListen = (append: boolean = false) => {
@@ -82,8 +84,8 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2 p-4 border border-muted rounded-lg shadow bg-background">
-      <div className="flex gap-2 items-center">
+    <div className="flex flex-col gap-2 p-3 sm:p-4 border border-muted rounded-lg shadow bg-background">
+      <div className="flex flex-wrap gap-2 items-center">
         <Button
           onClick={() => handleListen(false)}
           variant={isListening ? "secondary" : "outline"}
@@ -92,7 +94,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
         >
           {isListening ? <MicOff className="h-5 w-5 text-red-500" /> : <Mic className="h-5 w-5" />}
         </Button>
-        <span>
+        <span className="text-sm sm:text-base flex-1">
           Pressione <b>microfone</b> e fale a lista de produtos.
         </span>
         
@@ -118,9 +120,11 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
           <div className="flex items-center gap-1">
             <List className="h-4 w-4" /><b>Itens a adicionar:</b>
           </div>
-          <ul className="list-disc pl-8 text-primary">{products.map((p, i) => <li key={i}>{p}</li>)}</ul>
-          <div className="flex gap-2 mt-2">
-            <Button onClick={handleAdd} size="sm">
+          <ul className="list-disc pl-8 text-primary max-h-48 overflow-y-auto">
+            {products.map((p, i) => <li key={i} className="break-words">{p}</li>)}
+          </ul>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Button onClick={handleAdd} size="sm" className={isMobile ? "w-full" : ""}>
               Salvar lista
             </Button>
             <Button
@@ -130,6 +134,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
               type="button"
               disabled={isListening}
               title="Adicionar item"
+              className={isMobile ? "w-full" : ""}
             >
               <Mic className="h-5 w-5 mr-1" />
               Adicionar item

@@ -6,6 +6,7 @@ import type { OrderList } from "@/pages/VoiceOrderLists";
 import { Input } from "@/components/ui/input";
 import { ProductSuggestions } from "./ProductSuggestions";
 import { useAuth } from "@/contexts/AuthContext";
+import { ResponsiveWrapper } from "@/components/ui/responsive-wrapper";
 
 interface VoiceOrdersListProps {
   lists: OrderList[];
@@ -46,7 +47,7 @@ export function VoiceOrdersList({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 sm:mb-2">
         <h2 className="text-lg font-semibold">Minhas listas salvas</h2>
         <Button onClick={onClear} size="sm" variant="destructive">
           <Trash2 className="w-4 h-4 mr-1" /> Limpar todas
@@ -57,26 +58,33 @@ export function VoiceOrdersList({
           key={l.id}
           className="border rounded-lg p-3 flex flex-col gap-2 relative bg-card"
         >
-          <div className="flex justify-between">
+          <div className="flex flex-col sm:flex-row justify-between gap-2">
             <span className="text-sm text-muted-foreground">
               Criada em: {new Date(l.createdAt).toLocaleString()}
             </span>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => onToCheckout(l.id)}
-                size="sm"
-                variant={l.status === "enviado" ? "secondary" : "default"}
-                disabled={l.status === "enviado"}
+            <div className="flex flex-wrap gap-2">
+              <ResponsiveWrapper
+                mobileClassName="w-full"
+                desktopClassName="w-auto"
               >
-                <ShoppingCart className="w-4 h-4 mr-1" />{" "}
-                {l.status === "enviado" ? "Enviado" : "Enviar p/ Checkout"}
-              </Button>
+                <Button
+                  onClick={() => onToCheckout(l.id)}
+                  size="sm"
+                  variant={l.status === "enviado" ? "secondary" : "default"}
+                  disabled={l.status === "enviado"}
+                  className="w-full sm:w-auto"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-1" />{" "}
+                  {l.status === "enviado" ? "Enviado" : "Enviar p/ Checkout"}
+                </Button>
+              </ResponsiveWrapper>
               <Button
                 onClick={() => onRemove(l.id)}
                 size="sm"
                 variant="outline"
+                className="w-full sm:w-auto"
               >
-                <Trash2 className="w-4 h-4" /> Remover
+                <Trash2 className="w-4 h-4 mr-1" /> Remover
               </Button>
             </div>
           </div>
@@ -88,7 +96,7 @@ export function VoiceOrdersList({
               
               return (
                 <li key={idx} className="relative group">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {isEditing ? (
                       <>
                         <Input
@@ -96,35 +104,37 @@ export function VoiceOrdersList({
                           onChange={e =>
                             setEditValue(v => ({ ...v, [key]: e.target.value }))
                           }
-                          className="h-7 px-2 text-sm"
+                          className="h-7 px-2 text-sm flex-1"
                           autoFocus
                         />
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="secondary"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            onEditItem(l.id, idx, editValue[key] ?? prod);
-                            setEditing(ed => ({ ...ed, [key]: false }));
-                          }}
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => setEditing(ed => ({ ...ed, [key]: false }))}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="secondary"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              onEditItem(l.id, idx, editValue[key] ?? prod);
+                              setEditing(ed => ({ ...ed, [key]: false }));
+                            }}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => setEditing(ed => ({ ...ed, [key]: false }))}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </>
                     ) : (
                       <>
-                        <span>{prod}</span>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="break-words flex-1">{prod}</span>
+                        <div className="flex flex-wrap gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                           <Button
                             type="button"
                             size="icon"
@@ -134,6 +144,7 @@ export function VoiceOrdersList({
                               setEditing(ed => ({ ...ed, [key]: true }));
                               setEditValue(v => ({ ...v, [key]: prod }));
                             }}
+                            aria-label="Editar item"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -144,6 +155,7 @@ export function VoiceOrdersList({
                             className="h-7 w-7"
                             onClick={() => toggleExpanded(key)}
                             title={isExpanded ? "Esconder sugestões" : "Mostrar sugestões"}
+                            aria-label={isExpanded ? "Esconder sugestões" : "Mostrar sugestões"}
                           >
                             {isExpanded ? (
                               <ChevronUp className="w-4 h-4" />
@@ -158,7 +170,7 @@ export function VoiceOrdersList({
                   
                   {/* Sugestões de produtos */}
                   {!isEditing && isExpanded && (
-                    <div className="mt-1 ml-5">
+                    <div className="mt-1 ml-2 sm:ml-5">
                       <ProductSuggestions 
                         productName={prod} 
                         userId={user?.id}

@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { parseVoiceInput } from "@/utils/voiceUtils";
 
 export interface OrderList {
   id: string;
@@ -59,16 +60,30 @@ export default function VoiceOrderLists() {
 
   const addList = async (products: string[]) => {
     if (!user) return;
+    
+    const processedProducts = products.map(product => {
+      try {
+        if (typeof product === 'object') {
+          return JSON.stringify(product);
+        }
+        return product;
+      } catch (e) {
+        return product;
+      }
+    });
+    
     const newList = {
-      products,
+      products: processedProducts,
       status: "aberto",
       user_id: user.id,
     };
+    
     const { data, error } = await supabase
       .from("voice_order_lists")
       .insert([newList])
       .select()
       .single();
+      
     if (error) {
       toast({
         title: "Erro",
@@ -162,13 +177,34 @@ export default function VoiceOrderLists() {
     const list = lists.find((l) => l.id === listId);
     if (!list) return;
     const updatedProducts = [...list.products];
-    updatedProducts[itemIndex] = newValue;
+    
+    let currentItem = updatedProducts[itemIndex];
+    try {
+      if (typeof currentItem === 'string' && (currentItem.startsWith('{') || currentItem.startsWith('['))) {
+        const parsedItem = JSON.parse(currentItem);
+        if (parsedItem && typeof parsedItem === 'object' && parsedItem.name) {
+          const updatedItem = {
+            ...parsedItem,
+            name: newValue
+          };
+          updatedProducts[itemIndex] = JSON.stringify(updatedItem);
+        } else {
+          updatedProducts[itemIndex] = newValue;
+        }
+      } else {
+        updatedProducts[itemIndex] = newValue;
+      }
+    } catch (e) {
+      updatedProducts[itemIndex] = newValue;
+    }
+    
     const { data, error } = await supabase
       .from("voice_order_lists")
       .update({ products: updatedProducts })
       .eq("id", listId)
       .select()
       .single();
+      
     if (error) {
       toast({
         title: "Erro",

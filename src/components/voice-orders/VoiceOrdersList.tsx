@@ -18,6 +18,7 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
+import { parseVoiceInput } from "@/utils/voiceUtils";
 
 interface VoiceOrdersListProps {
   lists: OrderList[];
@@ -49,6 +50,23 @@ export function VoiceOrdersList({
   // Toggle the expanded state of an item
   const toggleExpanded = (key: string) => {
     setExpandedItems(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Function to format product item display
+  const formatProductItem = (item: string): string => {
+    try {
+      // Check if the item is a JSON string
+      if (typeof item === 'string' && (item.startsWith('{') || item.startsWith('['))) {
+        const parsedItem = JSON.parse(item);
+        if (parsedItem && typeof parsedItem === 'object' && parsedItem.name) {
+          return parsedItem.name;
+        }
+      }
+      return item;
+    } catch (e) {
+      // If parsing fails, return the original item
+      return item;
+    }
   };
 
   if (lists.length === 0) {
@@ -138,6 +156,7 @@ export function VoiceOrdersList({
               const key = getKey(l.id, idx);
               const isEditing = editing[key] === true;
               const isExpanded = expandedItems[key] === true;
+              const formattedProduct = formatProductItem(prod);
               
               return (
                 <li key={idx} className="relative group">
@@ -145,7 +164,7 @@ export function VoiceOrdersList({
                     {isEditing ? (
                       <>
                         <Input
-                          value={editValue[key] ?? prod}
+                          value={editValue[key] ?? formattedProduct}
                           onChange={e =>
                             setEditValue(v => ({ ...v, [key]: e.target.value }))
                           }
@@ -159,7 +178,7 @@ export function VoiceOrdersList({
                             variant="secondary"
                             className="h-7 w-7"
                             onClick={() => {
-                              onEditItem(l.id, idx, editValue[key] ?? prod);
+                              onEditItem(l.id, idx, editValue[key] ?? formattedProduct);
                               setEditing(ed => ({ ...ed, [key]: false }));
                             }}
                           >
@@ -178,7 +197,7 @@ export function VoiceOrdersList({
                       </>
                     ) : (
                       <>
-                        <span className="break-words flex-1">{prod}</span>
+                        <span className="break-words flex-1">{formattedProduct}</span>
                         <div className="flex flex-wrap gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                           <Button
                             type="button"
@@ -187,7 +206,7 @@ export function VoiceOrdersList({
                             className="h-7 w-7"
                             onClick={() => {
                               setEditing(ed => ({ ...ed, [key]: true }));
-                              setEditValue(v => ({ ...v, [key]: prod }));
+                              setEditValue(v => ({ ...v, [key]: formattedProduct }));
                             }}
                             aria-label="Editar item"
                           >
@@ -227,7 +246,7 @@ export function VoiceOrdersList({
                   {!isEditing && isExpanded && (
                     <div className="mt-1 ml-2 sm:ml-5">
                       <ProductSuggestions 
-                        productName={prod} 
+                        productName={formattedProduct} 
                         userId={user?.id}
                       />
                     </div>

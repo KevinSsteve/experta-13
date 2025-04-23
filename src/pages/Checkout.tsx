@@ -400,7 +400,9 @@ const Checkout = () => {
                               </span>
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="truncate font-medium text-sm">{item.product.name}</h3>
+                              <h3 className="text-sm font-medium line-clamp-1 max-w-[180px] sm:max-w-none" title={item.product.name}>
+                                {item.product.name}
+                              </h3>
                               <p className="text-xs text-muted-foreground">
                                 {formatCurrency(item.product.price)}
                               </p>

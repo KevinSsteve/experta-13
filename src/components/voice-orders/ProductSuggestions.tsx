@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Search } from "lucide-react";
@@ -34,32 +35,62 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
         try {
           parsed = JSON.parse(productName);
         } catch {
-          // Se não conseguir fazer parse, assume que é apenas o nome
           parsed = { name: productName };
         }
 
+        // Dividir o nome em palavras para busca parcial
+        const searchTerms = parsed.name.toLowerCase().split(' ');
+        
+        // Criar query inicial
         let query = supabase
           .from('products')
           .select('*')
-          .eq('user_id', userId)
-          .textSearch('name', parsed.name, { 
-            type: 'websearch',
-            config: 'portuguese'
-          });
+          .eq('user_id', userId);
 
-        // Se tiver preço, adiciona um filtro de range de preço (±20%)
+        // Se tiver preço, primeiro tenta encontrar produtos com palavras do nome E preço
         if (parsed.price) {
           const minPrice = parsed.price * 0.8;
           const maxPrice = parsed.price * 1.2;
-          query = query.gte('price', minPrice).lte('price', maxPrice);
+          
+          // Primeiro, tenta encontrar produtos que contenham qualquer palavra do nome E estejam na faixa de preço
+          let matchQuery = searchTerms.map(term => 
+            `name.ilike.%${term}%`
+          );
+          
+          const { data: nameAndPriceMatches } = await query
+            .or(matchQuery.join(','))
+            .gte('price', minPrice)
+            .lte('price', maxPrice)
+            .limit(8);
+
+          if (nameAndPriceMatches && nameAndPriceMatches.length > 0) {
+            setSuggestions(nameAndPriceMatches as Product[]);
+            return;
+          }
+
+          // Se não encontrar, tenta apenas pelo preço
+          const { data: priceMatches } = await query
+            .gte('price', minPrice)
+            .lte('price', maxPrice)
+            .limit(8);
+
+          if (priceMatches && priceMatches.length > 0) {
+            setSuggestions(priceMatches as Product[]);
+            return;
+          }
         }
 
-        const { data, error } = await query.limit(8);
-
-        if (error) throw error;
+        // Se não tiver preço ou não encontrou nada pelo preço, busca por palavras do nome
+        let matchQuery = searchTerms.map(term => 
+          `name.ilike.%${term}%`
+        );
         
-        if (data && data.length > 0) {
-          setSuggestions(data as Product[]);
+        const { data: nameMatches } = await query
+          .or(matchQuery.join(','))
+          .limit(8);
+
+        if (nameMatches && nameMatches.length > 0) {
+          setSuggestions(nameMatches as Product[]);
         } else {
           setNoResults(true);
         }

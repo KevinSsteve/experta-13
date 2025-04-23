@@ -12,11 +12,12 @@ export function parseVoiceInput(text: string): ParsedVoiceItem {
     .trim();
 
   // Padrões para encontrar preços
-  // Exemplos: "de 100", "por 100", "custa 100", "vale 100"
   const pricePatterns = [
     /\b(?:de|por|custa|vale)\s+(\d+(?:\.\d{1,2})?)\b/,  // Números com ou sem decimais
     /\b(?:de|por|custa|vale)\s+(\d+)\s*(?:reais|real)\b/,
-    /\b(?:de|por|custa|vale)\s+(?:r\$\s*)?(\d+(?:\.\d{1,2})?)\b/
+    /\b(?:de|por|custa|vale)\s+(?:r\$\s*)?(\d+(?:\.\d{1,2})?)\b/,
+    /\b(\d+(?:\.\d{1,2})?)\s*(?:reais|real)\b/, // Preço seguido de 'reais' ou 'real'
+    /\b(?:r\$\s*)?(\d+(?:\.\d{1,2})?)\b/ // Número isolado ou com R$
   ];
 
   let price: number | undefined;

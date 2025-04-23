@@ -17,14 +17,15 @@ const ProductCard = memo(({ product, onAddToCart, priority = false }: ProductCar
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Função para lidar com o carregamento da imagem
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-  };
-
-  // Função para lidar com erros de imagem
-  const handleImageError = () => {
-    setImageError(true);
+  // Função para otimizar URL da imagem
+  const getOptimizedImageUrl = (url: string) => {
+    if (!url || url === '/placeholder.svg') return url;
+    
+    // Adiciona parâmetros de dimensão à URL do Supabase Storage
+    if (url.includes('storage.googleapis.com')) {
+      return url + '?width=300&height=300&resize=contain';
+    }
+    return url;
   };
 
   return (
@@ -32,15 +33,17 @@ const ProductCard = memo(({ product, onAddToCart, priority = false }: ProductCar
       <AspectRatio ratio={1} className="bg-muted relative overflow-hidden">
         {!imageError && product.image ? (
           <img
-            src={product.image}
+            src={getOptimizedImageUrl(product.image)}
             alt={product.name}
             className={`h-full w-full object-cover transition-transform group-hover:scale-105 ${
               !imageLoaded ? 'opacity-0' : 'opacity-100'
             }`}
             loading={priority ? "eager" : "lazy"}
             decoding="async"
-            onLoad={handleImageLoad}
-            onError={handleImageError}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => setImageError(true)}
+            width={300}
+            height={300}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center">

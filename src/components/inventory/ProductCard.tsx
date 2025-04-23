@@ -1,4 +1,3 @@
-
 import { formatCurrency } from '@/lib/utils';
 import { Product } from '@/lib/products/types';
 import { Edit, Trash2, Image } from 'lucide-react';
@@ -32,33 +31,35 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
   const [isLoaded, setIsLoaded] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
 
+  const getOptimizedImageUrl = (url: string) => {
+    if (!url || url === '/placeholder.svg') return url;
+    
+    if (url.includes('storage.googleapis.com')) {
+      return url + '?width=300&height=300&resize=contain';
+    }
+    return url;
+  };
+
   useEffect(() => {
-    // Create a new IntersectionObserver
     const observer = new IntersectionObserver((entries) => {
-      // If the image container is intersecting with the viewport
       if (entries[0].isIntersecting && product.image && !isLoaded) {
-        // Get the image URL from the product
-        const url = getProductImageUrl(product.image);
-        setImageUrl(url);
+        const optimizedUrl = getOptimizedImageUrl(product.image);
+        setImageUrl(optimizedUrl);
         setIsLoaded(true);
-        console.log(`Loading image for inventory product ${product.name}, image path: ${product.image}`);
         
-        // Stop observing once we've loaded the image
         if (imgRef.current) {
           observer.unobserve(imgRef.current);
         }
       }
     }, {
-      rootMargin: '200px', // Load images when they're within 200px of viewport
+      rootMargin: '200px',
       threshold: 0.1
     });
     
-    // Start observing the image element container
     if (imgRef.current) {
       observer.observe(imgRef.current);
     }
     
-    // Cleanup function to unobserve when component unmounts
     return () => {
       if (imgRef.current) {
         observer.unobserve(imgRef.current);
@@ -71,7 +72,6 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
     setImageError(true);
   };
 
-  // Calcular a margem de lucro se os preços estiverem disponíveis
   const getProfitInfo = () => {
     const purchasePrice = product.purchase_price;
     const profitMargin = product.profit_margin;
@@ -92,15 +92,16 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
     <Card key={product.id} className="mb-4">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          {/* Imagem do produto */}
           <div ref={imgRef} className="h-16 w-16 rounded-md overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
-            {hasImage ? (
+            {!imageError && imageUrl !== "/placeholder.svg" ? (
               <img 
                 src={imageUrl} 
                 alt={product.name} 
                 className="h-full w-full object-cover"
-                onError={handleImageError}
+                onError={() => setImageError(true)}
                 loading="lazy"
+                width={150}
+                height={150}
               />
             ) : (
               <Image className="h-6 w-6 text-muted-foreground" />

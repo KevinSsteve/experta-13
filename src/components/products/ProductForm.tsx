@@ -45,13 +45,13 @@ interface ProductFormProps {
   isSubmitting?: boolean;
 }
 
-const resizeImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.8): Promise<File> => {
+const resizeImage = (file: File, maxWidth = 600, maxHeight = 600, quality = 0.8): Promise<File> => {
   return new Promise((resolve, reject) => {
     const img = document.createElement('img');
     img.src = URL.createObjectURL(file);
     
     img.onload = () => {
-      if (img.width <= maxWidth && img.height <= maxHeight && file.size <= 2 * 1024 * 1024) {
+      if (img.width <= maxWidth && img.height <= maxHeight && file.size <= 1 * 1024 * 1024) {
         resolve(file);
         return;
       }

@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { parseVoiceInput } from "@/utils/voiceUtils";
 import {
   Tooltip,
   TooltipContent,
@@ -21,7 +21,6 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Esta função, agora, pode aceitar um callback para adicionar itens (append) ou substituir (default)
   const handleListen = (append: boolean = false) => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
       toast({
@@ -40,27 +39,29 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
 
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
-      // Divide produtos utilizando separadores comuns
       const items = transcript
-        .toLowerCase()
-        .replace(/(comprar|adicionar|lista|pendente|pagar|quero|gostaria de|por favor)/g, "")
         .split(/,| e | mais | também | com |;/gi)
         .map((item) => item.trim())
-        .filter((item) => item.length > 1);
+        .filter((item) => item.length > 1)
+        .map(item => {
+          const parsed = parseVoiceInput(item);
+          return JSON.stringify(parsed);
+        });
 
       if (append) {
-        // Adiciona aos produtos já existentes, evitando duplicados exatos
         const newItems = items.filter(item => !products.includes(item));
         setProducts(prev => [...prev, ...newItems]);
         toast({
           title: "Mais produtos adicionados:",
-          description: newItems.length > 0 ? newItems.join(", ") : "Nenhum novo item reconhecido.",
+          description: newItems.length > 0 ? 
+            newItems.map(item => JSON.parse(item).name).join(", ") : 
+            "Nenhum novo item reconhecido.",
         });
       } else {
         setProducts(items);
         toast({
           title: "Produtos reconhecidos:",
-          description: items.join(", "),
+          description: items.map(item => JSON.parse(item).name).join(", "),
         });
       }
     };
@@ -121,7 +122,19 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
             <List className="h-4 w-4" /><b>Itens a adicionar:</b>
           </div>
           <ul className="list-disc pl-8 text-primary max-h-48 overflow-y-auto">
-            {products.map((p, i) => <li key={i} className="break-words">{p}</li>)}
+            {products.map((p, i) => {
+              const parsed = JSON.parse(p);
+              return (
+                <li key={i} className="break-words">
+                  {parsed.name}
+                  {parsed.price && (
+                    <span className="text-muted-foreground ml-1">
+                      (preço aproximado: {parsed.price})
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
           <div className="flex flex-wrap gap-2 mt-3">
             <Button onClick={handleAdd} size="sm" className={isMobile ? "w-full" : ""}>

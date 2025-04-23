@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, ArrowRight } from "lucide-react";
+import { ShoppingCart, Search } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -9,25 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ParsedVoiceItem } from "@/utils/voiceUtils";
 
 interface ProductSuggestionsProps {
   productName: string;
   userId: string | undefined;
-}
-
-// Função utilitária para dividir a frase em palavras e normalizar
-function getSearchTerms(raw: string): string[] {
-  // Remove caracteres especiais e plurais/diminutivos, separa por espaço
-  return raw
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[,.;:!?]/g, "")
-    .replace(/(inhos?|inhas?|zinhos?|zinhas?|s)\b/gi, "")
-    .replace(/\b(o|a|os|as|um|uma|uns|umas)\b/gi, "")
-    .split(/\s+/)
-    .map(w => w.trim())
-    .filter(w => w.length > 1);
 }
 
 export function ProductSuggestions({ productName, userId }: ProductSuggestionsProps) {
@@ -44,54 +29,37 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
       setLoading(true);
       setNoResults(false);
 
-      // Prepara uma lista de termos do item
-      const keywords = getSearchTerms(productName);
-      let allSuggestions: Product[] = [];
-
       try {
-        // Busca produtos usando cada termo em name, category ou code
-        for (const term of keywords) {
-          if (!term) continue;
-          const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('user_id', userId)
-            .or(
-              `name.ilike.%${term}%,category.ilike.%${term}%,code.ilike.%${term}%`
-            )
-            .order('name')
-            .limit(6);
-
-          if (error) continue;
-          if (data && data.length > 0) {
-            allSuggestions = [...allSuggestions, ...data];
-          }
+        let parsed: ParsedVoiceItem;
+        try {
+          parsed = JSON.parse(productName);
+        } catch {
+          // Se não conseguir fazer parse, assume que é apenas o nome
+          parsed = { name: productName };
         }
 
-        // Garante unicidade (remover duplicados, comparando por id)
-        allSuggestions = allSuggestions.filter(
-          (prod, idx, arr) =>
-            arr.findIndex(p => p.id === prod.id) === idx
-        );
-
-        if (allSuggestions.length > 0) {
-          // Ordena por relevância: match exato > começa igual > inclusão parcial > menor nome
-          allSuggestions.sort((a, b) => {
-            const kwSet = new Set(keywords);
-            const aName = a.name.toLowerCase();
-            const bName = b.name.toLowerCase();
-            // Match exato do nome do produto pedido
-            if (aName === productName.toLowerCase() && bName !== productName.toLowerCase()) return -1;
-            if (bName === productName.toLowerCase() && aName !== productName.toLowerCase()) return 1;
-            // Começa igual a qualquer palavra-chave
-            const aStarts = Array.from(kwSet).some(kw => aName.startsWith(kw));
-            const bStarts = Array.from(kwSet).some(kw => bName.startsWith(kw));
-            if (aStarts && !bStarts) return -1;
-            if (bStarts && !aStarts) return 1;
-            // Menor nome por último
-            return aName.length - bName.length;
+        let query = supabase
+          .from('products')
+          .select('*')
+          .eq('user_id', userId)
+          .textSearch('name', parsed.name, { 
+            type: 'websearch',
+            config: 'portuguese'
           });
-          setSuggestions(allSuggestions.slice(0, 8));
+
+        // Se tiver preço, adiciona um filtro de range de preço (±20%)
+        if (parsed.price) {
+          const minPrice = parsed.price * 0.8;
+          const maxPrice = parsed.price * 1.2;
+          query = query.gte('price', minPrice).lte('price', maxPrice);
+        }
+
+        const { data, error } = await query.limit(8);
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setSuggestions(data as Product[]);
         } else {
           setNoResults(true);
         }

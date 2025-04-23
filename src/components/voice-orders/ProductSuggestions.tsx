@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Search, X } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
@@ -10,8 +10,15 @@ import { Product } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ParsedVoiceItem } from "@/utils/voiceUtils";
-import { normalizeSearch } from "@/utils/searchUtils";
 import { Input } from "@/components/ui/input";
+import { normalizeSearch } from "@/utils/searchUtils";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import debounce from "lodash/debounce";
 
 interface ProductSuggestionsProps {
   productName: string;
@@ -20,115 +27,70 @@ interface ProductSuggestionsProps {
 
 export function ProductSuggestions({ productName, userId }: ProductSuggestionsProps) {
   const [suggestions, setSuggestions] = useState<Product[]>([]);
-  const [allSuggestions, setAllSuggestions] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { addItem } = useCart();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!productName || !userId) return;
-      setLoading(true);
-      setNoResults(false);
-      setSearchQuery(""); // Reset search query when fetching new suggestions
+  // Função para buscar produtos com debounce
+  const fetchProducts = debounce(async (query: string) => {
+    if (!userId) return;
+    setLoading(true);
+    setNoResults(false);
 
-      try {
-        let parsed: ParsedVoiceItem;
-        try {
-          parsed = JSON.parse(productName);
-        } catch {
-          parsed = { name: productName };
-        }
+    try {
+      let supabaseQuery = supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', userId);
 
-        // Dividir o nome em palavras para busca parcial
-        const searchTerms = parsed.name.toLowerCase().split(' ');
+      // Se houver busca, aplica os filtros
+      if (query) {
+        const normalizedQuery = normalizeSearch(query);
+        const terms = normalizedQuery.split(' ');
         
-        // Criar query inicial
-        let query = supabase
-          .from('products')
-          .select('*')
-          .eq('user_id', userId);
+        // Cria uma condição OR para cada termo da busca
+        const searchConditions = terms.map(term => {
+          const likeQuery = `%${term}%`;
+          return `or(name.ilike.${likeQuery},category.ilike.${likeQuery},code.ilike.${likeQuery})`;
+        }).join(',');
 
-        // Se tiver preço, primeiro tenta encontrar produtos com palavras do nome E preço
-        if (parsed.price) {
-          const minPrice = parsed.price * 0.8;
-          const maxPrice = parsed.price * 1.2;
-          
-          // Primeiro, tenta encontrar produtos que contenham qualquer palavra do nome E estejam na faixa de preço
-          let matchQuery = searchTerms.map(term => 
-            `name.ilike.%${term}%`
-          );
-          
-          const { data: nameAndPriceMatches } = await query
-            .or(matchQuery.join(','))
-            .gte('price', minPrice)
-            .lte('price', maxPrice)
-            .limit(15);
-
-          if (nameAndPriceMatches && nameAndPriceMatches.length > 0) {
-            setSuggestions(nameAndPriceMatches as Product[]);
-            setAllSuggestions(nameAndPriceMatches as Product[]);
-            return;
-          }
-
-          // Se não encontrar, tenta apenas pelo preço
-          const { data: priceMatches } = await query
-            .gte('price', minPrice)
-            .lte('price', maxPrice)
-            .limit(15);
-
-          if (priceMatches && priceMatches.length > 0) {
-            setSuggestions(priceMatches as Product[]);
-            setAllSuggestions(priceMatches as Product[]);
-            return;
-          }
-        }
-
-        // Se não tiver preço ou não encontrou nada pelo preço, busca por palavras do nome
-        let matchQuery = searchTerms.map(term => 
-          `name.ilike.%${term}%`
-        );
-        
-        const { data: nameMatches } = await query
-          .or(matchQuery.join(','))
-          .limit(15);
-
-        if (nameMatches && nameMatches.length > 0) {
-          setSuggestions(nameMatches as Product[]);
-          setAllSuggestions(nameMatches as Product[]);
-        } else {
-          setNoResults(true);
-        }
-      } catch (error) {
-        setNoResults(true);
-      } finally {
-        setLoading(false);
+        supabaseQuery = supabaseQuery.or(searchConditions);
       }
-    };
 
-    fetchSuggestions();
-  }, [productName, userId]);
+      // Ordena por nome e limita a 15 resultados
+      const { data, error } = await supabaseQuery
+        .order('name')
+        .limit(15);
 
-  // Filter suggestions when searchQuery changes
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSuggestions(allSuggestions);
-      setNoResults(allSuggestions.length === 0);
-      return;
+      if (error) throw error;
+
+      if (data) {
+        setSuggestions(data as Product[]);
+        setNoResults(data.length === 0);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar produtos:', error);
+      toast({
+        title: "Erro ao buscar produtos",
+        description: "Não foi possível carregar as sugestões.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
+  }, 300);
 
-    const query = searchQuery.toLowerCase();
-    const filtered = allSuggestions.filter(product => 
-      product.name.toLowerCase().includes(query) || 
-      (product.category && product.category.toLowerCase().includes(query))
-    );
-
-    setSuggestions(filtered);
-    setNoResults(filtered.length === 0);
-  }, [searchQuery, allSuggestions]);
+  // Efeito para buscar produtos quando o componente monta ou quando o termo de busca muda
+  useEffect(() => {
+    fetchProducts(searchQuery);
+    return () => {
+      fetchProducts.cancel();
+    };
+  }, [searchQuery, userId]);
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
@@ -136,6 +98,17 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
       title: "Produto adicionado",
       description: `${product.name} foi adicionado ao carrinho.`,
     });
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
   };
 
   if (!productName) return null;
@@ -147,25 +120,35 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
         <span>Sugestões para "{productName}"</span>
       </div>
       
-      {/* Search Input */}
+      {/* Search Input with improved UX */}
       <div className="relative mb-3">
         <Input
+          ref={searchInputRef}
           type="text"
-          placeholder="Buscar produtos..."
+          placeholder="Buscar por nome, código ou categoria..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           className="pl-8 pr-8"
         />
         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         {searchQuery && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-            onClick={() => setSearchQuery("")}
-          >
-            <X className="h-3 w-3" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={clearSearch}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Limpar busca</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
       
@@ -184,16 +167,19 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {suggestions.map((product) => (
             <div 
               key={product.id} 
-              className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 border rounded-md hover:bg-accent/20"
+              className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 border rounded-md hover:bg-accent/20 transition-colors"
             >
               <div className="flex-1 mb-2 sm:mb-0">
                 <div className="font-medium">{product.name}</div>
                 <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                  {product.code && (
+                    <span className="text-xs">Código: {product.code}</span>
+                  )}
                   {product.stock > 0 ? (
                     <span className="text-xs">Em estoque: {product.stock}</span>
                   ) : (
@@ -201,15 +187,24 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
                   )}
                 </div>
               </div>
-              <Button 
-                size={isMobile ? "sm" : "default"}
-                onClick={() => handleAddToCart(product)}
-                disabled={product.stock <= 0}
-                className="w-full sm:w-auto"
-              >
-                <ShoppingCart className="h-4 w-4 mr-1" /> 
-                {isMobile ? "+" : "Adicionar"}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size={isMobile ? "sm" : "default"}
+                      onClick={() => handleAddToCart(product)}
+                      disabled={product.stock <= 0}
+                      className="w-full sm:w-auto"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-1" /> 
+                      {isMobile ? "+" : "Adicionar"}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Adicionar ao carrinho</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           ))}
         </div>

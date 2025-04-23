@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search } from "lucide-react";
+import { ShoppingCart, Search, X } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ParsedVoiceItem } from "@/utils/voiceUtils";
 import { normalizeSearch } from "@/utils/searchUtils";
+import { Input } from "@/components/ui/input";
 
 interface ProductSuggestionsProps {
   productName: string;
@@ -19,8 +20,10 @@ interface ProductSuggestionsProps {
 
 export function ProductSuggestions({ productName, userId }: ProductSuggestionsProps) {
   const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [allSuggestions, setAllSuggestions] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { addItem } = useCart();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -30,6 +33,7 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
       if (!productName || !userId) return;
       setLoading(true);
       setNoResults(false);
+      setSearchQuery(""); // Reset search query when fetching new suggestions
 
       try {
         let parsed: ParsedVoiceItem;
@@ -62,10 +66,11 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
             .or(matchQuery.join(','))
             .gte('price', minPrice)
             .lte('price', maxPrice)
-            .limit(8);
+            .limit(15);
 
           if (nameAndPriceMatches && nameAndPriceMatches.length > 0) {
             setSuggestions(nameAndPriceMatches as Product[]);
+            setAllSuggestions(nameAndPriceMatches as Product[]);
             return;
           }
 
@@ -73,10 +78,11 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
           const { data: priceMatches } = await query
             .gte('price', minPrice)
             .lte('price', maxPrice)
-            .limit(8);
+            .limit(15);
 
           if (priceMatches && priceMatches.length > 0) {
             setSuggestions(priceMatches as Product[]);
+            setAllSuggestions(priceMatches as Product[]);
             return;
           }
         }
@@ -88,10 +94,11 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
         
         const { data: nameMatches } = await query
           .or(matchQuery.join(','))
-          .limit(8);
+          .limit(15);
 
         if (nameMatches && nameMatches.length > 0) {
           setSuggestions(nameMatches as Product[]);
+          setAllSuggestions(nameMatches as Product[]);
         } else {
           setNoResults(true);
         }
@@ -104,6 +111,24 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
 
     fetchSuggestions();
   }, [productName, userId]);
+
+  // Filter suggestions when searchQuery changes
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions(allSuggestions);
+      setNoResults(allSuggestions.length === 0);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = allSuggestions.filter(product => 
+      product.name.toLowerCase().includes(query) || 
+      (product.category && product.category.toLowerCase().includes(query))
+    );
+
+    setSuggestions(filtered);
+    setNoResults(filtered.length === 0);
+  }, [searchQuery, allSuggestions]);
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
@@ -121,6 +146,29 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
         <Search className="h-3.5 w-3.5" />
         <span>Sugestões para "{productName}"</span>
       </div>
+      
+      {/* Search Input */}
+      <div className="relative mb-3">
+        <Input
+          type="text"
+          placeholder="Buscar produtos..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8 pr-8"
+        />
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {searchQuery && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+            onClick={() => setSearchQuery("")}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+      
       {loading ? (
         <div className="space-y-2">
           <Skeleton className="h-14 w-full" />
@@ -128,7 +176,12 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
         </div>
       ) : noResults ? (
         <div className="text-center p-2 border rounded-md bg-muted/30">
-          <p className="text-sm text-muted-foreground">Nenhum produto correspondente encontrado</p>
+          <p className="text-sm text-muted-foreground">
+            {searchQuery 
+              ? `Nenhum produto encontrado para "${searchQuery}"`
+              : "Nenhum produto correspondente encontrado"
+            }
+          </p>
         </div>
       ) : (
         <div className="space-y-2">

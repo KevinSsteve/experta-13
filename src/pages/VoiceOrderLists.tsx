@@ -207,6 +207,7 @@ export default function VoiceOrderLists() {
           <AlertDescription>
             Agora você pode ver sugestões de produtos do seu inventário para cada item da lista.
             Basta clicar no ícone ▼ ao lado de cada item para expandir as sugestões e adicioná-las diretamente ao carrinho.
+            Use o buscador para filtrar produtos por nome ou categoria!
           </AlertDescription>
         </Alert>
         

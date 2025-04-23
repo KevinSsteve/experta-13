@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2, ShoppingCart, Edit, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import type { OrderList } from "@/pages/VoiceOrderLists";
@@ -7,6 +7,17 @@ import { Input } from "@/components/ui/input";
 import { ProductSuggestions } from "./ProductSuggestions";
 import { useAuth } from "@/contexts/AuthContext";
 import { ResponsiveWrapper } from "@/components/ui/responsive-wrapper";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 
 interface VoiceOrdersListProps {
   lists: OrderList[];
@@ -24,11 +35,8 @@ export function VoiceOrdersList({
   onEditItem,
 }: VoiceOrdersListProps) {
   const { user } = useAuth();
-  // Track which item is being edited: { [listId_itemIndex]: true }
   const [editing, setEditing] = useState<{ [k: string]: boolean }>({});
-  // Track new value for editing
   const [editValue, setEditValue] = useState<{ [k: string]: string }>({});
-  // Track expanded state for product suggestions
   const [expandedItems, setExpandedItems] = useState<{ [k: string]: boolean }>({});
 
   if (lists.length === 0) {
@@ -49,9 +57,25 @@ export function VoiceOrdersList({
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 sm:mb-2">
         <h2 className="text-lg font-semibold">Minhas listas salvas</h2>
-        <Button onClick={onClear} size="sm" variant="destructive">
-          <Trash2 className="w-4 h-4 mr-1" /> Limpar todas
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="destructive">
+              <Trash2 className="w-4 h-4 mr-1" /> Limpar todas
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja limpar todas as suas listas? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={onClear}>Limpar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       {lists.map((l) => (
         <div
@@ -78,16 +102,32 @@ export function VoiceOrdersList({
                   {l.status === "enviado" ? "Enviado" : "Enviar p/ Checkout"}
                 </Button>
               </ResponsiveWrapper>
-              <Button
-                onClick={() => onRemove(l.id)}
-                size="sm"
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                <Trash2 className="w-4 h-4 mr-1" /> Remover
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> Remover
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja remover esta lista? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onRemove(l.id)}>Remover</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
+          {/* Resto do código mantido igual */}
           <ul className="list-disc px-4 text-primary space-y-2">
             {l.products.map((prod, idx) => {
               const key = getKey(l.id, idx);
@@ -97,6 +137,7 @@ export function VoiceOrdersList({
               return (
                 <li key={idx} className="relative group">
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* Código de edição e exibição mantido igual */}
                     {isEditing ? (
                       <>
                         <Input
@@ -186,3 +227,4 @@ export function VoiceOrdersList({
     </div>
   );
 }
+

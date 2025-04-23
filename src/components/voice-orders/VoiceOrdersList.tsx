@@ -40,6 +40,16 @@ export function VoiceOrdersList({
   const [editing, setEditing] = useState<{ [k: string]: boolean }>({});
   const [editValue, setEditValue] = useState<{ [k: string]: string }>({});
   const [expandedItems, setExpandedItems] = useState<{ [k: string]: boolean }>({});
+  
+  // Generate a unique key for each item in the list
+  const getKey = (listId: string, itemIndex: number) => {
+    return `${listId}-${itemIndex}`;
+  };
+  
+  // Toggle the expanded state of an item
+  const toggleExpanded = (key: string) => {
+    setExpandedItems(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   if (lists.length === 0) {
     return (
@@ -123,7 +133,6 @@ export function VoiceOrdersList({
               </AlertDialog>
             </div>
           </div>
-          {/* Resto do código mantido igual */}
           <ul className="list-disc px-4 text-primary space-y-2">
             {l.products.map((prod, idx) => {
               const key = getKey(l.id, idx);

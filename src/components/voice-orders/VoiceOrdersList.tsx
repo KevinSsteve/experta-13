@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Trash2, ShoppingCart, Edit, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import type { OrderList } from "@/pages/VoiceOrderLists";
@@ -25,6 +25,7 @@ interface VoiceOrdersListProps {
   onClear: () => void;
   onToCheckout: (id: string) => void;
   onEditItem: (listId: string, itemIndex: number, newValue: string) => void;
+  onRemoveItem: (listId: string, itemIndex: number) => void;
 }
 
 export function VoiceOrdersList({
@@ -33,6 +34,7 @@ export function VoiceOrdersList({
   onClear,
   onToCheckout,
   onEditItem,
+  onRemoveItem
 }: VoiceOrdersListProps) {
   const { user } = useAuth();
   const [editing, setEditing] = useState<{ [k: string]: boolean }>({});
@@ -46,12 +48,6 @@ export function VoiceOrdersList({
       </div>
     );
   }
-
-  const getKey = (listId: string, idx: number) => `${listId}_${idx}`;
-  
-  const toggleExpanded = (key: string) => {
-    setExpandedItems(prev => ({ ...prev, [key]: !prev[key] }));
-  };
 
   return (
     <div className="space-y-4">
@@ -137,7 +133,6 @@ export function VoiceOrdersList({
               return (
                 <li key={idx} className="relative group">
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Código de edição e exibição mantido igual */}
                     {isEditing ? (
                       <>
                         <Input
@@ -187,7 +182,17 @@ export function VoiceOrdersList({
                             }}
                             aria-label="Editar item"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => onRemoveItem(l.id, idx)}
+                            aria-label="Remover item"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                           <Button
                             type="button"
@@ -227,4 +232,3 @@ export function VoiceOrdersList({
     </div>
   );
 }
-

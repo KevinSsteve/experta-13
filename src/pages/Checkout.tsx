@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -394,13 +393,13 @@ const Checkout = () => {
                     <div className="space-y-2">
                       {state.items.map((item) => (
                         <div key={item.product.id} className="flex items-center justify-between py-1">
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 min-w-0 flex-1">
                             <div className="flex-shrink-0">
                               <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted">
                                 {item.quantity}
                               </span>
                             </div>
-                            <div className="overflow-hidden">
+                            <div className="min-w-0 flex-1">
                               <h3 className="truncate font-medium text-sm">{item.product.name}</h3>
                               <p className="text-xs text-muted-foreground">
                                 {formatCurrency(item.product.price)}
@@ -408,8 +407,8 @@ const Checkout = () => {
                             </div>
                           </div>
                           
-                          <div className="flex items-center">
-                            <p className="font-medium text-sm mr-2">
+                          <div className="flex items-center shrink-0 ml-2">
+                            <p className="font-medium text-sm mr-2 whitespace-nowrap">
                               {formatCurrency(item.product.price * item.quantity)}
                             </p>
                             <Button 

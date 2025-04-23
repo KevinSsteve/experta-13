@@ -1,4 +1,3 @@
-
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { VoiceOrdersCreator } from "@/components/voice-orders/VoiceOrdersCreator";
 import { VoiceOrdersList } from "@/components/voice-orders/VoiceOrdersList";
@@ -24,7 +23,6 @@ export default function VoiceOrderLists() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Busca listas no Supabase
   useEffect(() => {
     if (!user || authLoading) {
       setLists([]);
@@ -59,7 +57,6 @@ export default function VoiceOrderLists() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
-  // Adiciona lista no Supabase
   const addList = async (products: string[]) => {
     if (!user) return;
     const newList = {
@@ -95,7 +92,6 @@ export default function VoiceOrderLists() {
     }
   };
 
-  // Remove lista no Supabase
   const removeList = async (id: string) => {
     const { error } = await supabase
       .from("voice_order_lists")
@@ -112,7 +108,6 @@ export default function VoiceOrderLists() {
     setLists((prev) => prev.filter((l) => l.id !== id));
   };
 
-  // Limpa todas as listas do usuário
   const clearLists = async () => {
     if (!user) return;
     const { error } = await supabase
@@ -130,7 +125,6 @@ export default function VoiceOrderLists() {
     setLists([]);
   };
 
-  // Atualiza status para enviado no Supabase
   const setToCheckout = async (id: string) => {
     const { data, error } = await supabase
       .from("voice_order_lists")
@@ -160,7 +154,6 @@ export default function VoiceOrderLists() {
     }
   };
 
-  // Edita produto de uma lista específica
   const editProductInList = async (
     listId: string,
     itemIndex: number,
@@ -184,6 +177,38 @@ export default function VoiceOrderLists() {
       });
       return;
     }
+    setLists((prev) =>
+      prev.map((l) =>
+        l.id === listId
+          ? {
+              ...l,
+              products: updatedProducts,
+            }
+          : l
+      )
+    );
+  };
+
+  const removeItemFromList = async (listId: string, itemIndex: number) => {
+    const list = lists.find((l) => l.id === listId);
+    if (!list) return;
+    const updatedProducts = [...list.products];
+    updatedProducts.splice(itemIndex, 1);
+    
+    const { error } = await supabase
+      .from("voice_order_lists")
+      .update({ products: updatedProducts })
+      .eq("id", listId);
+      
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o item.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLists((prev) =>
       prev.map((l) =>
         l.id === listId
@@ -221,6 +246,7 @@ export default function VoiceOrderLists() {
             onClear={clearLists}
             onToCheckout={setToCheckout}
             onEditItem={editProductInList}
+            onRemoveItem={removeItemFromList}
           />
         )}
       </div>

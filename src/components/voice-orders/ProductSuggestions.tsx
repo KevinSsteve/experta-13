@@ -113,6 +113,14 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
 
   if (!productName) return null;
 
+  // Format price function
+  const formatPrice = (price: number): string => {
+    return new Intl.NumberFormat('pt-AO', {
+      style: 'currency',
+      currency: 'AOA'
+    }).format(price);
+  };
+
   return (
     <div className="mt-2">
       <div className="flex items-center gap-1 mb-2 text-sm text-muted-foreground">
@@ -177,6 +185,7 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
                 <div className="font-medium">{product.name}</div>
                 <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                  <Badge variant="secondary" className="text-xs font-medium">{formatPrice(product.price)}</Badge>
                   {product.code && (
                     <span className="text-xs">Código: {product.code}</span>
                   )}

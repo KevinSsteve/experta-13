@@ -1,4 +1,3 @@
-
 import { Sale, DailySales, SalesByCategory, SalesKPIs } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -138,14 +137,51 @@ export function calculateSalesKPIs(
   recentSales: Sale[], 
   previousPeriodSales: Sale[]
 ): SalesKPIs {
+  // Calculate revenue
   const totalRevenue = recentSales.reduce((sum, sale) => sum + sale.total, 0);
   const totalSales = recentSales.length;
   const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
   
+  // Calculate cost and profit (assuming products have purchase_price)
+  let totalCost = 0;
+  recentSales.forEach(sale => {
+    if (sale.products && Array.isArray(sale.products)) {
+      sale.products.forEach(item => {
+        const quantity = item.quantity || 1;
+        // Try to get purchase_price from either direct property or nested product
+        const purchasePrice = 
+          (item.purchase_price) || 
+          (item.product && item.product.purchase_price) || 
+          0;
+        totalCost += purchasePrice * quantity;
+      });
+    }
+  });
+  
+  const profit = totalRevenue - totalCost;
+  
+  // Calculate previous period metrics
   const previousRevenue = previousPeriodSales.reduce((sum, sale) => sum + sale.total, 0);
   const previousSales = previousPeriodSales.length;
   const previousAvgTicket = previousSales > 0 ? previousRevenue / previousSales : 0;
   
+  let previousCost = 0;
+  previousPeriodSales.forEach(sale => {
+    if (sale.products && Array.isArray(sale.products)) {
+      sale.products.forEach(item => {
+        const quantity = item.quantity || 1;
+        const purchasePrice = 
+          (item.purchase_price) || 
+          (item.product && item.product.purchase_price) || 
+          0;
+        previousCost += purchasePrice * quantity;
+      });
+    }
+  });
+  
+  const previousProfit = previousRevenue - previousCost;
+  
+  // Calculate change percentages
   const revenueChange = previousRevenue > 0 
     ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
     : 0;
@@ -158,12 +194,27 @@ export function calculateSalesKPIs(
     ? ((averageTicket - previousAvgTicket) / previousAvgTicket) * 100 
     : 0;
   
+  // Calculate profit change
+  const profitChange = previousProfit > 0
+    ? ((profit - previousProfit) / previousProfit) * 100
+    : 0;
+  
+  // Calculate profit margin and its change
+  const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+  const previousMargin = previousRevenue > 0 ? (previousProfit / previousRevenue) * 100 : 0;
+  const marginChange = previousMargin > 0
+    ? (profitMargin - previousMargin) / previousMargin * 100
+    : 0;
+  
   return {
     totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+    totalCost: parseFloat(totalCost.toFixed(2)),
     totalSales,
     averageTicket: parseFloat(averageTicket.toFixed(2)),
     revenueChange: parseFloat(revenueChange.toFixed(1)),
     salesChange: parseFloat(salesChange.toFixed(1)),
     ticketChange: parseFloat(ticketChange.toFixed(1)),
+    profitChange: parseFloat(profitChange.toFixed(1)),
+    marginChange: parseFloat(marginChange.toFixed(1)),
   };
 }

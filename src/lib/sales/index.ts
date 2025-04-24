@@ -1,4 +1,3 @@
-
 import { Sale, DailySales, SalesByCategory, SalesKPIs, SalesSummary, CustomerInfo } from './types';
 import { fetchSalesFromSupabase, adaptSupabaseSale } from './adapters';
 import { generateSalesData } from './generators';
@@ -99,11 +98,14 @@ export async function getSalesKPIs(days: number = 7, userId?: string): Promise<S
     // Return empty KPIs with zero values instead of throwing
     return {
       totalRevenue: 0,
+      totalCost: 0,
       totalSales: 0,
       averageTicket: 0,
       revenueChange: 0,
       salesChange: 0,
-      ticketChange: 0
+      ticketChange: 0,
+      profitChange: 0,
+      marginChange: 0
     };
   }
 }

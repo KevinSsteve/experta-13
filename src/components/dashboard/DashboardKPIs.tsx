@@ -38,7 +38,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
     );
   }
 
-  const profit = data.totalRevenue - (data.totalCost || 0);
+  const profit = data.totalRevenue - data.totalCost;
   const profitMargin = data.totalRevenue > 0 ? (profit / data.totalRevenue) * 100 : 0;
 
   return (

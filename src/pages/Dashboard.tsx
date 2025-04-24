@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -12,6 +11,10 @@ import { formatCurrency } from '@/lib/utils';
 import { AlertTriangle, CreditCard, DollarSign, Info, Loader2, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { DashboardKPIs } from '@/components/dashboard/DashboardKPIs';
+import { SalesReportCard } from '@/components/dashboard/SalesReportCard';
+import { getSalesKPIs } from '@/lib/sales';
+import { useQuery } from '@tanstack/react-query';
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
@@ -28,7 +31,15 @@ const Dashboard = () => {
 
   const { isLoading, hasError, noData, userId, isAuthReady } = dashboardState;
 
-  // Log do estado do dashboard para debugging
+  const salesKPIsQuery = useQuery({
+    queryKey: ['salesKPIs', timeRange, userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      return await getSalesKPIs(parseInt(timeRange), userId);
+    },
+    enabled: !!userId
+  });
+
   console.log('[Dashboard] Estado atual:', { 
     user: user?.id, 
     userId,
@@ -37,13 +48,14 @@ const Dashboard = () => {
     recentSalesData: recentSales.data?.length || 0,
     lowStockData: lowStock.data?.length || 0,
     isLoading,
-    hasError
+    hasError,
+    salesKPIs: salesKPIsQuery.data
   });
 
-  // Função para forçar a atualização dos dados
   const handleRefresh = () => {
     toast.info("Atualizando dados do dashboard...");
     refreshData().then(() => {
+      salesKPIsQuery.refetch();
       toast.success("Dados atualizados com sucesso!");
     }).catch((error) => {
       toast.error("Erro ao atualizar dados");
@@ -55,7 +67,6 @@ const Dashboard = () => {
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
         <div className="flex flex-col space-y-6">
-          {/* Header com seletor de período */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
@@ -95,7 +106,6 @@ const Dashboard = () => {
             </div>
           </div>
           
-          {/* Status de autenticação */}
           {!userId && (
             <div className="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-4 my-4 text-yellow-800 dark:text-yellow-200">
               <div className="flex items-start">
@@ -121,7 +131,6 @@ const Dashboard = () => {
             </div>
           )}
           
-          {/* Avisos de erros */}
           {hasError && (
             <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md p-4 my-4 text-red-800 dark:text-red-200">
               <div className="flex items-start">
@@ -145,7 +154,6 @@ const Dashboard = () => {
             </div>
           )}
           
-          {/* Sem dados */}
           {userId && isAuthReady && noData && !isLoading && (
             <Card className="my-4">
               <CardContent className="p-6 text-center">
@@ -165,7 +173,6 @@ const Dashboard = () => {
             </Card>
           )}
           
-          {/* Loading */}
           {isLoading && userId && (
             <div className="flex justify-center items-center p-12">
               <div className="flex flex-col items-center">
@@ -175,7 +182,15 @@ const Dashboard = () => {
             </div>
           )}
           
-          {/* KPIs */}
+          {!isLoading && userId && isAuthReady && (
+            <div className="mb-6">
+              <DashboardKPIs 
+                data={salesKPIsQuery.data} 
+                isLoading={salesKPIsQuery.isLoading} 
+              />
+            </div>
+          )}
+          
           {!isLoading && userId && isAuthReady && salesSummary.data && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <SimpleDashboardKPI 
@@ -199,7 +214,12 @@ const Dashboard = () => {
             </div>
           )}
           
-          {/* Conteúdo principal */}
+          {!isLoading && userId && isAuthReady && (
+            <div className="mb-6">
+              <SalesReportCard />
+            </div>
+          )}
+          
           {!isLoading && userId && isAuthReady && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <SimpleRecentSales 

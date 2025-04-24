@@ -3,6 +3,8 @@ import { Product } from '@/lib/products/types';
 import { Edit, Trash2, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from "@/components/ui/card";
+import { InlineEdit } from '@/components/ui/inline-edit';
+import { toast } from 'sonner';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -15,9 +17,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { StockStatusIndicator } from './StockStatusIndicator';
-import { getProductImageUrl } from '@/integrations/supabase/client';
-import { useEffect, useState, useRef } from 'react';
 import { ProductQRCode } from './ProductQRCode';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProductCardProps {
   product: Product;
@@ -26,82 +27,52 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
-  const [imageUrl, setImageUrl] = useState<string>("/placeholder.svg");
-  const [imageError, setImageError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
-
-  const getOptimizedImageUrl = (url: string) => {
-    if (!url || url === '/placeholder.svg') return url;
+  const handleUpdateStock = async (newValue: string) => {
+    const stock = parseInt(newValue, 10);
     
-    if (url.includes('storage.googleapis.com')) {
-      return url + '?width=300&height=300&resize=contain';
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ stock })
+        .eq('id', product.id);
+      
+      if (error) throw error;
+      
+      toast.success('Estoque atualizado com sucesso');
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      toast.error('Erro ao atualizar estoque');
     }
-    return url;
   };
 
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && product.image && !isLoaded) {
-        const optimizedUrl = getOptimizedImageUrl(product.image);
-        setImageUrl(optimizedUrl);
-        setIsLoaded(true);
-        
-        if (imgRef.current) {
-          observer.unobserve(imgRef.current);
-        }
-      }
-    }, {
-      rootMargin: '200px',
-      threshold: 0.1
-    });
+  const handleUpdatePrice = async (newValue: string) => {
+    const price = parseFloat(newValue);
     
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ price })
+        .eq('id', product.id);
+      
+      if (error) throw error;
+      
+      toast.success('Preço atualizado com sucesso');
+    } catch (error) {
+      console.error('Error updating price:', error);
+      toast.error('Erro ao atualizar preço');
     }
-    
-    return () => {
-      if (imgRef.current) {
-        observer.unobserve(imgRef.current);
-      }
-    };
-  }, [product.image, isLoaded]);
-
-  const handleImageError = () => {
-    console.error(`Failed to load image for inventory product: ${product.name}, URL: ${imageUrl}`);
-    setImageError(true);
   };
-
-  const getProfitInfo = () => {
-    const purchasePrice = product.purchase_price;
-    const profitMargin = product.profit_margin;
-    
-    if (profitMargin !== null && profitMargin !== undefined) {
-      return `${profitMargin.toFixed(2)}%`;
-    } else if (purchasePrice && purchasePrice > 0) {
-      const margin = ((product.price - purchasePrice) / purchasePrice) * 100;
-      return `${margin.toFixed(2)}%`;
-    }
-    return null;
-  };
-
-  const profitInfo = getProfitInfo();
-  const hasImage = !imageError && imageUrl !== "/placeholder.svg" && isLoaded;
 
   return (
     <Card key={product.id} className="mb-4">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div ref={imgRef} className="h-16 w-16 rounded-md overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
-            {!imageError && imageUrl !== "/placeholder.svg" ? (
+          <div className="h-16 w-16 rounded-md overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
+            {product.image && product.image !== "/placeholder.svg" ? (
               <img 
-                src={imageUrl} 
+                src={product.image} 
                 alt={product.name} 
                 className="h-full w-full object-cover"
-                onError={() => setImageError(true)}
-                loading="lazy"
-                width={150}
-                height={150}
               />
             ) : (
               <Image className="h-6 w-6 text-muted-foreground" />
@@ -115,22 +86,33 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
                 {product.code || "Sem código"} • {product.category}
               </p>
             </div>
-          </div>
-          
-          <div className="text-right ml-2">
-            <div className="font-medium">{formatCurrency(product.price)}</div>
-            {profitInfo && (
-              <p className="text-xs text-green-600">Margem: {profitInfo}</p>
-            )}
+            
+            <div className="mt-2 flex items-center justify-between">
+              <InlineEdit
+                value={product.price}
+                onSave={handleUpdatePrice}
+                type="number"
+                min={0}
+                step={0.01}
+                formatter={formatCurrency}
+                className="text-base font-medium"
+              />
+            </div>
           </div>
         </div>
         
         <div className="flex items-center justify-between mt-3 pt-3 border-t">
-          <div className="inline-flex items-center gap-1">
+          <div className="inline-flex items-center gap-2">
             <StockStatusIndicator stock={product.stock} />
-            <span className="text-sm">
-              {product.stock} unidades
-            </span>
+            <InlineEdit
+              value={product.stock}
+              onSave={handleUpdateStock}
+              type="number"
+              min={0}
+              step={1}
+              className="w-16"
+            />
+            <span className="text-sm">un</span>
           </div>
           
           <div className="flex space-x-2">

@@ -3,6 +3,8 @@ import { formatCurrency } from '@/lib/utils';
 import { Product } from '@/lib/products/types';
 import { Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InlineEdit } from '@/components/ui/inline-edit';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -10,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { StockStatusIndicator } from './StockStatusIndicator';
 import { ProductQRCode } from './ProductQRCode';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProductTableDesktopProps {
   products: Product[];
@@ -32,6 +35,42 @@ interface ProductTableDesktopProps {
 }
 
 export const ProductTableDesktop = ({ products, onEdit, onDelete }: ProductTableDesktopProps) => {
+  const handleUpdateStock = async (productId: string, newValue: string) => {
+    const stock = parseInt(newValue, 10);
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ stock })
+        .eq('id', productId);
+      
+      if (error) throw error;
+      
+      toast.success('Estoque atualizado com sucesso');
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      toast.error('Erro ao atualizar estoque');
+    }
+  };
+
+  const handleUpdatePrice = async (productId: string, newValue: string) => {
+    const price = parseFloat(newValue);
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ price })
+        .eq('id', productId);
+      
+      if (error) throw error;
+      
+      toast.success('Preço atualizado com sucesso');
+    } catch (error) {
+      console.error('Error updating price:', error);
+      toast.error('Erro ao atualizar preço');
+    }
+  };
+
   if (products.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -77,16 +116,28 @@ export const ProductTableDesktop = ({ products, onEdit, onDelete }: ProductTable
                 </TableCell>
                 <TableCell className="max-w-[120px] truncate">{product.category}</TableCell>
                 <TableCell className="text-right whitespace-nowrap">
-                  {formatCurrency(product.price)}
+                  <InlineEdit
+                    value={product.price}
+                    onSave={(value) => handleUpdatePrice(product.id, value)}
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    formatter={formatCurrency}
+                    className="ml-auto"
+                  />
                 </TableCell>
                 <TableCell>
-                  <div className="flex justify-center">
-                    <div className="inline-flex items-center gap-1">
-                      <StockStatusIndicator stock={product.stock} />
-                      <span className="text-sm whitespace-nowrap">
-                        {product.stock} unidades
-                      </span>
-                    </div>
+                  <div className="flex justify-center items-center gap-2">
+                    <StockStatusIndicator stock={product.stock} />
+                    <InlineEdit
+                      value={product.stock}
+                      onSave={(value) => handleUpdateStock(product.id, value)}
+                      type="number"
+                      min={0}
+                      step={1}
+                      className="w-16"
+                    />
+                    <span className="text-sm whitespace-nowrap">un</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">

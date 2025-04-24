@@ -142,32 +142,40 @@ export function calculateSalesKPIs(
   const totalSales = recentSales.length;
   const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
   
-  // Calculate cost and profit (assuming products have purchase_price)
+  // Calculate cost and profit (ensuring products have purchase_price)
   let totalCost = 0;
   recentSales.forEach(sale => {
     if (sale.products && Array.isArray(sale.products)) {
       sale.products.forEach(item => {
         const quantity = item.quantity || 1;
-        // Try to get purchase_price from either direct property or nested product
-        const purchasePrice = 
-          (typeof item.purchase_price !== 'undefined' ? Number(item.purchase_price) : 0) || 
-          (item.product && typeof item.product.purchase_price !== 'undefined' ? Number(item.product.purchase_price) : 0);
         
-        console.log("Calculando custo do item:", {
-          nome: item.name || item.id,
-          quantidade: quantity,
-          precoCusto: purchasePrice,
-          custoTotal: purchasePrice * quantity
-        });
+        // Extract purchase price with better type checking
+        let purchasePrice = 0;
         
-        totalCost += purchasePrice * quantity;
+        if (item.purchase_price !== undefined && item.purchase_price !== null) {
+          purchasePrice = Number(item.purchase_price);
+        } else if (item.product && item.product.purchase_price !== undefined && item.product.purchase_price !== null) {
+          purchasePrice = Number(item.product.purchase_price);
+        }
+        
+        // Ensure purchase price is valid
+        if (isNaN(purchasePrice)) {
+          console.warn(`Preço de compra inválido para o produto ${item.id || item.name}:`, item.purchase_price);
+          purchasePrice = 0;
+        }
+        
+        const itemCost = purchasePrice * quantity;
+        totalCost += itemCost;
+        
+        console.log(`Item: ${item.name || item.id} - Qtd: ${quantity} - Preço compra: ${purchasePrice} - Custo: ${itemCost}`);
       });
     }
   });
   
+  console.log(`Custo total calculado: ${totalCost} (de ${recentSales.length} vendas)`);
   const profit = totalRevenue - totalCost;
   
-  // Calculate previous period metrics
+  // Calculate previous period metrics with the same logic
   const previousRevenue = previousPeriodSales.reduce((sum, sale) => sum + sale.total, 0);
   const previousSales = previousPeriodSales.length;
   const previousAvgTicket = previousSales > 0 ? previousRevenue / previousSales : 0;
@@ -177,9 +185,20 @@ export function calculateSalesKPIs(
     if (sale.products && Array.isArray(sale.products)) {
       sale.products.forEach(item => {
         const quantity = item.quantity || 1;
-        const purchasePrice = 
-          (typeof item.purchase_price !== 'undefined' ? Number(item.purchase_price) : 0) || 
-          (item.product && typeof item.product.purchase_price !== 'undefined' ? Number(item.product.purchase_price) : 0);
+        
+        // Extract purchase price with the same logic as above
+        let purchasePrice = 0;
+        
+        if (item.purchase_price !== undefined && item.purchase_price !== null) {
+          purchasePrice = Number(item.purchase_price);
+        } else if (item.product && item.product.purchase_price !== undefined && item.product.purchase_price !== null) {
+          purchasePrice = Number(item.product.purchase_price);
+        }
+        
+        if (isNaN(purchasePrice)) {
+          purchasePrice = 0;
+        }
+        
         previousCost += purchasePrice * quantity;
       });
     }
@@ -212,13 +231,16 @@ export function calculateSalesKPIs(
     ? (profitMargin - previousMargin) / previousMargin * 100
     : 0;
   
-  console.log("KPIs calculados:", {
-    receita: totalRevenue,
-    custo: totalCost,
-    lucro: profit,
-    margemLucro: profitMargin,
+  console.log("KPIs calculados completos:", {
+    receita: totalRevenue.toFixed(2),
+    custo: totalCost.toFixed(2),
+    lucro: profit.toFixed(2),
+    margemLucro: profitMargin.toFixed(1) + "%",
     vendas: totalSales,
-    ticketMedio: averageTicket
+    ticketMedio: averageTicket.toFixed(2),
+    mudancaReceita: revenueChange.toFixed(1) + "%",
+    mudancaLucro: profitChange.toFixed(1) + "%",
+    mudancaMargem: marginChange.toFixed(1) + "%"
   });
   
   return {

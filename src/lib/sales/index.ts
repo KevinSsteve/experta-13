@@ -1,4 +1,3 @@
-
 import { Sale, DailySales, SalesByCategory, SalesKPIs, SalesSummary, CustomerInfo } from './types';
 import { fetchSalesFromSupabase, adaptSupabaseSale } from './adapters';
 import { generateSalesData } from './generators';
@@ -95,6 +94,25 @@ export async function getSalesKPIs(days: number = 7, userId?: string): Promise<S
     const previousPeriodSales = allSales.slice(recentSales.length);
     
     console.log(`Dados obtidos: ${recentSales.length} vendas recentes, ${previousPeriodSales.length} vendas do período anterior`);
+    
+    if (recentSales.length === 0) {
+      console.warn("Nenhuma venda recente encontrada para calcular KPIs");
+    }
+    
+    // Verificando se há preços de compra definidos nas vendas
+    if (recentSales.length > 0) {
+      const sampleSale = recentSales[0];
+      if (sampleSale.products && Array.isArray(sampleSale.products) && sampleSale.products.length > 0) {
+        const sampleProduct = sampleSale.products[0];
+        console.log("Exemplo de produto na venda:", {
+          produto: sampleProduct.name || sampleProduct.id,
+          temPrecoCusto: sampleProduct.purchase_price !== undefined,
+          valorPrecoCusto: sampleProduct.purchase_price,
+          temProdutoAninhado: sampleProduct.product !== undefined,
+          produtoAninhado: sampleProduct.product
+        });
+      }
+    }
     
     return calculateSalesKPIs(recentSales, previousPeriodSales);
   } catch (error) {

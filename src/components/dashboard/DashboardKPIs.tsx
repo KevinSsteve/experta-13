@@ -38,15 +38,15 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
     );
   }
 
-  // Certificar que estamos calculando o lucro corretamente (receita total - custo total)
+  // Utilizando os valores já calculados do backend
   const profit = data.totalRevenue - data.totalCost;
   const profitMargin = data.totalRevenue > 0 ? (profit / data.totalRevenue) * 100 : 0;
 
-  console.log("Dashboard KPIs - Valores calculados:", {
+  console.log("Dashboard KPIs - Dados recebidos:", {
     totalRevenue: data.totalRevenue,
     totalCost: data.totalCost,
-    profit,
-    profitMargin
+    calculatedProfit: profit,
+    calculatedMargin: profitMargin
   });
 
   return (

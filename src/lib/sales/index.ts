@@ -1,3 +1,4 @@
+
 import { Sale, DailySales, SalesByCategory, SalesKPIs, SalesSummary, CustomerInfo } from './types';
 import { fetchSalesFromSupabase, adaptSupabaseSale } from './adapters';
 import { generateSalesData } from './generators';
@@ -84,6 +85,7 @@ export async function fetchSalesByCategory(userId?: string): Promise<SalesByCate
 // Function to calculate KPIs
 export async function getSalesKPIs(days: number = 7, userId?: string): Promise<SalesKPIs> {
   try {
+    console.log(`Calculando KPIs para os últimos ${days} dias, usuário: ${userId || 'não definido'}`);
     // Get sales for current period
     const recentSales = await getRecentSales(days, userId);
     
@@ -91,6 +93,8 @@ export async function getSalesKPIs(days: number = 7, userId?: string): Promise<S
     const previousDays = days * 2;
     const allSales = await getRecentSales(previousDays, userId);
     const previousPeriodSales = allSales.slice(recentSales.length);
+    
+    console.log(`Dados obtidos: ${recentSales.length} vendas recentes, ${previousPeriodSales.length} vendas do período anterior`);
     
     return calculateSalesKPIs(recentSales, previousPeriodSales);
   } catch (error) {

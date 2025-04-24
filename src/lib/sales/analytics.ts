@@ -150,8 +150,16 @@ export function calculateSalesKPIs(
         const quantity = item.quantity || 1;
         // Try to get purchase_price from either direct property or nested product
         const purchasePrice = 
-          (item.purchase_price !== undefined ? item.purchase_price : 0) || 
-          (item.product && item.product.purchase_price !== undefined ? item.product.purchase_price : 0);
+          (typeof item.purchase_price !== 'undefined' ? Number(item.purchase_price) : 0) || 
+          (item.product && typeof item.product.purchase_price !== 'undefined' ? Number(item.product.purchase_price) : 0);
+        
+        console.log("Calculando custo do item:", {
+          nome: item.name || item.id,
+          quantidade: quantity,
+          precoCusto: purchasePrice,
+          custoTotal: purchasePrice * quantity
+        });
+        
         totalCost += purchasePrice * quantity;
       });
     }
@@ -170,8 +178,8 @@ export function calculateSalesKPIs(
       sale.products.forEach(item => {
         const quantity = item.quantity || 1;
         const purchasePrice = 
-          (item.purchase_price !== undefined ? item.purchase_price : 0) || 
-          (item.product && item.product.purchase_price !== undefined ? item.product.purchase_price : 0);
+          (typeof item.purchase_price !== 'undefined' ? Number(item.purchase_price) : 0) || 
+          (item.product && typeof item.product.purchase_price !== 'undefined' ? Number(item.product.purchase_price) : 0);
         previousCost += purchasePrice * quantity;
       });
     }
@@ -203,6 +211,15 @@ export function calculateSalesKPIs(
   const marginChange = previousMargin > 0
     ? (profitMargin - previousMargin) / previousMargin * 100
     : 0;
+  
+  console.log("KPIs calculados:", {
+    receita: totalRevenue,
+    custo: totalCost,
+    lucro: profit,
+    margemLucro: profitMargin,
+    vendas: totalSales,
+    ticketMedio: averageTicket
+  });
   
   return {
     totalRevenue: parseFloat(totalRevenue.toFixed(2)),

@@ -150,9 +150,8 @@ export function calculateSalesKPIs(
         const quantity = item.quantity || 1;
         // Try to get purchase_price from either direct property or nested product
         const purchasePrice = 
-          (item.purchase_price) || 
-          (item.product && item.product.purchase_price) || 
-          0;
+          (item.purchase_price !== undefined ? item.purchase_price : 0) || 
+          (item.product && item.product.purchase_price !== undefined ? item.product.purchase_price : 0);
         totalCost += purchasePrice * quantity;
       });
     }
@@ -171,9 +170,8 @@ export function calculateSalesKPIs(
       sale.products.forEach(item => {
         const quantity = item.quantity || 1;
         const purchasePrice = 
-          (item.purchase_price) || 
-          (item.product && item.product.purchase_price) || 
-          0;
+          (item.purchase_price !== undefined ? item.purchase_price : 0) || 
+          (item.product && item.product.purchase_price !== undefined ? item.product.purchase_price : 0);
         previousCost += purchasePrice * quantity;
       });
     }

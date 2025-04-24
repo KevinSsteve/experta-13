@@ -30,6 +30,7 @@ export interface Sale {
     quantity?: number;
     image?: string;
     category?: string; // Added category property to support analytics
+    purchase_price?: number; // Add purchase_price property
     product?: any; // Support for nested product structure
   }>
 }

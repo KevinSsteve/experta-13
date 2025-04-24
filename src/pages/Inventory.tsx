@@ -11,11 +11,40 @@ import { InventoryTabs } from '@/components/inventory/InventoryTabs';
 import { ProductDialog } from '@/components/inventory/ProductDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/lib/products/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Inventory = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const inventory = useInventory(user?.id);
+  const queryClient = useQueryClient();
+  
+  // Listen for product changes and update UI
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const channel = supabase
+      .channel('public:products')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'products',
+          filter: `user_id=eq.${user.id}`
+        }, 
+        () => {
+          // Invalidate and refetch products when any change occurs
+          queryClient.invalidateQueries({ queryKey: ['products', user.id] });
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
   
   if (inventory.isLoadingProducts) {
     return (

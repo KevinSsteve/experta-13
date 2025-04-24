@@ -1,3 +1,4 @@
+
 import { formatCurrency } from '@/lib/utils';
 import { Product } from '@/lib/products/types';
 import { Edit, Trash2, Image } from 'lucide-react';

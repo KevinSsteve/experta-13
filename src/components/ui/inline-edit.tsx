@@ -28,6 +28,11 @@ export function InlineEdit({
   const [editValue, setEditValue] = useState(value.toString());
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Update local state when parent value changes
+  useEffect(() => {
+    setEditValue(value.toString());
+  }, [value]);
+
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();

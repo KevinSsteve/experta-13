@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/contexts/CartContext';
 import { getProducts, getCategories } from '@/lib/products/queries';
@@ -16,6 +16,7 @@ export const useInventory = (userId?: string) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   // Use React Query to fetch products data
   const { 
@@ -93,7 +94,8 @@ export const useInventory = (userId?: string) => {
       
       setIsAddDialogOpen(false);
       toast.success("Produto adicionado com sucesso!");
-      refetchProducts();
+      // Invalidate and refetch products
+      await queryClient.invalidateQueries({queryKey: ['products', userId]});
     } catch (error: any) {
       console.error('Erro ao adicionar produto:', error);
       toast.error(`Erro ao adicionar produto: ${error.message}`);
@@ -128,7 +130,8 @@ export const useInventory = (userId?: string) => {
       setIsEditDialogOpen(false);
       setCurrentProduct(null);
       toast.success("Produto atualizado com sucesso!");
-      refetchProducts();
+      // Invalidate and refetch products
+      await queryClient.invalidateQueries({queryKey: ['products', userId]});
     } catch (error: any) {
       console.error('Erro ao atualizar produto:', error);
       toast.error(`Erro ao atualizar produto: ${error.message}`);
@@ -150,7 +153,8 @@ export const useInventory = (userId?: string) => {
       if (error) throw error;
       
       toast.success("Produto excluído com sucesso!");
-      refetchProducts();
+      // Invalidate and refetch products
+      await queryClient.invalidateQueries({queryKey: ['products', userId]});
     } catch (error: any) {
       console.error('Erro ao excluir produto:', error);
       toast.error(`Erro ao excluir produto: ${error.message}`);
@@ -161,6 +165,11 @@ export const useInventory = (userId?: string) => {
   const openEditDialog = (product: Product) => {
     setCurrentProduct(product);
     setIsEditDialogOpen(true);
+  };
+
+  // Function to update the product cache
+  const updateProductInCache = async (productId: string, newData: Partial<Product>) => {
+    await queryClient.invalidateQueries({queryKey: ['products', userId]});
   };
 
   return {
@@ -186,6 +195,7 @@ export const useInventory = (userId?: string) => {
     handleDeleteProduct,
     openEditDialog,
     setIsAddDialogOpen,
-    setIsEditDialogOpen
+    setIsEditDialogOpen,
+    updateProductInCache
   };
 };

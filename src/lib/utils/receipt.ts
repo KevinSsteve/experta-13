@@ -66,8 +66,8 @@ const defaultReceiptConfig: ReceiptConfig = {
   showLogo: false,
   showSignature: false,
   showBarcode: false,
-  systemInfo: 'Contascom - Sistema de Gestão',
-  certificateNumber: 'Aguardando certificação AGT',
+  systemInfo: 'MOLOJA - Sistema de Gestão Certificado',
+  certificateNumber: '0000/AGT/2025',
   taxExemptionReason: 'Artigo 12.º, n.º 1, alínea c) do CIVA'
 };
 
@@ -272,8 +272,8 @@ const generateThermalReceipt = (sale: Sale, config?: ExtendedProfile): string =>
   output += '\n' + footerText + '\n\n';
   
   // Informação do sistema
-  output += center('Contascom - Sistema de Gestão');
-  output += center('Aguardando certificação AGT');
+  output += center('MOLOJA - Sistema de Gestão de Faturação Certificado');
+  output += center('0000/AGT/2025');
   
   return output;
 };
@@ -303,8 +303,8 @@ export const generateReceipt = (sale: Sale, config?: ExtendedProfile): jsPDF => 
     companyNeighborhood: config?.company_neighborhood || '',
     companyCity: config?.company_city || '',
     companySocialMedia: config?.company_social_media || '',
-    systemInfo: 'Contascom - Sistema de Gestão de Faturação v1.0',
-    certificateNumber: 'Aguardando certificação AGT',
+    systemInfo: 'MOLOJA - Sistema de Gestão de Faturação Certificado',
+    certificateNumber: '0000/AGT/2025',
     taxExemptionReason: 'Artigo 12.º, n.º 1, alínea c) do CIVA'
   };
   

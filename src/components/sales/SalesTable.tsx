@@ -2,7 +2,7 @@
 import React from 'react';
 import { Sale } from '@/lib/sales/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Eye, Printer } from 'lucide-react';
+import { Eye, Printer, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SalesTableProps {
   sales: Sale[];
@@ -45,19 +46,37 @@ export function SalesTable({ sales, onViewSaleDetails, onPrintReceipt }: SalesTa
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sales.map((sale) => (
+          {sales.map((sale) => {
+            // Validar data futura (inválida segundo AGT)
+            const isFutureDate = new Date(sale.date) > new Date();
+            
+            return (
             <TableRow 
               key={sale.id} 
-              className="cursor-pointer"
+              className={`cursor-pointer ${isFutureDate ? 'bg-red-50 dark:bg-red-950/20' : ''}`}
               onClick={() => onViewSaleDetails(sale)}
             >
-              <TableCell>{formatDate(sale.date)}</TableCell>
+              <TableCell className="flex items-center gap-1">
+                {formatDate(sale.date)}
+                {isFutureDate && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <AlertCircle size={16} className="text-red-500" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Data futura inválida</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </TableCell>
               <TableCell className="font-mono text-xs">
-                {sale.id.slice(0, 8)}...
+                FT MOLOJA/{sale.id.slice(0, 8)}
               </TableCell>
               <TableCell>
                 {typeof sale.customer === 'string' 
                   ? sale.customer 
+                  : typeof sale.customer === 'object' && sale.customer && (sale.customer as any).name
+                  ? (sale.customer as any).name
                   : 'Cliente não identificado'}
               </TableCell>
               <TableCell>
@@ -89,13 +108,14 @@ export function SalesTable({ sales, onViewSaleDetails, onPrintReceipt }: SalesTa
                     size="icon"
                     onClick={(e) => onPrintReceipt(sale, e)}
                     title="Gerar recibo PDF"
+                    disabled={isFutureDate}
                   >
                     <Printer className="h-4 w-4" />
                   </Button>
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+          )})}
         </TableBody>
       </Table>
     </div>

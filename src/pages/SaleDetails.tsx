@@ -17,7 +17,8 @@ import {
   Printer,
   Share2,
   FileText,
-  Info
+  Info,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomerInfo } from '@/lib/sales/types';
@@ -26,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CreateCreditNoteDialog } from '@/components/credit-notes/CreateCreditNoteDialog';
 import { SaleCreditNotesList } from '@/components/credit-notes/SaleCreditNotesList';
 import { Json } from '@/integrations/supabase/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const SaleDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +37,7 @@ const SaleDetails = () => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [companyProfile, setCompanyProfile] = useState<ExtendedProfile | undefined>(undefined);
+  const [isSaleEditingBlocked, setIsSaleEditingBlocked] = useState(true);
   
   const { data: sales, isLoading } = useQuery({
     queryKey: ['sales', user?.id],
@@ -43,6 +46,8 @@ const SaleDetails = () => {
   });
   
   const sale = sales?.find(s => s.id === id);
+  
+  const isFutureDate = sale ? new Date(sale.date) > new Date() : false;
   
   useEffect(() => {
     const loadCompanyProfile = async () => {
@@ -73,6 +78,11 @@ const SaleDetails = () => {
   const handlePrint = () => {
     if (!sale) return;
     
+    if (isFutureDate) {
+      toast.error('Não é possível imprimir uma fatura com data futura');
+      return;
+    }
+    
     setIsPrinting(true);
     try {
       console.log("Printing receipt with company profile:", companyProfile);
@@ -88,6 +98,11 @@ const SaleDetails = () => {
   
   const handleDownload = () => {
     if (!sale) return;
+    
+    if (isFutureDate) {
+      toast.error('Não é possível baixar uma fatura com data futura');
+      return;
+    }
     
     setIsDownloading(true);
     try {
@@ -105,6 +120,11 @@ const SaleDetails = () => {
   const handleDownloadThermal = () => {
     if (!sale) return;
     
+    if (isFutureDate) {
+      toast.error('Não é possível baixar um recibo térmico com data futura');
+      return;
+    }
+    
     setIsDownloading(true);
     try {
       console.log("Downloading thermal receipt with company profile:", companyProfile);
@@ -120,6 +140,11 @@ const SaleDetails = () => {
   
   const handleShare = async () => {
     if (!sale) return;
+    
+    if (isFutureDate) {
+      toast.error('Não é possível compartilhar uma fatura com data futura');
+      return;
+    }
     
     setIsSharing(true);
     try {
@@ -271,6 +296,17 @@ const SaleDetails = () => {
             </Button>
           </div>
           
+          {isFutureDate && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Data inválida</AlertTitle>
+              <AlertDescription>
+                Esta venda possui uma data futura, o que não está em conformidade com os requisitos fiscais.
+                Por favor, corrija a data antes de emitir qualquer documento fiscal.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Card>
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -280,7 +316,10 @@ const SaleDetails = () => {
                     Informações completas sobre a transação
                   </CardDescription>
                 </div>
-                <Badge variant="outline" className="md:self-start">
+                <Badge 
+                  variant={isFutureDate ? "destructive" : "outline"} 
+                  className="md:self-start"
+                >
                   {formatDate(sale.date)}
                 </Badge>
               </div>
@@ -306,6 +345,12 @@ const SaleDetails = () => {
                           {(sale.customer as CustomerInfo).email && (
                             <p>Email: {(sale.customer as CustomerInfo).email}</p>
                           )}
+                          {!(sale.customer as CustomerInfo).nif && (
+                            <p className="text-amber-600 dark:text-amber-400">NIF: Consumidor final</p>
+                          )}
+                          {(sale.customer as CustomerInfo).nif && (
+                            <p>NIF: {(sale.customer as CustomerInfo).nif}</p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -313,6 +358,14 @@ const SaleDetails = () => {
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground">Método de Pagamento</h3>
                       <p>{sale.paymentMethod}</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Imposto</h3>
+                      <p>Taxa: {companyProfile?.tax_rate || 0}%</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Motivo de isenção: {companyProfile?.receipt_additional_info || 'Artigo 12.º, n.º 1, alínea c) do CIVA'}
+                      </p>
                     </div>
                   </div>
                   
@@ -402,8 +455,9 @@ const SaleDetails = () => {
               <Button 
                 variant="outline" 
                 onClick={handlePrint}
-                disabled={isPrinting}
+                disabled={isPrinting || isFutureDate}
                 className="flex-1 sm:flex-initial"
+                title={isFutureDate ? "Não é possível imprimir faturas com data futura" : ""}
               >
                 <Printer className="mr-2 h-4 w-4" />
                 Imprimir
@@ -412,8 +466,9 @@ const SaleDetails = () => {
               <Button
                 variant="outline"
                 onClick={handleDownload}
-                disabled={isDownloading}
+                disabled={isDownloading || isFutureDate}
                 className="flex-1 sm:flex-initial"
+                title={isFutureDate ? "Não é possível baixar faturas com data futura" : ""}
               >
                 <Download className="mr-2 h-4 w-4" />
                 Baixar PDF
@@ -422,8 +477,9 @@ const SaleDetails = () => {
               <Button
                 variant="outline"
                 onClick={handleDownloadThermal}
-                disabled={isDownloading}
+                disabled={isDownloading || isFutureDate}
                 className="flex-1 sm:flex-initial"
+                title={isFutureDate ? "Não é possível baixar faturas com data futura" : ""}
               >
                 <FileText className="mr-2 h-4 w-4" />
                 Baixar Texto
@@ -431,8 +487,9 @@ const SaleDetails = () => {
               
               <Button
                 onClick={handleShare}
-                disabled={isSharing}
+                disabled={isSharing || isFutureDate}
                 className="flex-1 sm:flex-initial"
+                title={isFutureDate ? "Não é possível compartilhar faturas com data futura" : ""}
               >
                 <Share2 className="mr-2 h-4 w-4" />
                 Compartilhar

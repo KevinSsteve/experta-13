@@ -64,11 +64,14 @@ export interface SalesByCategory {
 
 export interface SalesKPIs {
   totalRevenue: number;
+  totalCost: number; // Added missing property
   totalSales: number;
   averageTicket: number;
   revenueChange: number;
   salesChange: number;
   ticketChange: number;
+  profitChange: number; // Added missing property
+  marginChange: number; // Added missing property
 }
 
 // Interface para notas de crédito

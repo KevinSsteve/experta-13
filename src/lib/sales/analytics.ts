@@ -132,28 +132,48 @@ export async function getSalesByCategory(sales: Sale[]): Promise<SalesByCategory
   })).sort((a, b) => b.sales - a.sales);
 }
 
+// Function para buscar despesas do período
+async function getExpensesForPeriod(startDate: Date, endDate: Date, userId: string) {
+  try {
+    const { data: expenses, error } = await supabase
+      .from('expenses')
+      .select('amount')
+      .gte('date', startDate.toISOString())
+      .lte('date', endDate.toISOString())
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Erro ao buscar despesas:', error);
+      return 0;
+    }
+
+    return expenses.reduce((total, expense) => total + Number(expense.amount), 0);
+  } catch (error) {
+    console.error('Erro ao calcular total de despesas:', error);
+    return 0;
+  }
+}
+
 // Função para calcular KPIs
-export function calculateSalesKPIs(
+export async function calculateSalesKPIs(
   recentSales: Sale[], 
-  previousPeriodSales: Sale[]
-): SalesKPIs {
+  previousPeriodSales: Sale[],
+  userId?: string
+): Promise<SalesKPIs> {
   // Calculate revenue
   const totalRevenue = recentSales.reduce((sum, sale) => sum + sale.total, 0);
   const totalSales = recentSales.length;
   const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
   
-  // Calculate cost and profit (ensuring products have purchase_price)
-  let totalCost = 0;
+  // Calculate product costs
+  let totalProductCost = 0;
   
-  // Processamento mais detalhado para verificar o custo real
+  console.log(`Calculando custos para ${recentSales.length} vendas...`);
+  
   recentSales.forEach(sale => {
-    console.log(`Processando venda: ${sale.id}, total: ${sale.total}, produtos: ${sale.products ? sale.products.length : 'nenhum'}`);
-    
     if (sale.products && Array.isArray(sale.products)) {
       sale.products.forEach(item => {
         const quantity = item.quantity || 1;
-        
-        // Extract purchase price with better type checking
         let purchasePrice = 0;
         
         if (item.purchase_price !== undefined && item.purchase_price !== null) {
@@ -162,43 +182,52 @@ export function calculateSalesKPIs(
           purchasePrice = Number(item.product.purchase_price);
         }
         
-        // Ensure purchase price is valid
         if (isNaN(purchasePrice)) {
           console.warn(`Preço de compra inválido para o produto ${item.id || item.name}:`, item.purchase_price);
           purchasePrice = 0;
         }
         
         const itemCost = purchasePrice * quantity;
-        totalCost += itemCost;
+        totalProductCost += itemCost;
         
         console.log(`Item: ${item.name || item.id} - Qtd: ${quantity} - Preço compra: ${purchasePrice} - Custo: ${itemCost}`);
       });
-    } else {
-      console.warn(`Venda ${sale.id} não tem produtos ou formato inválido:`, sale.products);
     }
   });
-  
-  // Se não encontramos nenhum custo, usamos uma estimativa para evitar margem 100%
-  if (totalCost === 0 && totalRevenue > 0) {
-    console.warn("Nenhum custo encontrado nas vendas! Usando estimativa de 60% da receita para evitar margem 100%");
-    totalCost = totalRevenue * 0.6;
+
+  // Se não encontramos nenhum custo de produtos, estimamos como 60% da receita
+  if (totalProductCost === 0 && totalRevenue > 0) {
+    console.warn("Nenhum custo de produtos encontrado! Usando estimativa de 60% da receita");
+    totalProductCost = totalRevenue * 0.6;
   }
-  
-  console.log(`Custo total calculado: ${totalCost} (de ${recentSales.length} vendas)`);
+
+  // Calcular datas para buscar despesas
+  const now = new Date();
+  const periodStart = new Date(now);
+  periodStart.setDate(periodStart.getDate() - 7); // Ajuste conforme necessário
+
+  // Buscar despesas se tivermos userId
+  let totalExpenses = 0;
+  if (userId) {
+    totalExpenses = await getExpensesForPeriod(periodStart, now, userId);
+    console.log(`Total de despesas do período: ${totalExpenses}`);
+  }
+
+  // Calcular custo total (produtos + despesas)
+  const totalCost = totalProductCost + totalExpenses;
+  console.log(`Custo total: ${totalCost} (Produtos: ${totalProductCost}, Despesas: ${totalExpenses})`);
+
   const profit = totalRevenue - totalCost;
   
-  // Calculate previous period metrics with the same logic
+  // Calculate previous period metrics
   const previousRevenue = previousPeriodSales.reduce((sum, sale) => sum + sale.total, 0);
   const previousSales = previousPeriodSales.length;
-  const previousAvgTicket = previousSales > 0 ? previousRevenue / previousSales : 0;
+  let previousProductCost = 0;
   
-  let previousCost = 0;
   previousPeriodSales.forEach(sale => {
     if (sale.products && Array.isArray(sale.products)) {
       sale.products.forEach(item => {
         const quantity = item.quantity || 1;
-        
-        // Extract purchase price with the same logic as above
         let purchasePrice = 0;
         
         if (item.purchase_price !== undefined && item.purchase_price !== null) {
@@ -207,23 +236,30 @@ export function calculateSalesKPIs(
           purchasePrice = Number(item.product.purchase_price);
         }
         
-        if (isNaN(purchasePrice)) {
-          purchasePrice = 0;
-        }
-        
-        previousCost += purchasePrice * quantity;
+        previousProductCost += purchasePrice * quantity;
       });
     }
   });
   
-  // Se não encontramos nenhum custo no período anterior, usamos a mesma estimativa
-  if (previousCost === 0 && previousRevenue > 0) {
-    previousCost = previousRevenue * 0.6;
+  // Buscar despesas do período anterior
+  const previousPeriodStart = new Date(periodStart);
+  previousPeriodStart.setDate(previousPeriodStart.getDate() - 7);
+  
+  let previousExpenses = 0;
+  if (userId) {
+    previousExpenses = await getExpensesForPeriod(previousPeriodStart, periodStart, userId);
+    console.log(`Total de despesas do período anterior: ${previousExpenses}`);
   }
+
+  // Se não encontramos custos do período anterior, estimamos
+  if (previousProductCost === 0 && previousRevenue > 0) {
+    previousProductCost = previousRevenue * 0.6;
+  }
+
+  const previousTotalCost = previousProductCost + previousExpenses;
+  const previousProfit = previousRevenue - previousTotalCost;
   
-  const previousProfit = previousRevenue - previousCost;
-  
-  // Calculate change percentages
+  // Calculate changes
   const revenueChange = previousRevenue > 0 
     ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
     : 0;
@@ -232,11 +268,6 @@ export function calculateSalesKPIs(
     ? ((totalSales - previousSales) / previousSales) * 100 
     : 0;
   
-  const ticketChange = previousAvgTicket > 0 
-    ? ((averageTicket - previousAvgTicket) / previousAvgTicket) * 100 
-    : 0;
-  
-  // Calculate profit change
   const profitChange = previousProfit > 0
     ? ((profit - previousProfit) / previousProfit) * 100
     : 0;
@@ -250,7 +281,9 @@ export function calculateSalesKPIs(
   
   console.log("KPIs calculados completos:", {
     receita: totalRevenue.toFixed(2),
-    custo: totalCost.toFixed(2),
+    custoProdutos: totalProductCost.toFixed(2),
+    despesas: totalExpenses.toFixed(2),
+    custoTotal: totalCost.toFixed(2),
     lucro: profit.toFixed(2),
     margemLucro: profitMargin.toFixed(1) + "%",
     vendas: totalSales,
@@ -267,7 +300,6 @@ export function calculateSalesKPIs(
     averageTicket: parseFloat(averageTicket.toFixed(2)),
     revenueChange: parseFloat(revenueChange.toFixed(1)),
     salesChange: parseFloat(salesChange.toFixed(1)),
-    ticketChange: parseFloat(ticketChange.toFixed(1)),
     profitChange: parseFloat(profitChange.toFixed(1)),
     marginChange: parseFloat(marginChange.toFixed(1)),
   };

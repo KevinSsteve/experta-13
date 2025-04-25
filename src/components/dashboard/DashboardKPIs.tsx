@@ -1,4 +1,3 @@
-
 import { SalesKPIs } from '@/lib/sales';
 import { formatCurrency } from '@/lib/utils';
 import { KPICard } from './KPICard';
@@ -47,7 +46,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
     totalCost: data.totalCost,
     calculatedProfit: profit,
     calculatedMargin: profitMargin,
-    dataOriginalMargin: profitMargin
+    metricasOriginais: data
   });
 
   return (

@@ -192,25 +192,25 @@ const Dashboard = () => {
             </div>
           )}
           
-          {!isLoading && userId && isAuthReady && salesSummary.data && (
+          {!isLoading && userId && isAuthReady && salesKPIs.data && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <SimpleDashboardKPI 
                 title="Receita Total" 
-                value={formatCurrency(salesSummary.data.totalRevenue)} 
+                value={formatCurrency(salesKPIs.data.totalRevenue)} 
                 icon={<DollarSign className="h-5 w-5 text-primary" />}
-                isLoading={salesSummary.isLoading}
+                isLoading={salesKPIs.isLoading}
               />
               <SimpleDashboardKPI 
                 title="Número de Vendas" 
-                value={salesSummary.data.totalSales.toString()} 
+                value={salesKPIs.data.totalSales.toString()} 
                 icon={<ShoppingBag className="h-5 w-5 text-primary" />}
-                isLoading={salesSummary.isLoading}
+                isLoading={salesKPIs.isLoading}
               />
               <SimpleDashboardKPI 
                 title="Ticket Médio" 
-                value={formatCurrency(salesSummary.data.averageTicket)} 
+                value={formatCurrency(salesKPIs.data.averageTicket)} 
                 icon={<CreditCard className="h-5 w-5 text-primary" />} 
-                isLoading={salesSummary.isLoading}
+                isLoading={salesKPIs.isLoading}
               />
             </div>
           )}

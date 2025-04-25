@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -21,7 +22,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   
   const {
-    salesSummary,
+    salesKPIs,
     recentSales,
     lowStock,
     refreshData,
@@ -44,7 +45,7 @@ const Dashboard = () => {
     user: user?.id, 
     userId,
     isAuthReady,
-    salesSummaryData: salesSummary.data,
+    salesKPIsData: salesKPIs.data,
     recentSalesData: recentSales.data?.length || 0,
     lowStockData: lowStock.data?.length || 0,
     isLoading,

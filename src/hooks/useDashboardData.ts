@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getSalesKPIs } from '@/lib/sales';
 
 export const useDashboardData = (timeRange: string) => {
   const { user } = useAuth();
@@ -14,7 +16,6 @@ export const useDashboardData = (timeRange: string) => {
     queryKey: ['salesKPIs', days, userId],
     queryFn: async () => {
       if (!userId) return null;
-      const sales = await getSalesData(userId);
       return await getSalesKPIs(parseInt(timeRange), userId);
     },
     enabled: !!userId

@@ -1,3 +1,4 @@
+
 import { Sale, DailySales, SalesByCategory, SalesKPIs } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -279,6 +280,12 @@ export async function calculateSalesKPIs(
     ? (profitMargin - previousMargin) / previousMargin * 100
     : 0;
   
+  // Calculate ticket change
+  const previousTicket = previousSales > 0 ? previousRevenue / previousSales : 0;
+  const ticketChange = previousTicket > 0 
+    ? ((averageTicket - previousTicket) / previousTicket) * 100 
+    : 0;
+  
   console.log("KPIs calculados completos:", {
     receita: totalRevenue.toFixed(2),
     custoProdutos: totalProductCost.toFixed(2),
@@ -290,7 +297,8 @@ export async function calculateSalesKPIs(
     ticketMedio: averageTicket.toFixed(2),
     mudancaReceita: revenueChange.toFixed(1) + "%",
     mudancaLucro: profitChange.toFixed(1) + "%",
-    mudancaMargem: marginChange.toFixed(1) + "%"
+    mudancaMargem: marginChange.toFixed(1) + "%",
+    mudancaTicket: ticketChange.toFixed(1) + "%"
   });
   
   return {
@@ -302,5 +310,6 @@ export async function calculateSalesKPIs(
     salesChange: parseFloat(salesChange.toFixed(1)),
     profitChange: parseFloat(profitChange.toFixed(1)),
     marginChange: parseFloat(marginChange.toFixed(1)),
+    ticketChange: parseFloat(ticketChange.toFixed(1)),
   };
 }

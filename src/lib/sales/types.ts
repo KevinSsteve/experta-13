@@ -1,4 +1,3 @@
-
 import { CartItem } from "@/contexts/CartContext";
 import { Json } from "@/integrations/supabase/types";
 
@@ -65,14 +64,14 @@ export interface SalesByCategory {
 
 export interface SalesKPIs {
   totalRevenue: number;
-  totalCost: number; // Added missing property
+  totalCost: number;
   totalSales: number;
   averageTicket: number;
   revenueChange: number;
   salesChange: number;
   ticketChange: number;
-  profitChange: number; // Added missing property
-  marginChange: number; // Added missing property
+  profitChange: number;
+  marginChange: number;
 }
 
 // Interface para notas de crédito

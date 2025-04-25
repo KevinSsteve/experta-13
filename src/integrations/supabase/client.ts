@@ -96,7 +96,7 @@ export const addMultiplePublicProducts = async (products, userId) => {
  * @param endDate End date for the report
  * @returns Array of sales or null if there was an error
  */
-export const getSalesReportData = async (userId, startDate, endDate) => {
+export const getSalesReportData = async (userId: string, startDate: Date | string, endDate: Date | string) => {
   try {
     if (!userId) {
       console.error('No user ID provided for sales report data');
@@ -141,7 +141,7 @@ export const getSalesReportData = async (userId, startDate, endDate) => {
  * @param days Number of days to include in the report
  * @returns The generated report or null if there was an error
  */
-export const generateSalesReport = async (userId, days = 30) => {
+export const generateSalesReport = async (userId: string, days = 30) => {
   try {
     if (!userId) {
       console.error('No user ID provided for sales report generation');
@@ -164,7 +164,7 @@ export const generateSalesReport = async (userId, days = 30) => {
     }
     
     // Calculate total revenue
-    const totalRevenue = salesData.reduce((sum, sale) => sum + parseFloat(sale.total), 0);
+    const totalRevenue = salesData.reduce((sum, sale) => sum + parseFloat(sale.total.toString()), 0);
     
     // Calculate total cost (if available in the data)
     let totalCost = 0;
@@ -172,12 +172,16 @@ export const generateSalesReport = async (userId, days = 30) => {
     
     // Try to calculate cost if possible from the items data
     salesData.forEach(sale => {
-      if (sale.items && sale.items.products) {
-        sale.items.products.forEach(item => {
-          const purchasePrice = item.purchase_price || 0;
-          const quantity = item.quantity || 1;
-          totalCost += purchasePrice * quantity;
-        });
+      if (sale.items && typeof sale.items === 'object') {
+        // Check if 'products' exists as a property of the object
+        const itemsObj = sale.items as { products?: any[] };
+        if (itemsObj.products && Array.isArray(itemsObj.products)) {
+          itemsObj.products.forEach(item => {
+            const purchasePrice = item.purchase_price || 0;
+            const quantity = item.quantity || 1;
+            totalCost += purchasePrice * quantity;
+          });
+        }
       }
     });
     

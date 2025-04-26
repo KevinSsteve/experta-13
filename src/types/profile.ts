@@ -1,4 +1,3 @@
-
 export interface ExtendedProfile {
   id: string;
   name: string | null;
@@ -23,4 +22,7 @@ export interface ExtendedProfile {
   company_neighborhood: string | null;
   company_city: string | null;
   company_social_media: string | null;
+
+  needs_password_change?: boolean | null;
+  has_changed_password?: boolean | null;
 }

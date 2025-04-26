@@ -251,6 +251,7 @@ export type Database = {
           created_at: string | null
           currency: string | null
           email: string
+          has_changed_password: boolean | null
           id: string
           name: string | null
           needs_password_change: boolean | null
@@ -277,6 +278,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           email: string
+          has_changed_password?: boolean | null
           id: string
           name?: string | null
           needs_password_change?: boolean | null
@@ -303,6 +305,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           email?: string
+          has_changed_password?: boolean | null
           id?: string
           name?: string | null
           needs_password_change?: boolean | null

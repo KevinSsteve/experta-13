@@ -16,6 +16,7 @@ import {
   FileText,
   List,
   BadgeDollarSign,
+  User,
 } from "lucide-react";
 
 const navItems = [
@@ -65,6 +66,12 @@ const navItems = [
     title: "Scanner",
     href: "/scan",
     icon: <ScanLine className="h-5 w-5" />,
+    variant: "ghost" as const,
+  },
+  {
+    title: "Meu Perfil",
+    href: "/profile",
+    icon: <User className="h-5 w-5" />,
     variant: "ghost" as const,
   },
   {

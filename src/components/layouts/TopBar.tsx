@@ -1,14 +1,18 @@
+
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { Menu, ShoppingCart, Bell, Moon, Sun, AlertTriangle } from "lucide-react";
+import { Menu, ShoppingCart, Bell, Moon, Sun, AlertTriangle, User, LogOut, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   DropdownMenu,
   DropdownMenuContent, 
   DropdownMenuItem,
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
 interface TopBarProps {
@@ -18,8 +22,15 @@ interface TopBarProps {
 export function TopBar({ toggleSidebar }: TopBarProps) {
   const { theme, toggleTheme } = useTheme();
   const { openCart, getTotalItems } = useCart();
+  const { signOut, profile } = useAuth();
+  const navigate = useNavigate();
   const totalItems = getTotalItems();
   const [alertCount] = useState(1);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <header className="fixed top-0 z-50 w-full bg-background/95 backdrop-blur border-b border-border overflow-x-hidden">
@@ -96,11 +107,33 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
               )}
             </Button>
           </div>
-          <div className="ml-2">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-medium text-sm">CC</span>
-            </div>
-          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="ml-2 cursor-pointer">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-primary font-medium text-sm">
+                    {profile?.name ? profile.name.charAt(0).toUpperCase() : "U"}
+                  </span>
+                </div>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Meu Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configurações</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:text-red-500">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

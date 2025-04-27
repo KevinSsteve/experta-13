@@ -17,11 +17,10 @@ import { toast } from "sonner";
 import { Search, Plus, Database } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, logCurrentUser } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { importProductsToSupabase } from "@/utils/product-importer";
-import { ProductCarousel } from '@/components/products/ProductCarousel';
-import { ProductsList } from '@/components/products/ProductsList';
+import { ProductsList } from "@/components/products/ProductsList";
 import { ProductDialog } from '@/components/inventory/ProductDialog';
 import { ProductFormValues } from "@/components/products/ProductForm";
 
@@ -43,6 +42,7 @@ const Products = () => {
     queryKey: ['userProducts'],
     queryFn: async () => {
       console.log("Fetching user products...");
+      await logCurrentUser();
       
       if (!user) {
         console.error("No user found when trying to fetch products");
@@ -287,18 +287,6 @@ const Products = () => {
     }
   };
 
-  // Group products by category for carousel display
-  const groupedProducts: Record<string, Product[]> = {};
-  
-  if (publicProductsData) {
-    publicProductsData.forEach(product => {
-      if (!groupedProducts[product.category]) {
-        groupedProducts[product.category] = [];
-      }
-      groupedProducts[product.category].push(product);
-    });
-  }
-
   if (isLoadingUserProducts && activeTab === "my-products") {
     return (
       <MainLayout>
@@ -378,7 +366,7 @@ const Products = () => {
             </div>
           </div>
 
-          {/* Main content */}
+          {/* Main content card */}
           <Card className="overflow-hidden">
             <CardHeader className="p-3 sm:p-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -388,11 +376,11 @@ const Products = () => {
                 </TabsList>
 
                 <CardTitle className="text-lg sm:text-xl">
-                  {activeTab === "store" ? "Sugestões de Produtos" : "Meus Produtos"}
+                  {activeTab === "store" ? "Loja de Produtos" : "Meus Produtos"}
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
                   {activeTab === "store" 
-                    ? "Descubra produtos populares para adicionar ao seu estoque." 
+                    ? "Adicione produtos da loja ao seu estoque." 
                     : "Gerencie os produtos disponíveis no seu estoque."}
                 </CardDescription>
                 <div className="relative mt-2">
@@ -406,25 +394,19 @@ const Products = () => {
                 </div>
               </Tabs>
             </CardHeader>
-            <CardContent className="p-0 sm:p-6">
-              <ScrollArea className="h-[calc(100vh-280px)] sm:h-[60vh] w-full px-3 sm:px-0">
+            <CardContent className="p-0 sm:p-3">
+              <ScrollArea className="h-[calc(100vh-280px)] sm:h-[60vh] w-full">
                 <Tabs value={activeTab} className="w-full">
-                  <TabsContent value="store" className="mt-0">
-                    <div className="space-y-8">
-                      {Object.entries(groupedProducts).map(([category, products]) => (
-                        <div key={category} className="space-y-4">
-                          <h3 className="text-lg font-semibold">{category}</h3>
-                          <ProductCarousel
-                            products={products}
-                            onAdd={addToStock}
-                            isSubmitting={isSubmitting}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                  <TabsContent value="store" className="mt-0 px-2 sm:px-0">
+                    <ProductsList 
+                      products={filteredProducts}
+                      isStore={true}
+                      onAdd={addToStock}
+                      isSubmitting={isSubmitting}
+                    />
                   </TabsContent>
                   
-                  <TabsContent value="my-products" className="mt-0">
+                  <TabsContent value="my-products" className="mt-0 px-2 sm:px-0">
                     <ProductsList 
                       products={filteredProducts}
                       isStore={false}
@@ -439,7 +421,7 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Dialogs */}
+      {/* Add Product Dialog */}
       <ProductDialog 
         isOpen={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
@@ -449,6 +431,7 @@ const Products = () => {
         mode="add"
       />
 
+      {/* Edit Product Dialog */}
       <ProductDialog
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}

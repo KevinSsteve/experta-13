@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -11,6 +12,7 @@ import {
   Barcode,
   Headphones,
   Coins,
+  Sparkles,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -37,7 +39,7 @@ const SidebarNav = () => {
     {
       title: "Sugestões",
       href: "/suggestions",
-      icon: Package,
+      icon: Sparkles,
     },
     {
       title: "Estoque",

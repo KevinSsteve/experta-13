@@ -20,27 +20,30 @@ const Suggestions = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
-  const { data: publicProducts = [], isLoading, error } = useQuery({
-    queryKey: ['publicProducts'],
+  const { data: allProducts = [], isLoading, error } = useQuery({
+    queryKey: ['allProducts'],
     queryFn: async () => {
+      // Modificando a consulta para buscar produtos de todos os usuários,
+      // excluindo apenas os produtos do usuário atual
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('is_public', true)
+        .neq('user_id', user?.id || 'no-user') // Exclui produtos do usuário atual
         .order('name');
       
       if (error) {
-        console.error("Error fetching public products:", error);
+        console.error("Error fetching products from other users:", error);
         throw error;
       }
       
       return data as Product[];
-    }
+    },
+    enabled: !!user // A consulta será executada apenas quando o usuário estiver logado
   });
 
-  const filteredProducts = publicProducts.filter(product =>
+  const filteredProducts = allProducts.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const addToStock = async (product: Product) => {
@@ -63,13 +66,14 @@ const Suggestions = () => {
 
       if (existingProducts && existingProducts.length > 0) {
         toast.error("Este produto já existe no seu estoque");
+        setIsSubmitting(false);
         return;
       }
 
       const newProduct = {
         name: product.name,
         price: product.price,
-        category: product.category,
+        category: product.category || 'Geral',
         stock: 10,
         description: product.description || '',
         code: product.code || '',
@@ -125,6 +129,9 @@ const Suggestions = () => {
             <p className="text-sm text-muted-foreground">
               Descubra produtos populares para adicionar ao seu estoque
             </p>
+            <p className="text-sm mt-1 font-medium text-primary">
+              {allProducts.length} produtos encontrados de outros usuários
+            </p>
           </div>
 
           {/* Search bar */}
@@ -143,7 +150,7 @@ const Suggestions = () => {
           {/* Products grid */}
           <ScrollArea className="h-[calc(100vh-240px)]">
             <ProductGrid
-              products={publicProducts}
+              products={allProducts}
               visibleProducts={filteredProducts}
               isLoading={isLoading}
               error={error as Error}

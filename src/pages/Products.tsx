@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,6 @@ const Products = () => {
     queryKey: ['userProducts'],
     queryFn: async () => {
       console.log("Fetching user products...");
-      await logCurrentUser();
       
       if (!user) {
         console.error("No user found when trying to fetch products");
@@ -287,17 +287,17 @@ const Products = () => {
     }
   };
 
-  const getProductsByCategory = (products: Product[], category: string) => {
-    return products.filter(product => product.category === category);
-  };
-
-  const groupedProducts = products?.reduce((acc, product) => {
-    if (!acc[product.category]) {
-      acc[product.category] = [];
-    }
-    acc[product.category].push(product);
-    return acc;
-  }, {} as Record<string, Product[]>) || {};
+  // Group products by category for carousel display
+  const groupedProducts: Record<string, Product[]> = {};
+  
+  if (publicProductsData) {
+    publicProductsData.forEach(product => {
+      if (!groupedProducts[product.category]) {
+        groupedProducts[product.category] = [];
+      }
+      groupedProducts[product.category].push(product);
+    });
+  }
 
   if (isLoadingUserProducts && activeTab === "my-products") {
     return (

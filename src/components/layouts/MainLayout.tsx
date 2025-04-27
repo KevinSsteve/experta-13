@@ -1,6 +1,6 @@
 
 import { useState, ReactNode } from "react";
-import { SidebarNav } from "./SidebarNav";
+import SidebarNav from "./SidebarNav";
 import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
 import { ShoppingCart } from "@/components/shop/ShoppingCart";

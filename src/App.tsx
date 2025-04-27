@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -25,7 +24,8 @@ import ScanProducts from "./pages/ScanProducts";
 import NotFound from "./pages/NotFound";
 import VoiceOrderLists from "./pages/VoiceOrderLists";
 import Expenses from "./pages/Expenses";
-import ForcePasswordChange from "./pages/ForcePasswordChange"; // Novo import
+import ForcePasswordChange from "./pages/ForcePasswordChange";
+import Suggestions from "./pages/Suggestions";
 
 const App = () => {
   const PasswordChangeRoute = () => {

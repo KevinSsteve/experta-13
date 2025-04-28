@@ -42,12 +42,12 @@ const ProductCard = memo(({ product, onAddToCart, priority = false }: ProductCar
             decoding="async"
             onLoad={() => setImageLoaded(true)}
             onError={() => setImageError(true)}
-            width={300}
-            height={300}
+            width={150}
+            height={150}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center">
-            <ImageIcon className="h-10 w-10 text-muted-foreground" />
+            <ImageIcon className="h-6 w-6 text-muted-foreground" />
           </div>
         )}
         {!imageLoaded && !imageError && product.image && (
@@ -55,33 +55,33 @@ const ProductCard = memo(({ product, onAddToCart, priority = false }: ProductCar
         )}
         {product.stock === 0 && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <span className="text-white font-medium text-xs sm:text-sm px-2 py-1 bg-red-500 rounded-md">
+            <span className="text-white font-medium text-[10px] px-1.5 py-0.5 bg-red-500 rounded">
               Esgotado
             </span>
           </div>
         )}
       </AspectRatio>
       
-      <CardContent className="p-2 flex-grow">
-        <div className="flex justify-between items-start">
+      <CardContent className="p-1.5 flex-grow">
+        <div className="flex justify-between items-start gap-1">
           <div>
-            <h3 className="font-medium line-clamp-1 text-xs sm:text-sm">{product.name}</h3>
-            <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
+            <h3 className="font-medium line-clamp-1 text-[11px]">{product.name}</h3>
+            <p className="text-[10px] text-muted-foreground">{product.category}</p>
           </div>
-          <span className="text-xs sm:text-sm font-medium text-primary">
+          <span className="text-[11px] font-medium text-primary whitespace-nowrap">
             {formatCurrency(product.price)}
           </span>
         </div>
         {product.stock > 0 && (
-          <p className="text-xs">Estoque: {product.stock} unidades</p>
+          <p className="text-[10px] text-muted-foreground">Estoque: {product.stock}</p>
         )}
       </CardContent>
       
-      <CardFooter className="p-2 pt-0 mt-auto">
+      <CardFooter className="p-1.5 pt-0 mt-auto">
         <Button 
-          className="w-full text-xs"
+          className="w-full text-[10px]"
           size="sm"
-          disabled={product.stock === 0}
+          variant="secondary"
           onClick={() => onAddToCart(product)}
         >
           <ShoppingCart className="mr-1 h-3 w-3" />

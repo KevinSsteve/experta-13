@@ -190,6 +190,10 @@ export interface VoiceOrderTrainingData {
   userCorrected: boolean;
   correctProduct?: Product;
   timestamp: number;
+  contextData?: any;
+  alternativeTerms?: string[];
+  deviceInfo?: string;
+  feedbackRating?: number;
 }
 
 // Função para salvar dados de treinamento
@@ -202,6 +206,11 @@ export function saveTrainingData(data: VoiceOrderTrainingData): void {
       trainingData = JSON.parse(storedData);
     }
     
+    // Adicionamos informações extras do dispositivo
+    if (!data.deviceInfo) {
+      data.deviceInfo = navigator.userAgent;
+    }
+    
     // Limitamos a 100 entradas para não sobrecarregar o localStorage
     if (trainingData.length > 100) {
       trainingData = trainingData.slice(-100);
@@ -209,6 +218,48 @@ export function saveTrainingData(data: VoiceOrderTrainingData): void {
     
     trainingData.push(data);
     localStorage.setItem('voiceOrderTraining', JSON.stringify(trainingData));
+    
+    // Tenta enviar ao backend também, se disponível
+    try {
+      const { supabase } = require('@/integrations/supabase/client');
+      const { user } = require('@/contexts/AuthContext');
+      
+      if (user?.id) {
+        // Formato de dados a serem enviados ao Supabase
+        const dbData = {
+          user_id: user.id,
+          voice_input: data.voiceInput,
+          parsed_name: data.parsedOrder.name,
+          parsed_quantity: data.parsedOrder.quantity,
+          parsed_price: data.parsedOrder.price,
+          confidence: data.parsedOrder.confidence,
+          selected_product_id: data.selectedProduct?.id,
+          selected_product_name: data.selectedProduct?.name,
+          user_corrected: data.userCorrected,
+          correct_product_id: data.correctProduct?.id,
+          correct_product_name: data.correctProduct?.name,
+          context_data: data.contextData || {},
+          alternative_terms: data.alternativeTerms,
+          device_info: data.deviceInfo,
+          feedback_rating: data.feedbackRating,
+          created_at: new Date()
+        };
+        
+        // Tenta inserir no banco, mas não bloqueia o fluxo
+        supabase.from('voice_training_data').insert(dbData)
+          .then((result: any) => {
+            if (result.error) {
+              console.error('Erro ao salvar dados de treinamento no Supabase:', result.error);
+            }
+          })
+          .catch((err: any) => {
+            console.error('Exceção ao salvar dados no Supabase:', err);
+          });
+      }
+    } catch (err) {
+      // Ignora erros ao tentar salvar no backend
+      console.error('Erro ao tentar salvar no backend:', err);
+    }
   } catch (error) {
     console.error('Erro ao salvar dados de treinamento:', error);
   }

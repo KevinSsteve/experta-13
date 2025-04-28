@@ -217,4 +217,3 @@ export function SideNavigation({ className, isCollapsed }: SideNavigationProps) 
     </div>
   );
 }
-

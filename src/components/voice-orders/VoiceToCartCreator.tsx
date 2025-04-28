@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, ShoppingCart, Repeat, Check, History, X, HelpCircle } from "lucide-react";
+import { Mic, MicOff, ShoppingCart, Repeat, Check, History, X, HelpCircle, MessageSquareText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/tooltip";
 import { formatCurrency } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { VoiceTrainingFeedbackDialog } from "./VoiceTrainingFeedbackDialog";
 
 export function VoiceToCartCreator() {
   const [isListening, setIsListening] = useState(false);
@@ -34,10 +35,40 @@ export function VoiceToCartCreator() {
   const [matchedProduct, setMatchedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [recentOrders, setRecentOrders] = useState<{text: string, timestamp: number}[]>([]);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [contextualData, setContextualData] = useState<{
+    timeOfDay: string;
+    deviceType: string;
+    userAgent: string;
+  }>({
+    timeOfDay: '',
+    deviceType: '',
+    userAgent: ''
+  });
+  
   const { toast } = useToast();
   const { user } = useAuth();
   const { addItem } = useCart();
   const isMobile = useIsMobile();
+
+  // Coletar dados contextuais no carregamento
+  useEffect(() => {
+    const hour = new Date().getHours();
+    let timeOfDay = '';
+    
+    if (hour >= 5 && hour < 12) timeOfDay = 'manhã';
+    else if (hour >= 12 && hour < 18) timeOfDay = 'tarde';
+    else timeOfDay = 'noite';
+    
+    const deviceType = isMobile ? 'mobile' : 'desktop';
+    const userAgent = navigator.userAgent;
+    
+    setContextualData({
+      timeOfDay,
+      deviceType,
+      userAgent
+    });
+  }, [isMobile]);
 
   // Buscar produtos do usuário
   const { data: products, isLoading: isLoadingProducts } = useQuery({
@@ -100,6 +131,24 @@ export function VoiceToCartCreator() {
         variant: "destructive"
       });
       setIsListening(false);
+      
+      // Salvar dados sobre o erro
+      if (user?.id) {
+        try {
+          supabase.from('voice_recognition_errors').insert({
+            user_id: user.id,
+            error_type: e.error,
+            device_info: navigator.userAgent,
+            created_at: new Date()
+          }).then(result => {
+            if (result.error) {
+              console.error('Erro ao salvar dados de erro:', result.error);
+            }
+          });
+        } catch (err) {
+          console.error('Exceção ao salvar erro:', err);
+        }
+      }
     };
     
     recognition.onend = () => setIsListening(false);
@@ -121,13 +170,17 @@ export function VoiceToCartCreator() {
       setMatchedProduct(match.product);
       setQuantity(parsed.quantity || 1);
       
-      // Salvar para treinamento
+      // Salvar dados de treinamento melhorados
       saveTrainingData({
         voiceInput: text,
         parsedOrder: parsed,
         selectedProduct: match.product,
         userCorrected: false,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        contextData: {
+          ...contextualData,
+          confidence: match.confidence
+        }
       });
     } else {
       setMatchedProduct(null);
@@ -143,7 +196,8 @@ export function VoiceToCartCreator() {
         parsedOrder: parsed,
         selectedProduct: null,
         userCorrected: false,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        contextData: contextualData
       });
     }
   };
@@ -161,6 +215,28 @@ export function VoiceToCartCreator() {
       description: `${quantity} x ${matchedProduct.name} adicionado ao carrinho.`,
     });
     
+    // Salvar feedback positivo
+    if (user?.id && parsedOrder) {
+      try {
+        supabase.from('voice_recognition_feedback').insert({
+          user_id: user.id,
+          voice_input: recognizedText,
+          product_id: matchedProduct.id,
+          product_name: matchedProduct.name,
+          was_correct: true,
+          confidence: parsedOrder.confidence,
+          created_at: new Date(),
+          context: contextualData
+        }).then(result => {
+          if (result.error) {
+            console.error('Erro ao salvar feedback positivo:', result.error);
+          }
+        });
+      } catch (err) {
+        console.error('Exceção ao salvar feedback positivo:', err);
+      }
+    }
+    
     // Limpar o estado após adicionar
     setParsedOrder(null);
     setMatchedProduct(null);
@@ -169,6 +245,31 @@ export function VoiceToCartCreator() {
 
   // Rejeitar correspondência
   const handleReject = () => {
+    // Abrir o diálogo de feedback quando rejeitar
+    setShowFeedback(true);
+    
+    // Salvar feedback negativo
+    if (user?.id && parsedOrder) {
+      try {
+        supabase.from('voice_recognition_feedback').insert({
+          user_id: user.id,
+          voice_input: recognizedText,
+          product_id: matchedProduct?.id,
+          product_name: matchedProduct?.name,
+          was_correct: false,
+          confidence: parsedOrder.confidence,
+          created_at: new Date(),
+          context: contextualData
+        }).then(result => {
+          if (result.error) {
+            console.error('Erro ao salvar feedback negativo:', result.error);
+          }
+        });
+      } catch (err) {
+        console.error('Exceção ao salvar feedback negativo:', err);
+      }
+    }
+    
     // Salvar feedback negativo para treinamento
     if (parsedOrder) {
       saveTrainingData({
@@ -176,16 +277,10 @@ export function VoiceToCartCreator() {
         parsedOrder: parsedOrder,
         selectedProduct: matchedProduct,
         userCorrected: true,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        contextData: contextualData
       });
     }
-    
-    setParsedOrder(null);
-    setMatchedProduct(null);
-    toast({
-      title: "Correspondência rejeitada",
-      description: "Produto não adicionado ao carrinho.",
-    });
   };
 
   // Repetir último pedido
@@ -194,6 +289,11 @@ export function VoiceToCartCreator() {
       setRecognizedText(recentOrders[0].text);
       processVoiceOrder(recentOrders[0].text);
     }
+  };
+
+  // Abrir diálogo de feedback manualmente
+  const handleOpenFeedback = () => {
+    setShowFeedback(true);
   };
 
   const getConfidenceColor = (confidence?: number): string => {
@@ -262,15 +362,27 @@ export function VoiceToCartCreator() {
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRepeatLast}
-            disabled={recentOrders.length === 0 || isListening}
-          >
-            <Repeat className="h-4 w-4 mr-1" />
-            Repetir último
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRepeatLast}
+              disabled={recentOrders.length === 0 || isListening}
+            >
+              <Repeat className="h-4 w-4 mr-1" />
+              Repetir último
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenFeedback}
+              disabled={!recognizedText}
+            >
+              <MessageSquareText className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Enviar Feedback</span>
+            </Button>
+          </div>
           
           <TooltipProvider>
             <Tooltip>
@@ -358,6 +470,7 @@ export function VoiceToCartCreator() {
             <li>Mencione a quantidade e o nome do produto claramente</li>
             <li>Fale devagar e em um ambiente sem ruído</li>
             <li>Você pode mencionar características como marca e preço</li>
+            <li>Forneça feedback para ajudar a melhorar o sistema</li>
           </ul>
         </AlertDescription>
       </Alert>
@@ -388,6 +501,15 @@ export function VoiceToCartCreator() {
           </div>
         </div>
       )}
+
+      {/* Diálogo de Feedback */}
+      <VoiceTrainingFeedbackDialog
+        open={showFeedback}
+        onOpenChange={setShowFeedback}
+        voiceInput={recognizedText}
+        suggestedProduct={matchedProduct}
+        products={products || []}
+      />
     </div>
   );
 }

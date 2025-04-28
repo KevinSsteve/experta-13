@@ -4,11 +4,12 @@ import { VoiceToCartCreator } from "@/components/voice-orders/VoiceToCartCreator
 import { ShoppingCart } from "@/components/shop/ShoppingCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart as CartIcon, History, ArrowLeft } from "lucide-react";
+import { ShoppingCart as CartIcon, History, ArrowLeft, Mic } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResponsiveWrapper } from "@/components/ui/responsive-wrapper";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function VoiceToCart() {
   const { user, isLoading: authLoading } = useAuth();
@@ -30,7 +31,10 @@ export default function VoiceToCart() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-xl sm:text-2xl font-bold">Pedido por Voz</h1>
+            <div className="flex items-center gap-1">
+              <Mic className="h-5 w-5 text-primary" />
+              <h1 className="text-xl sm:text-2xl font-bold">Pedido por Voz</h1>
+            </div>
           </div>
           
           <div className="flex items-center gap-2">
@@ -59,6 +63,15 @@ export default function VoiceToCart() {
             </Button>
           </div>
         </div>
+        
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-4">
+            <p className="text-sm">
+              <strong>Novo!</strong> Agora você pode ajudar a melhorar o sistema fornecendo feedback. 
+              Quando o sistema não reconhecer corretamente um produto, clique em "Não é isso" ou use o botão "Enviar Feedback".
+            </p>
+          </CardContent>
+        </Card>
         
         <ResponsiveWrapper>
           <VoiceToCartCreator />

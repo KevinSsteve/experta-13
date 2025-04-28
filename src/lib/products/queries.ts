@@ -35,14 +35,18 @@ export async function getProducts(search = '', category = '', minPrice = 0, maxP
         (product) => {
           const nameMatches = product.name.toLowerCase().includes(searchLower);
           const codeMatches = product.code && product.code.toLowerCase().includes(searchLower);
+          const categoryMatches = product.category.toLowerCase().includes(searchLower);
           
           // Check phonetic match if no direct match
-          if (!nameMatches && !codeMatches) {
+          if (!nameMatches && !codeMatches && !categoryMatches) {
             const phoneticName = getPhoneticCode(product.name);
-            return phoneticName.includes(phoneticSearch) || phoneticSearch.includes(phoneticName);
+            const phoneticCategory = getPhoneticCode(product.category);
+            return phoneticName.includes(phoneticSearch) || 
+                   phoneticSearch.includes(phoneticName) || 
+                   phoneticCategory.includes(phoneticSearch);
           }
           
-          return nameMatches || codeMatches;
+          return nameMatches || codeMatches || categoryMatches;
         }
       );
       

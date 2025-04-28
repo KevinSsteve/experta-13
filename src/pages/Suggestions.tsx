@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Card } from "@/components/ui/card";
@@ -45,16 +44,6 @@ const Suggestions = () => {
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  // Group products by category
-  const productsByCategory = filteredProducts.reduce((acc, product) => {
-    const category = product.category || 'Outros';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(product);
-    return acc;
-  }, {} as Record<string, Product[]>);
 
   const addToStock = async (product: Product) => {
     if (!user) {
@@ -155,29 +144,30 @@ const Suggestions = () => {
               </div>
             </Card>
 
-            <div className="space-y-12">
-              {Object.entries(productsByCategory).map(([category, products]) => (
-                <div key={category} className="space-y-4">
-                  <h2 className="text-2xl font-semibold">{category}</h2>
-                  <Carousel className="w-full">
-                    <CarouselContent>
-                      {products.map((product) => (
-                        <CarouselItem key={product.id} className="md:basis-1/4 lg:basis-1/5 xl:basis-1/6">
-                          <div className="h-full p-0.5">
-                            <ProductCard
-                              product={product}
-                              onAddToCart={addToStock}
-                              priority={true}
-                            />
-                          </div>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
-                  </Carousel>
-                </div>
-              ))}
+            <div className="space-y-4">
+              <Carousel
+                opts={{
+                  align: "start",
+                  slidesToScroll: 3,
+                }}
+                className="w-full"
+              >
+                <CarouselContent>
+                  {filteredProducts.map((product) => (
+                    <CarouselItem key={product.id} className="basis-1/3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+                      <div className="h-full p-0.5">
+                        <ProductCard
+                          product={product}
+                          onAddToCart={addToStock}
+                          priority={true}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
             </div>
 
             <div className="text-center text-muted-foreground mt-8">

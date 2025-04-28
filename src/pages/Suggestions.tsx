@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -13,38 +12,44 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ProductGrid } from "@/components/products/ProductGrid";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+
+const ITEMS_PER_PAGE = 24;
 
 const Suggestions = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
   const { data: allProducts = [], isLoading, error } = useQuery({
     queryKey: ['allProducts'],
     queryFn: async () => {
-      // Modificando a consulta para buscar produtos de todos os usuários,
-      // excluindo apenas os produtos do usuário atual
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .neq('user_id', user?.id || 'no-user') // Exclui produtos do usuário atual
         .order('name');
       
       if (error) {
-        console.error("Error fetching products from other users:", error);
+        console.error("Error fetching all products:", error);
         throw error;
       }
       
       return data as Product[];
     },
-    enabled: !!user // A consulta será executada apenas quando o usuário estiver logado
+    enabled: !!user
   });
 
   const filteredProducts = allProducts.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
 
   const addToStock = async (product: Product) => {
     if (!user) {
@@ -123,18 +128,16 @@ const Suggestions = () => {
     <MainLayout>
       <div className="container mx-auto px-2 sm:px-4">
         <div className="flex flex-col space-y-4">
-          {/* Header */}
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">Sugestões de Produtos</h1>
             <p className="text-sm text-muted-foreground">
               Descubra produtos populares para adicionar ao seu estoque
             </p>
             <p className="text-sm mt-1 font-medium text-primary">
-              {allProducts.length} produtos encontrados de outros usuários
+              {filteredProducts.length} produtos encontrados
             </p>
           </div>
 
-          {/* Search bar */}
           <Card className="p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -147,16 +150,39 @@ const Suggestions = () => {
             </div>
           </Card>
 
-          {/* Products grid */}
-          <ScrollArea className="h-[calc(100vh-240px)]">
+          <ScrollArea className="h-[calc(100vh-320px)]">
             <ProductGrid
               products={allProducts}
-              visibleProducts={filteredProducts}
+              visibleProducts={currentProducts}
               isLoading={isLoading}
               error={error as Error}
               onAddToCart={addToStock}
             />
           </ScrollArea>
+
+          {totalPages > 1 && (
+            <Pagination className="mt-4">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-sm">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </div>
     </MainLayout>

@@ -1,26 +1,26 @@
+
 import { useState } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Product } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ProductGrid } from "@/components/products/ProductGrid";
-import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-
-const ITEMS_PER_PAGE = 24;
+import { ProductCard } from "@/components/products/ProductCard";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const Suggestions = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const isMobile = useIsMobile();
   const { user } = useAuth();
 
   const { data: allProducts = [], isLoading, error } = useQuery({
@@ -46,10 +46,15 @@ const Suggestions = () => {
     (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+  // Group products by category
+  const productsByCategory = filteredProducts.reduce((acc, product) => {
+    const category = product.category || 'Outros';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(product);
+    return acc;
+  }, {} as Record<string, Product[]>);
 
   const addToStock = async (product: Product) => {
     if (!user) {
@@ -126,63 +131,59 @@ const Suggestions = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-2 sm:px-4">
-        <div className="flex flex-col space-y-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Sugestões de Produtos</h1>
-            <p className="text-sm text-muted-foreground">
-              Descubra produtos populares para adicionar ao seu estoque
-            </p>
-            <p className="text-sm mt-1 font-medium text-primary">
-              {filteredProducts.length} produtos encontrados
-            </p>
-          </div>
-
-          <Card className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar produtos por nome ou categoria..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+      <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col space-y-8">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Descubra Novos Produtos
+              </h1>
+              <p className="text-lg text-muted-foreground mt-2">
+                Explore nossa seleção de produtos populares para seu estoque
+              </p>
             </div>
-          </Card>
 
-          <ScrollArea className="h-[calc(100vh-320px)]">
-            <ProductGrid
-              products={allProducts}
-              visibleProducts={currentProducts}
-              isLoading={isLoading}
-              error={error as Error}
-              onAddToCart={addToStock}
-            />
-          </ScrollArea>
+            <Card className="p-4 backdrop-blur-sm bg-background/80">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar produtos por nome ou categoria..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </Card>
 
-          {totalPages > 1 && (
-            <Pagination className="mt-4">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="text-sm">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
+            <div className="space-y-12">
+              {Object.entries(productsByCategory).map(([category, products]) => (
+                <div key={category} className="space-y-4">
+                  <h2 className="text-2xl font-semibold">{category}</h2>
+                  <Carousel className="w-full">
+                    <CarouselContent className="-ml-4">
+                      {products.map((product) => (
+                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                          <div className="h-full">
+                            <ProductCard
+                              product={product}
+                              onAddToCart={addToStock}
+                              priority={true}
+                            />
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="-left-12 sm:-left-4" />
+                    <CarouselNext className="-right-12 sm:-right-4" />
+                  </Carousel>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center text-muted-foreground mt-8">
+              <p>{filteredProducts.length} produtos encontrados</p>
+            </div>
+          </div>
         </div>
       </div>
     </MainLayout>

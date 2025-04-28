@@ -43,22 +43,70 @@ const calculateSimilarity = (str1: string, str2: string): number => {
   return 1 - distance / maxLength;
 };
 
+// Calcula similaridade por palavras individuais (útil para produtos com múltiplas palavras)
+const calculateWordSimilarity = (text1: string, text2: string): number => {
+  // Divide as strings em palavras
+  const words1 = text1.split(/\s+/).filter(w => w.length > 1);
+  const words2 = text2.split(/\s+/).filter(w => w.length > 1);
+  
+  if (words1.length === 0 || words2.length === 0) {
+    return calculateSimilarity(text1, text2);
+  }
+  
+  // Para cada palavra em text1, encontra a melhor correspondência em text2
+  let totalSimilarity = 0;
+  let matches = 0;
+  
+  for (const word1 of words1) {
+    let bestMatch = 0;
+    for (const word2 of words2) {
+      const similarity = calculateSimilarity(word1, word2);
+      bestMatch = Math.max(bestMatch, similarity);
+    }
+    if (bestMatch > 0.6) { // Considera apenas correspondências razoáveis
+      totalSimilarity += bestMatch;
+      matches++;
+    }
+  }
+  
+  // Calcula similaridade combinada
+  const wordMatchScore = matches > 0 ? totalSimilarity / matches : 0;
+  const fullTextScore = calculateSimilarity(text1, text2);
+  
+  // Peso maior para correspondências de palavras individuais
+  return 0.7 * wordMatchScore + 0.3 * fullTextScore;
+};
+
 // Encontra produtos similares baseado no texto reconhecido
 export const findSimilarProducts = <T extends { name: string; id: string; category: string }>(
   recognizedText: string,
   products: T[],
-  threshold: number = 0.6
+  threshold: number = 0.5  // Reduzido de 0.6 para 0.5 para encontrar mais correspondências
 ): Array<T & { similarity: number }> => {
   const normalizedInput = normalizeText(recognizedText);
   
   return products
-    .map(product => ({
-      ...product,
-      similarity: calculateSimilarity(
+    .map(product => {
+      // Calcula similaridade melhorada considerando palavras individuais
+      const nameSimilarity = calculateWordSimilarity(
         normalizeText(product.name),
         normalizedInput
-      )
-    }))
+      );
+      
+      // Calcula similaridade com a categoria também (com peso menor)
+      const categorySimilarity = calculateSimilarity(
+        normalizeText(product.category),
+        normalizedInput
+      ) * 0.5; // Peso menor para categoria
+      
+      // Usa o máximo das duas similaridades
+      const similarity = Math.max(nameSimilarity, categorySimilarity);
+      
+      return {
+        ...product,
+        similarity
+      };
+    })
     .filter(product => product.similarity >= threshold)
     .sort((a, b) => b.similarity - a.similarity);
 };

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle } from "lucide-react";
@@ -28,13 +29,24 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  const { data: catalogProducts } = useQuery({
+  // Melhorar a consulta para buscar todos os produtos
+  const { data: catalogProducts, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
-      const { data } = await supabase
+      console.log('Buscando todos os produtos do catálogo...');
+      
+      // Buscar todos os produtos sem filtros
+      const { data, error } = await supabase
         .from('products')
         .select('*')
         .order('name');
+      
+      if (error) {
+        console.error('Erro ao buscar produtos:', error);
+        throw error;
+      }
+      
+      console.log(`Quantidade de produtos encontrados: ${data?.length || 0}`);
       return data as Product[];
     }
   });
@@ -60,13 +72,30 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
       const transcript = event.results[0][0].transcript;
       setRecognizedText(transcript);
       
-      if (catalogProducts) {
-        const matchedProducts = findSimilarProducts(transcript, catalogProducts);
+      if (catalogProducts && catalogProducts.length > 0) {
+        console.log(`Buscando sugestões para: "${transcript}"`);
+        console.log(`Total de produtos no catálogo: ${catalogProducts.length}`);
+        
+        // Usar limiar mais baixo (0.5) para encontrar mais produtos
+        const matchedProducts = findSimilarProducts(transcript, catalogProducts, 0.5);
+        console.log(`Produtos encontrados com similaridade: ${matchedProducts.length}`);
+        matchedProducts.forEach(p => {
+          console.log(`- ${p.name} (similaridade: ${p.similarity.toFixed(2)})`);
+        });
+        
         setSuggestions(matchedProducts);
+      } else {
+        console.warn('Catálogo de produtos vazio ou não carregado!');
+        toast({
+          title: "Aviso",
+          description: "Catálogo de produtos não está disponível.",
+          variant: "warning"
+        });
       }
     };
 
     recognition.onerror = (e) => {
+      console.error('Erro de reconhecimento de voz:', e);
       toast({
         title: "Erro",
         description: "Houve um erro no reconhecimento de voz.",
@@ -136,6 +165,12 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
         </TooltipProvider>
       </div>
 
+      {isLoadingProducts && (
+        <div className="p-2 text-sm text-muted-foreground text-center">
+          Carregando produtos do catálogo...
+        </div>
+      )}
+
       {recognizedText && (
         <div className="mt-2">
           <p className="text-sm text-muted-foreground mb-2">
@@ -156,11 +191,12 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
                 />
               ))}
             </div>
-          ) : (
+          ) : recognizedText && !isLoadingProducts ? (
             <p className="text-sm text-muted-foreground">
-              Nenhuma sugestão encontrada para este texto.
+              Nenhuma sugestão encontrada para "{recognizedText}". 
+              Tente usar palavras diferentes ou verifique se o produto está cadastrado.
             </p>
-          )}
+          ) : null}
         </div>
       )}
 

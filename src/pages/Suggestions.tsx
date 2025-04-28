@@ -160,10 +160,10 @@ const Suggestions = () => {
                 <div key={category} className="space-y-4">
                   <h2 className="text-2xl font-semibold">{category}</h2>
                   <Carousel className="w-full">
-                    <CarouselContent className="-ml-4">
+                    <CarouselContent>
                       {products.map((product) => (
-                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                          <div className="h-full">
+                        <CarouselItem key={product.id} className="md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                          <div className="h-full p-1">
                             <ProductCard
                               product={product}
                               onAddToCart={addToStock}
@@ -173,8 +173,8 @@ const Suggestions = () => {
                         </CarouselItem>
                       ))}
                     </CarouselContent>
-                    <CarouselPrevious className="-left-12 sm:-left-4" />
-                    <CarouselNext className="-right-12 sm:-right-4" />
+                    <CarouselPrevious />
+                    <CarouselNext />
                   </Carousel>
                 </div>
               ))}

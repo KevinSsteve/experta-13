@@ -44,11 +44,11 @@ const calculateSimilarity = (str1: string, str2: string): number => {
 };
 
 // Encontra produtos similares baseado no texto reconhecido
-export const findSimilarProducts = (
+export const findSimilarProducts = <T extends { name: string; id: string; category: string }>(
   recognizedText: string,
-  products: Array<{ name: string; id: string; category: string }>,
+  products: T[],
   threshold: number = 0.6
-): Array<{ name: string; id: string; category: string; similarity: number }> => {
+): Array<T & { similarity: number }> => {
   const normalizedInput = normalizeText(recognizedText);
   
   return products

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle } from "lucide-react";
@@ -29,13 +28,11 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Melhorar a consulta para buscar todos os produtos
   const { data: catalogProducts, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
       console.log('Buscando todos os produtos do catálogo...');
       
-      // Buscar todos os produtos sem filtros
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -76,7 +73,6 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
         console.log(`Buscando sugestões para: "${transcript}"`);
         console.log(`Total de produtos no catálogo: ${catalogProducts.length}`);
         
-        // Usar limiar mais baixo (0.5) para encontrar mais produtos
         const matchedProducts = findSimilarProducts(transcript, catalogProducts, 0.5);
         console.log(`Produtos encontrados com similaridade: ${matchedProducts.length}`);
         matchedProducts.forEach(p => {
@@ -89,7 +85,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
         toast({
           title: "Aviso",
           description: "Catálogo de produtos não está disponível.",
-          variant: "warning"
+          variant: "default"
         });
       }
     };

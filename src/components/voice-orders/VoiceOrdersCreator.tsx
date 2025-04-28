@@ -29,6 +29,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [noResultsFor, setNoResultsFor] = useState<string | null>(null);
+  const [previousQueries, setPreviousQueries] = useState<Set<string>>(new Set());
 
   const { data: catalogProducts, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products'],
@@ -51,10 +52,17 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
         data.slice(0, 5).forEach(p => {
           console.log(`- ${p.name} (${p.category})`);
         });
-        // Verificar se tem produtos com "leite" no nome
-        const leiteProducts = data.filter(p => p.name.toLowerCase().includes('leite'));
-        console.log(`Produtos com "leite" no nome: ${leiteProducts.length}`);
-        leiteProducts.forEach(p => console.log(`- ${p.name}`));
+        
+        // Verificar todos os produtos com "leite", "kiame", "yummi", "ngusso", "alimo" no nome
+        const testTerms = ['leite', 'kiame', 'yummi', 'ngusso', 'alimo'];
+        testTerms.forEach(term => {
+          const matchingProducts = data.filter(p => 
+            p.name.toLowerCase().includes(term) || 
+            p.category.toLowerCase().includes(term)
+          );
+          console.log(`Produtos com "${term}" no nome ou categoria: ${matchingProducts.length}`);
+          matchingProducts.forEach(p => console.log(`  - ${p.name} (${p.category})`));
+        });
       }
       return data as Product[];
     }
@@ -82,12 +90,15 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
       setRecognizedText(transcript);
       setNoResultsFor(null);
       
+      // Adiciona a consulta ao histórico para evitar mensagens repetitivas
+      setPreviousQueries(prev => new Set([...prev, transcript.toLowerCase()]));
+      
       if (catalogProducts && catalogProducts.length > 0) {
         console.log(`Buscando sugestões para: "${transcript}"`);
         console.log(`Total de produtos no catálogo: ${catalogProducts.length}`);
         
-        // Usar limiar mais baixo (0.4) para encontrar mais produtos
-        const matchedProducts = findSimilarProducts(transcript, catalogProducts, 0.4);
+        // Usar limiar mais baixo (0.35) para encontrar mais produtos com a nova lógica fonética
+        const matchedProducts = findSimilarProducts(transcript, catalogProducts, 0.35);
         console.log(`Produtos encontrados com similaridade: ${matchedProducts.length}`);
         matchedProducts.forEach(p => {
           console.log(`- ${p.name} (similaridade: ${p.similarity.toFixed(2)})`);
@@ -95,6 +106,36 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
         
         if (matchedProducts.length === 0) {
           setNoResultsFor(transcript);
+          
+          // Mensagem mais específica para termos conhecidos
+          const knownTerms = {
+            'kiame': 'Kiame',
+            'que ame': 'Kiame',
+            'quiame': 'Kiame',
+            'yummi': 'Yummi',
+            'filme': 'Yummi',
+            'ngusso': 'Ngusso',
+            'moço': 'Ngusso',
+            'alimo': 'Alimo',
+            'aline': 'Alimo',
+            'alemão': 'Alimo',
+            'alemao': 'Alimo'
+          };
+          
+          // Verifica se o texto reconhecido pode ser uma marca específica
+          const normalizedText = transcript.toLowerCase();
+          const potentialBrand = Object.entries(knownTerms).find(([variant]) => 
+            normalizedText.includes(variant)
+          );
+          
+          if (potentialBrand) {
+            const [variant, actual] = potentialBrand;
+            toast({
+              title: "Dica de busca",
+              description: `Você disse "${variant}", mas talvez esteja procurando por produtos "${actual}"?`,
+              variant: "default"
+            });
+          }
         }
         
         setSuggestions(matchedProducts);
@@ -214,8 +255,8 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
                 Tente usar palavras diferentes ou verifique se o produto está cadastrado.
                 <br />
                 <span className="text-xs italic mt-1 block">
-                  Dica: Para produtos específicos, tente usar apenas o nome principal 
-                  (ex: "leite" em vez de "caixa de leite integral").
+                  Dica: Para marcas específicas como Kiame, Yummi, Ngusso ou Alimo, 
+                  tente pronunciar claramente ou verificar a ortografia.
                 </span>
               </p>
             </div>
@@ -268,3 +309,4 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
     </div>
   );
 }
+

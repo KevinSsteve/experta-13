@@ -1,8 +1,8 @@
-
 import { Product } from './types';
 import { fetchProductsFromSupabase } from './adapters';
 import hardcodedProducts from './fallback';
 import { supabase } from '@/integrations/supabase/client';
+import { getPhoneticCode } from '@/utils/productMatchUtils';
 
 // Função para obter produtos
 export async function getProducts(search = '', category = '', minPrice = 0, maxPrice = Infinity, inStock = false, userId?: string): Promise<Product[]> {
@@ -21,10 +21,21 @@ export async function getProducts(search = '', category = '', minPrice = 0, maxP
     // Filtrar por busca
     if (search) {
       const searchLower = search.toLowerCase();
+      const phoneticSearch = getPhoneticCode(search);
+      
       filteredProducts = filteredProducts.filter(
-        (product) => 
-          product.name.toLowerCase().includes(searchLower) || 
-          (product.code && product.code.toLowerCase().includes(searchLower))
+        (product) => {
+          const nameMatches = product.name.toLowerCase().includes(searchLower);
+          const codeMatches = product.code && product.code.toLowerCase().includes(searchLower);
+          
+          // Verifica correspondência fonética se não houver correspondência direta
+          if (!nameMatches && !codeMatches) {
+            const phoneticName = getPhoneticCode(product.name);
+            return phoneticName.includes(phoneticSearch) || phoneticSearch.includes(phoneticName);
+          }
+          
+          return nameMatches || codeMatches;
+        }
       );
     }
     

@@ -1,5 +1,6 @@
 
-import { supabase, addMultiplePublicProducts, logCurrentUser } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
+import { addMultiplePublicProducts, logCurrentUser } from '@/utils/supabase-helpers';
 
 type ProductInput = {
   name: string;

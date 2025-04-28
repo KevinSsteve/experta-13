@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +33,8 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Check, Trash2, Calculator, Printer, Download, FileText, Share2, BarChart3, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, generateSalesReport } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
+import { generateSalesReport } from '@/utils/supabase-helpers';
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ExtendedProfile } from '@/types/profile';

@@ -1,9 +1,11 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileDown, ChartBar, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase, getSalesReportData, generateSalesReport } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
+import { getSalesReportData, generateSalesReport } from '@/utils/supabase-helpers';
 import { format } from 'date-fns';
 import { adaptSupabaseSale } from '@/lib/sales/adapters';
 import { useAuth } from '@/contexts/AuthContext';

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle } from "lucide-react";
@@ -27,6 +28,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   const [suggestions, setSuggestions] = useState<Array<Product & { similarity: number }>>([]);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [noResultsFor, setNoResultsFor] = useState<string | null>(null);
 
   const { data: catalogProducts, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products'],
@@ -44,6 +46,16 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
       }
       
       console.log(`Quantidade de produtos encontrados: ${data?.length || 0}`);
+      if (data && data.length > 0) {
+        console.log('Exemplo dos primeiros produtos:');
+        data.slice(0, 5).forEach(p => {
+          console.log(`- ${p.name} (${p.category})`);
+        });
+        // Verificar se tem produtos com "leite" no nome
+        const leiteProducts = data.filter(p => p.name.toLowerCase().includes('leite'));
+        console.log(`Produtos com "leite" no nome: ${leiteProducts.length}`);
+        leiteProducts.forEach(p => console.log(`- ${p.name}`));
+      }
       return data as Product[];
     }
   });
@@ -68,16 +80,22 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setRecognizedText(transcript);
+      setNoResultsFor(null);
       
       if (catalogProducts && catalogProducts.length > 0) {
         console.log(`Buscando sugestões para: "${transcript}"`);
         console.log(`Total de produtos no catálogo: ${catalogProducts.length}`);
         
-        const matchedProducts = findSimilarProducts(transcript, catalogProducts, 0.5);
+        // Usar limiar mais baixo (0.4) para encontrar mais produtos
+        const matchedProducts = findSimilarProducts(transcript, catalogProducts, 0.4);
         console.log(`Produtos encontrados com similaridade: ${matchedProducts.length}`);
         matchedProducts.forEach(p => {
           console.log(`- ${p.name} (similaridade: ${p.similarity.toFixed(2)})`);
         });
+        
+        if (matchedProducts.length === 0) {
+          setNoResultsFor(transcript);
+        }
         
         setSuggestions(matchedProducts);
       } else {
@@ -120,6 +138,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
     
     setSuggestions([]);
     setRecognizedText("");
+    setNoResultsFor(null);
   };
 
   const handleAdd = () => {
@@ -187,10 +206,22 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
                 />
               ))}
             </div>
+          ) : noResultsFor ? (
+            <div className="p-3 border border-amber-200 bg-amber-50 rounded-md">
+              <p className="text-sm text-amber-800">
+                Nenhuma sugestão encontrada para "{noResultsFor}". 
+                <br />
+                Tente usar palavras diferentes ou verifique se o produto está cadastrado.
+                <br />
+                <span className="text-xs italic mt-1 block">
+                  Dica: Para produtos específicos, tente usar apenas o nome principal 
+                  (ex: "leite" em vez de "caixa de leite integral").
+                </span>
+              </p>
+            </div>
           ) : recognizedText && !isLoadingProducts ? (
             <p className="text-sm text-muted-foreground">
-              Nenhuma sugestão encontrada para "{recognizedText}". 
-              Tente usar palavras diferentes ou verifique se o produto está cadastrado.
+              Processando texto reconhecido...
             </p>
           ) : null}
         </div>

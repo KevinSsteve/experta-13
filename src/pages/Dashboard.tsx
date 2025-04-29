@@ -7,15 +7,13 @@ import { SimpleRecentSales } from '@/components/dashboard/SimpleRecentSales';
 import { SimpleLowStockProducts } from '@/components/dashboard/SimpleLowStockProducts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { AlertTriangle, CreditCard, DollarSign, Info, Loader2, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { DashboardKPIs } from '@/components/dashboard/DashboardKPIs';
 import { SalesReportCard } from '@/components/dashboard/SalesReportCard';
-import { getSalesKPIs } from '@/lib/sales';
-import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('7');
@@ -32,35 +30,10 @@ const Dashboard = () => {
 
   const { isLoading, hasError, noData, userId, isAuthReady } = dashboardState;
 
-  const salesKPIsQuery = useQuery({
-    queryKey: ['salesKPIs', timeRange, userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      return await getSalesKPIs(parseInt(timeRange), userId);
-    },
-    enabled: !!userId
-  });
-
-  console.log('[Dashboard] Estado atual:', { 
-    user: user?.id, 
-    userId,
-    isAuthReady,
-    salesKPIsData: salesKPIs.data,
-    recentSalesData: recentSales.data?.length || 0,
-    lowStockData: lowStock.data?.length || 0,
-    isLoading,
-    hasError,
-    salesKPIs: salesKPIsQuery.data
-  });
-
   const handleRefresh = () => {
     toast.info("Atualizando dados do dashboard...");
-    refreshData().then(() => {
-      salesKPIsQuery.refetch();
-      toast.success("Dados atualizados com sucesso!");
-    }).catch((error) => {
-      toast.error("Erro ao atualizar dados");
-      console.error("Erro:", error);
+    refreshData().catch((error) => {
+      console.error("Erro na atualização:", error);
     });
   };
 
@@ -68,6 +41,7 @@ const Dashboard = () => {
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
         <div className="flex flex-col space-y-6">
+          {/* Header com título e controles */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
@@ -107,6 +81,7 @@ const Dashboard = () => {
             </div>
           </div>
           
+          {/* Alerta de autenticação */}
           {!userId && (
             <div className="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-4 my-4 text-yellow-800 dark:text-yellow-200">
               <div className="flex items-start">
@@ -132,6 +107,7 @@ const Dashboard = () => {
             </div>
           )}
           
+          {/* Mensagem de erro */}
           {hasError && (
             <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md p-4 my-4 text-red-800 dark:text-red-200">
               <div className="flex items-start">
@@ -155,6 +131,7 @@ const Dashboard = () => {
             </div>
           )}
           
+          {/* Mensagem de sem dados */}
           {userId && isAuthReady && noData && !isLoading && (
             <Card className="my-4">
               <CardContent className="p-6 text-center">
@@ -174,6 +151,7 @@ const Dashboard = () => {
             </Card>
           )}
           
+          {/* Estado de carregamento */}
           {isLoading && userId && (
             <div className="flex justify-center items-center p-12">
               <div className="flex flex-col items-center">
@@ -183,55 +161,58 @@ const Dashboard = () => {
             </div>
           )}
           
+          {/* Conteúdo principal do dashboard */}
           {!isLoading && userId && isAuthReady && (
-            <div className="mb-6">
-              <DashboardKPIs 
-                data={salesKPIsQuery.data} 
-                isLoading={salesKPIsQuery.isLoading} 
-              />
-            </div>
-          )}
-          
-          {!isLoading && userId && isAuthReady && salesKPIs.data && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <SimpleDashboardKPI 
-                title="Receita Total" 
-                value={formatCurrency(salesKPIs.data.totalRevenue)} 
-                icon={<DollarSign className="h-5 w-5 text-primary" />}
-                isLoading={salesKPIs.isLoading}
-              />
-              <SimpleDashboardKPI 
-                title="Número de Vendas" 
-                value={salesKPIs.data.totalSales.toString()} 
-                icon={<ShoppingBag className="h-5 w-5 text-primary" />}
-                isLoading={salesKPIs.isLoading}
-              />
-              <SimpleDashboardKPI 
-                title="Ticket Médio" 
-                value={formatCurrency(salesKPIs.data.averageTicket)} 
-                icon={<CreditCard className="h-5 w-5 text-primary" />} 
-                isLoading={salesKPIs.isLoading}
-              />
-            </div>
-          )}
-          
-          {!isLoading && userId && isAuthReady && (
-            <div className="mb-6">
-              <SalesReportCard />
-            </div>
-          )}
-          
-          {!isLoading && userId && isAuthReady && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <SimpleRecentSales 
-                sales={recentSales.data} 
-                isLoading={recentSales.isLoading} 
-              />
-              <SimpleLowStockProducts 
-                products={lowStock.data} 
-                isLoading={lowStock.isLoading} 
-              />
-            </div>
+            <>
+              {/* KPIs principais */}
+              <div className="mb-6">
+                <DashboardKPIs 
+                  data={salesKPIs.data} 
+                  isLoading={salesKPIs.isLoading} 
+                />
+              </div>
+              
+              {/* KPIs simplificados */}
+              {salesKPIs.data && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <SimpleDashboardKPI 
+                    title="Receita Total" 
+                    value={formatCurrency(salesKPIs.data.totalRevenue)} 
+                    icon={<DollarSign className="h-5 w-5 text-primary" />}
+                    isLoading={salesKPIs.isLoading}
+                  />
+                  <SimpleDashboardKPI 
+                    title="Número de Vendas" 
+                    value={salesKPIs.data.totalSales.toString()} 
+                    icon={<ShoppingBag className="h-5 w-5 text-primary" />}
+                    isLoading={salesKPIs.isLoading}
+                  />
+                  <SimpleDashboardKPI 
+                    title="Ticket Médio" 
+                    value={formatCurrency(salesKPIs.data.averageTicket)} 
+                    icon={<CreditCard className="h-5 w-5 text-primary" />} 
+                    isLoading={salesKPIs.isLoading}
+                  />
+                </div>
+              )}
+              
+              {/* Relatório de vendas */}
+              <div className="mb-6">
+                <SalesReportCard />
+              </div>
+              
+              {/* Vendas recentes e estoque baixo */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SimpleRecentSales 
+                  sales={recentSales.data} 
+                  isLoading={recentSales.isLoading} 
+                />
+                <SimpleLowStockProducts 
+                  products={lowStock.data} 
+                  isLoading={lowStock.isLoading} 
+                />
+              </div>
+            </>
           )}
         </div>
       </div>

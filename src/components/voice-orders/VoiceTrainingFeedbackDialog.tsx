@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/select";
 import { Product } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
 
@@ -87,25 +86,11 @@ export function VoiceTrainingFeedbackDialog({
         was_helpful: wasHelpful,
         feedback,
         alternative_terms: terms,
-        created_at: new Date()
+        created_at: new Date().toISOString()
       };
       
-      // Tentar salvar no Supabase (se tiver a tabela configurada)
-      try {
-        const { error } = await supabase
-          .from('voice_training_data')
-          .insert(trainingData);
-        
-        if (error) {
-          console.error("Erro ao salvar no banco de dados:", error);
-          // Fallback para localStorage se falhar com Supabase
-          saveToLocalStorage(trainingData);
-        }
-      } catch (err) {
-        console.error("Exceção ao salvar no banco de dados:", err);
-        // Fallback para localStorage
-        saveToLocalStorage(trainingData);
-      }
+      // Salvar no localStorage em vez de tentar salvar em uma tabela inexistente no Supabase
+      saveToLocalStorage(trainingData);
       
       toast({
         title: "Feedback enviado",

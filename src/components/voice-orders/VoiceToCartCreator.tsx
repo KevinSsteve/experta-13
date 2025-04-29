@@ -132,19 +132,18 @@ export function VoiceToCartCreator() {
       });
       setIsListening(false);
       
-      // Salvar dados sobre o erro
+      // Salvar dados sobre o erro localmente
       if (user?.id) {
         try {
-          supabase.from('voice_recognition_errors').insert({
+          // Armazenar no localStorage em vez de tentar enviar para uma tabela inexistente
+          const voiceErrors = JSON.parse(localStorage.getItem('voiceRecognitionErrors') || '[]');
+          voiceErrors.push({
             user_id: user.id,
             error_type: e.error,
             device_info: navigator.userAgent,
-            created_at: new Date()
-          }).then(result => {
-            if (result.error) {
-              console.error('Erro ao salvar dados de erro:', result.error);
-            }
+            created_at: new Date().toISOString()
           });
+          localStorage.setItem('voiceRecognitionErrors', JSON.stringify(voiceErrors));
         } catch (err) {
           console.error('Exceção ao salvar erro:', err);
         }
@@ -215,23 +214,22 @@ export function VoiceToCartCreator() {
       description: `${quantity} x ${matchedProduct.name} adicionado ao carrinho.`,
     });
     
-    // Salvar feedback positivo
+    // Salvar feedback positivo localmente
     if (user?.id && parsedOrder) {
       try {
-        supabase.from('voice_recognition_feedback').insert({
+        // Armazenar no localStorage em vez de tentar enviar para uma tabela inexistente
+        const feedbackData = JSON.parse(localStorage.getItem('voiceRecognitionFeedback') || '[]');
+        feedbackData.push({
           user_id: user.id,
           voice_input: recognizedText,
           product_id: matchedProduct.id,
           product_name: matchedProduct.name,
           was_correct: true,
           confidence: parsedOrder.confidence,
-          created_at: new Date(),
+          created_at: new Date().toISOString(),
           context: contextualData
-        }).then(result => {
-          if (result.error) {
-            console.error('Erro ao salvar feedback positivo:', result.error);
-          }
         });
+        localStorage.setItem('voiceRecognitionFeedback', JSON.stringify(feedbackData));
       } catch (err) {
         console.error('Exceção ao salvar feedback positivo:', err);
       }
@@ -248,23 +246,22 @@ export function VoiceToCartCreator() {
     // Abrir o diálogo de feedback quando rejeitar
     setShowFeedback(true);
     
-    // Salvar feedback negativo
+    // Salvar feedback negativo localmente
     if (user?.id && parsedOrder) {
       try {
-        supabase.from('voice_recognition_feedback').insert({
+        // Armazenar no localStorage em vez de tentar enviar para uma tabela inexistente
+        const feedbackData = JSON.parse(localStorage.getItem('voiceRecognitionFeedback') || '[]');
+        feedbackData.push({
           user_id: user.id,
           voice_input: recognizedText,
           product_id: matchedProduct?.id,
           product_name: matchedProduct?.name,
           was_correct: false,
           confidence: parsedOrder.confidence,
-          created_at: new Date(),
+          created_at: new Date().toISOString(),
           context: contextualData
-        }).then(result => {
-          if (result.error) {
-            console.error('Erro ao salvar feedback negativo:', result.error);
-          }
         });
+        localStorage.setItem('voiceRecognitionFeedback', JSON.stringify(feedbackData));
       } catch (err) {
         console.error('Exceção ao salvar feedback negativo:', err);
       }

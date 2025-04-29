@@ -20,7 +20,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
     return (
       <ResponsiveWrapper
         className="grid gap-4"
-        mobileClassName="grid-cols-1"
+        mobileClassName="grid-cols-2"
         desktopClassName="grid-cols-4"
       >
         <KPICardSkeleton />
@@ -46,12 +46,12 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
     <TooltipProvider delayDuration={300}>
       <ResponsiveWrapper
         className="grid gap-4"
-        mobileClassName="grid-cols-1"
+        mobileClassName="grid-cols-2"
         desktopClassName="grid-cols-4"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <div>
+            <div className="w-full">
               <KPICard
                 title="Receita Total"
                 value={formatCurrency(data.totalRevenue)}
@@ -68,7 +68,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
         
         <Tooltip>
           <TooltipTrigger asChild>
-            <div>
+            <div className="w-full">
               <KPICard
                 title="Lucro"
                 value={formatCurrency(profit)}
@@ -85,7 +85,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
         
         <Tooltip>
           <TooltipTrigger asChild>
-            <div>
+            <div className="w-full">
               <KPICard
                 title="Margem de Lucro"
                 value={`${profitMargin.toFixed(1)}%`}
@@ -102,7 +102,7 @@ export const DashboardKPIs = ({ data, isLoading }: DashboardKPIsProps) => {
         
         <Tooltip>
           <TooltipTrigger asChild>
-            <div>
+            <div className="w-full">
               <KPICard
                 title="Vendas"
                 value={data.totalSales.toString()}

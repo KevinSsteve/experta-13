@@ -18,11 +18,15 @@ export const useDashboardData = (timeRange: string) => {
   const salesKPIs = useQuery({
     queryKey: ['salesKPIs', days, userId],
     queryFn: async () => {
-      if (!userId) return null;
+      if (!userId) {
+        console.log('[useDashboardData] Sem usuário autenticado, não é possível buscar KPIs');
+        return null;
+      }
       console.log(`[useDashboardData] Buscando KPIs para os últimos ${days} dias`);
-      return await getSalesKPIs(parseInt(timeRange), userId);
+      return await getSalesKPIs(days, userId);
     },
-    enabled: !!userId
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5 // 5 minutos
   });
 
   // Usando hooks modularizados para carregamento de dados
@@ -31,20 +35,30 @@ export const useDashboardData = (timeRange: string) => {
   
   // Função unificada para forçar a atualização dos dados
   const refreshData = async () => {
-    if (!userId) return;
+    if (!userId) {
+      toast.error('Não foi possível atualizar: usuário não identificado');
+      return;
+    }
     
     setIsRefreshing(true);
     console.log('[useDashboardData] Atualizando todos os dados do dashboard...');
     
     try {
-      await Promise.all([
+      const results = await Promise.allSettled([
         salesKPIs.refetch(),
         recentSales.refetch(),
         lowStock.refetch()
       ]);
       
-      toast.success('Dados do dashboard atualizados com sucesso');
-      console.log('[useDashboardData] Atualização concluída com sucesso');
+      const hasErrors = results.some(result => result.status === 'rejected');
+      
+      if (hasErrors) {
+        toast.warning('Alguns dados não puderam ser atualizados');
+        console.warn('[useDashboardData] Alguns dados não puderam ser atualizados');
+      } else {
+        toast.success('Dados do dashboard atualizados com sucesso');
+        console.log('[useDashboardData] Atualização concluída com sucesso');
+      }
     } catch (error) {
       console.error('[useDashboardData] Erro ao atualizar dados:', error);
       toast.error('Erro ao atualizar os dados');
@@ -54,13 +68,13 @@ export const useDashboardData = (timeRange: string) => {
   };
   
   // Combinando todos os estados de carregamento
-  const isLoading = salesKPIs.isLoading || recentSales.isLoading || lowStock.isLoading || isRefreshing;
+  const isLoading = (salesKPIs.isLoading || recentSales.isLoading || lowStock.isLoading || isRefreshing) && userId !== undefined;
   
   // Verificando se houve erro em alguma das consultas
   const hasError = !!salesKPIs.error || !!recentSales.error || !!lowStock.error;
   
   // Verificando se não há dados
-  const noData = !salesKPIs.data && !recentSales.data && !lowStock.data;
+  const noData = !salesKPIs.data && !recentSales.data && !lowStock.data && !isLoading;
 
   return {
     salesKPIs,

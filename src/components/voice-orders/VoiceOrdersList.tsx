@@ -17,6 +17,7 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
+import { parseVoiceInput } from "@/utils/voiceUtils";
 import { Product } from "@/contexts/CartContext";
 
 // Define the OrderList type here to be consistent with the page component
@@ -80,7 +81,7 @@ export function VoiceOrdersList({
     }
   };
   
-  // Function to add suggested product to list
+  // Função para adicionar produto sugerido à lista
   const handleAddProductToList = (listId: string, product: Product) => {
     if (onAddProduct) {
       onAddProduct(listId, product);
@@ -260,7 +261,7 @@ export function VoiceOrdersList({
                     )}
                   </div>
                   
-                  {/* Product suggestions */}
+                  {/* Sugestões de produtos */}
                   {!isEditing && isExpanded && (
                     <div className="mt-1 ml-2 sm:ml-5">
                       <ProductSuggestions 

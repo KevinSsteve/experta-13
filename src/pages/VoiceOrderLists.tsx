@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,7 @@ import { Mic, Plus, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Product } from '@/contexts/CartContext';
+import { Product as CartProduct } from '@/contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { OrderList, VoiceOrdersList } from '@/components/voice-orders/VoiceOrdersList';
 import { ProductSuggestions } from '@/components/voice-orders/ProductSuggestions';
@@ -100,31 +101,26 @@ const VoiceOrderLists = () => {
     recognition.start();
   };
   
-  // Add product to list with proper typing
-  const addProductToList = async (listId: string, product: Product) => {
+  // Modified to handle type conversion properly
+  const addProductToList = async (listId: string, product: CartProduct) => {
     try {
-      // Find the list by ID
+      // Encontrar a lista pelo ID
       const listIndex = lists.findIndex(list => list.id === listId);
       if (listIndex === -1) return;
       
-      // Create a copy of the list
+      // Criar uma cópia da lista
       const updatedLists = [...lists];
       const list = { ...updatedLists[listIndex] };
       
-      // Convert the product to a string (JSON) to maintain compatibility with the database schema
-      const productJson = JSON.stringify({
-        name: product.name,
-        price: product.price
-      });
+      // Adicionar o produto à lista como string (conforme o tipo definido)
+      // Convertendo o objeto em string JSON para manter a compatibilidade
+      list.products = [...list.products, JSON.stringify(product)];
       
-      // Add the product to the list
-      list.products = [...list.products, productJson];
-      
-      // Update local list
+      // Atualizar lista local
       updatedLists[listIndex] = list;
       setLists(updatedLists);
       
-      // Update database
+      // Persistir no banco de dados
       const { error } = await supabase
         .from('voice_order_lists')
         .update({
@@ -139,7 +135,7 @@ const VoiceOrderLists = () => {
         description: `${product.name} adicionado à lista`,
       });
       
-      // Clear transcript after adding
+      // Limpar transcrição depois de adicionar
       setTranscript('');
     } catch (error) {
       console.error('Erro ao adicionar produto:', error);
@@ -153,24 +149,24 @@ const VoiceOrderLists = () => {
   
   const removeItemFromList = async (listId: string, itemIndex: number) => {
     try {
-      // Find the list by ID
+      // Encontrar a lista pelo ID
       const listIndex = lists.findIndex(list => list.id === listId);
       if (listIndex === -1) return;
       
-      // Create a copy of the list
+      // Criar uma cópia da lista
       const updatedLists = [...lists];
       const list = { ...updatedLists[listIndex] };
       
-      // Remove the item from the list
+      // Remover o item da lista
       const newProducts = [...list.products];
       newProducts.splice(itemIndex, 1);
       list.products = newProducts;
       
-      // Update local list
+      // Atualizar lista local
       updatedLists[listIndex] = list;
       setLists(updatedLists);
       
-      // Update database
+      // Persistir no banco de dados
       const { error } = await supabase
         .from('voice_order_lists')
         .update({
@@ -196,32 +192,24 @@ const VoiceOrderLists = () => {
   
   const editItemInList = async (listId: string, itemIndex: number, newValue: string) => {
     try {
-      // Find the list by ID
+      // Encontrar a lista pelo ID
       const listIndex = lists.findIndex(list => list.id === listId);
       if (listIndex === -1) return;
       
-      // Create a copy of the list
+      // Criar uma cópia da lista
       const updatedLists = [...lists];
       const list = { ...updatedLists[listIndex] };
       
-      // Update the item
+      // Atualizar o item
       const newProducts = [...list.products];
-      // Convert the edited value to a JSON string if necessary
-      try {
-        // Check if it's already JSON or if it needs to be wrapped
-        JSON.parse(newValue);
-        newProducts[itemIndex] = newValue;
-      } catch (e) {
-        // If parsing fails, wrap in a simple JSON object
-        newProducts[itemIndex] = JSON.stringify({ name: newValue });
-      }
+      newProducts[itemIndex] = newValue;
       list.products = newProducts;
       
-      // Update local list
+      // Atualizar lista local
       updatedLists[listIndex] = list;
       setLists(updatedLists);
       
-      // Update database
+      // Persistir no banco de dados
       const { error } = await supabase
         .from('voice_order_lists')
         .update({
@@ -348,16 +336,16 @@ const VoiceOrderLists = () => {
   };
   
   const sendListToCheckout = (listId: string) => {
-    // Find the list by ID
+    // Encontrar a lista pelo ID
     const list = lists.find(l => l.id === listId);
     if (!list) return;
     
-    // Store list in sessionStorage to retrieve in cart
+    // Armazenar lista no sessionStorage para recuperar no carrinho
     sessionStorage.setItem('shopping_list_to_cart', JSON.stringify(list));
     navigate('/checkout');
   };
   
-  // Function to format product item (used in both list and voice synthesis)
+  // Função para formatar itens de produto (usado tanto na lista como na síntese de voz)
   const formatProductItem = (item: string): string => {
     try {
       // Check if the item is a JSON string
@@ -379,7 +367,7 @@ const VoiceOrderLists = () => {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Listas de Compras por Voz</h1>
         
-        {/* Voice input section */}
+        {/* Seção de entrada por voz */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Adicionar Produtos por Voz</CardTitle>
@@ -405,7 +393,7 @@ const VoiceOrderLists = () => {
               </Button>
             </div>
             
-            {/* Product suggestions - Limited to 2 items for better accessibility */}
+            {/* Sugestões de produtos - Limitado a 2 itens para melhorar acessibilidade */}
             {transcript && selectedList && (
               <div className="mt-4">
                 <h3 className="text-sm font-medium mb-2">Adicionar "{transcript}" à lista:</h3>
@@ -433,7 +421,7 @@ const VoiceOrderLists = () => {
           </CardContent>
         </Card>
         
-        {/* Create new list */}
+        {/* Criar nova lista */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Criar Nova Lista</CardTitle>
@@ -472,7 +460,7 @@ const VoiceOrderLists = () => {
           </CardContent>
         </Card>
         
-        {/* Existing lists */}
+        {/* Listas existentes */}
         <VoiceOrdersList
           lists={lists}
           onRemove={deleteList}

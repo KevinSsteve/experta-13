@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Trash2, ShoppingCart, Edit, Check, X, ChevronDown, ChevronUp } from "lucide-react";
-import { OrderList } from "@/pages/VoiceOrderLists";
 import { Input } from "@/components/ui/input";
 import { ProductSuggestions } from "./ProductSuggestions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +18,16 @@ import {
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
 import { parseVoiceInput } from "@/utils/voiceUtils";
+
+// Define the OrderList type here to be consistent with the page component
+export interface OrderList {
+  id: string;
+  user_id: string;
+  products: string[];
+  created_at: string;
+  status: string;
+  name?: string;
+}
 
 interface VoiceOrdersListProps {
   lists: OrderList[];
@@ -108,7 +117,7 @@ export function VoiceOrdersList({
         >
           <div className="flex flex-col sm:flex-row justify-between gap-2">
             <span className="text-sm text-muted-foreground">
-              Criada em: {new Date(l.createdAt).toLocaleString()}
+              Criada em: {new Date(l.created_at).toLocaleString()}
             </span>
             <div className="flex flex-wrap gap-2">
               <ResponsiveWrapper

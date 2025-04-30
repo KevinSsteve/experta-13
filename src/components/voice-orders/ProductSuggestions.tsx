@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, X } from "lucide-react";
+import { ShoppingCart, Search, X, ChevronDown } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ParsedVoiceItem } from "@/utils/voiceUtils";
 import { Input } from "@/components/ui/input";
 import { normalizeSearch } from "@/utils/searchUtils";
 import { 
@@ -30,6 +29,7 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
   const [loading, setLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
   const { addItem } = useCart();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -121,6 +121,9 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
     }).format(price);
   };
 
+  // Limitar o número de sugestões mostradas inicialmente (apenas a primeira sugestão)
+  const visibleSuggestions = showAll ? suggestions : suggestions.slice(0, 1);
+
   return (
     <div className="mt-2">
       <div className="flex items-center gap-1 mb-2 text-sm text-muted-foreground">
@@ -176,7 +179,7 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
         </div>
       ) : (
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          {suggestions.map((product) => (
+          {visibleSuggestions.map((product) => (
             <div 
               key={product.id} 
               className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 border rounded-md hover:bg-accent/20 transition-colors"
@@ -216,6 +219,24 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
               </TooltipProvider>
             </div>
           ))}
+
+          {/* Botão "Ver mais" quando há mais sugestões disponíveis */}
+          {suggestions.length > 1 && (
+            <Button
+              variant="outline"
+              onClick={() => setShowAll(!showAll)}
+              className="w-full mt-2"
+            >
+              {showAll ? (
+                "Mostrar menos"
+              ) : (
+                <>
+                  Ver mais sugestões ({suggestions.length - 1})
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          )}
         </div>
       )}
     </div>

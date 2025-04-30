@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/contexts/CartContext';
@@ -18,47 +18,38 @@ export const useInventory = (userId?: string) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
 
-  // Use React Query to fetch products data with performance optimization
+  // Use React Query to fetch products data
   const { 
     data: products = [], 
     isLoading: isLoadingProducts, 
     error: productsError,
     refetch: refetchProducts
   } = useQuery({
-    queryKey: ['products', userId, searchQuery, category],
-    queryFn: async () => {
-      // Otimizando a consulta de produtos
-      const categoryFilter = category !== 'all' ? category : '';
-      return getProducts(searchQuery, categoryFilter, 0, 100, false, userId);
-    },
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutos de cache
-    refetchOnWindowFocus: false
+    queryKey: ['products', userId],
+    queryFn: async () => getProducts(searchQuery, category !== 'all' ? category : '', 0, Infinity, false, userId),
+    enabled: !!userId
   });
 
-  // Use React Query to fetch categories with performance optimization
+  // Use React Query to fetch categories
   const { 
     data: categories = [], 
     isLoading: isLoadingCategories 
   } = useQuery({
     queryKey: ['categories', userId],
     queryFn: async () => getCategories(userId),
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 10, // 10 minutos de cache
-    refetchOnWindowFocus: false
+    enabled: !!userId
   });
 
-  // Memoizing filtered products to improve performance
+  // Get low stock products (stock < 10)
   const lowStockProducts = products.filter(product => product.stock > 0 && product.stock < 10);
+  
+  // Get out of stock products
   const outOfStockProducts = products.filter(product => product.stock === 0);
 
-  // Debounced search function optimized
-  const debouncedSearch = useCallback(
-    debounce(() => {
-      refetchProducts();
-    }, 300),
-    [refetchProducts]
-  );
+  // Debounced search function
+  const debouncedSearch = debounce(() => {
+    refetchProducts();
+  }, 300);
 
   // Handle search input
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,6 +167,11 @@ export const useInventory = (userId?: string) => {
     setIsEditDialogOpen(true);
   };
 
+  // Function to update the product cache
+  const updateProductInCache = async (productId: string, newData: Partial<Product>) => {
+    await queryClient.invalidateQueries({queryKey: ['products', userId]});
+  };
+
   return {
     products,
     lowStockProducts,
@@ -200,8 +196,6 @@ export const useInventory = (userId?: string) => {
     openEditDialog,
     setIsAddDialogOpen,
     setIsEditDialogOpen,
-    updateProductInCache: async (productId: string, newData: Partial<Product>) => {
-      await queryClient.invalidateQueries({queryKey: ['products', userId]});
-    }
+    updateProductInCache
   };
 };

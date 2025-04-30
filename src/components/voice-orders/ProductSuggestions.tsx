@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ParsedVoiceItem } from "@/utils/voiceUtils";
 import { Input } from "@/components/ui/input";
 import { normalizeSearch } from "@/utils/searchUtils";
 import { 
@@ -22,10 +23,9 @@ import debounce from "lodash/debounce";
 interface ProductSuggestionsProps {
   productName: string;
   userId: string | undefined;
-  onSelectProduct?: (product: Product) => void; // Nova propriedade para adicionar à lista
 }
 
-export function ProductSuggestions({ productName, userId, onSelectProduct }: ProductSuggestionsProps) {
+export function ProductSuggestions({ productName, userId }: ProductSuggestionsProps) {
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
@@ -34,9 +34,6 @@ export function ProductSuggestions({ productName, userId, onSelectProduct }: Pro
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Limitar a apenas 2 sugestões de produtos para melhorar a acessibilidade
-  const maxSuggestions = 2;
 
   // Função para buscar produtos com debounce
   const fetchProducts = debounce(async (query: string) => {
@@ -64,10 +61,10 @@ export function ProductSuggestions({ productName, userId, onSelectProduct }: Pro
         supabaseQuery = supabaseQuery.or(searchConditions);
       }
 
-      // Ordena por nome e limita a apenas 2 resultados para melhorar acessibilidade
+      // Ordena por nome e limita a 15 resultados
       const { data, error } = await supabaseQuery
         .order('name')
-        .limit(maxSuggestions);
+        .limit(15);
 
       if (error) throw error;
 
@@ -101,13 +98,6 @@ export function ProductSuggestions({ productName, userId, onSelectProduct }: Pro
       title: "Produto adicionado",
       description: `${product.name} foi adicionado ao carrinho.`,
     });
-  };
-  
-  // Novo manipulador para adicionar à lista
-  const handleAddToList = (product: Product) => {
-    if (onSelectProduct) {
-      onSelectProduct(product);
-    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,49 +196,24 @@ export function ProductSuggestions({ productName, userId, onSelectProduct }: Pro
                   )}
                 </div>
               </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                {onSelectProduct && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size={isMobile ? "sm" : "default"}
-                          onClick={() => handleAddToList(product)}
-                          disabled={product.stock <= 0}
-                          variant="secondary"
-                          className="flex-1 sm:flex-initial"
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-1" /> 
-                          {isMobile ? "Adicionar" : "Adicionar à Lista"}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Adicionar à lista</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-                {!onSelectProduct && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size={isMobile ? "sm" : "default"}
-                          onClick={() => handleAddToCart(product)}
-                          disabled={product.stock <= 0}
-                          className="flex-1 sm:flex-initial"
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-1" /> 
-                          {isMobile ? "+" : "Adicionar"}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Adicionar ao carrinho</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size={isMobile ? "sm" : "default"}
+                      onClick={() => handleAddToCart(product)}
+                      disabled={product.stock <= 0}
+                      className="w-full sm:w-auto"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-1" /> 
+                      {isMobile ? "+" : "Adicionar"}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Adicionar ao carrinho</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           ))}
         </div>

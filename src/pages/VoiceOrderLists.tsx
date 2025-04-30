@@ -10,7 +10,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product } from '@/lib/products/types';
 import { useNavigate } from 'react-router-dom';
-import { OrderList, VoiceOrdersList } from '@/components/voice-orders/VoiceOrdersList';
+
+// Define the ShoppingList interface based on voice_order_lists table structure
+interface ShoppingList {
+  id: string;
+  user_id: string;
+  products: Array<{
+    id: string;
+    product?: Product;
+    quantity: number;
+    added: boolean;
+  }>;
+  created_at: string;
+  status: string;
+  name?: string; // Added for compatibility
+}
+
+export type OrderList = ShoppingList; // Export type for other components
 
 const VoiceOrderLists = () => {
   const { user } = useAuth();
@@ -20,7 +36,7 @@ const VoiceOrderLists = () => {
   const [transcript, setTranscript] = useState('');
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
-  const [lists, setLists] = useState<OrderList[]>([]);
+  const [lists, setLists] = useState<ShoppingList[]>([]);
   const [newListName, setNewListName] = useState('');
   
   // Limitando a apenas 2 sugestões de produtos para melhorar a acessibilidade
@@ -83,7 +99,13 @@ const VoiceOrderLists = () => {
         
       if (error) throw error;
       
-      setLists(data || []);
+      // Transform the data to match our ShoppingList interface
+      const parsedLists = data.map(list => ({
+        ...list,
+        products: list.products || []
+      }));
+      
+      setLists(parsedLists);
     } catch (error) {
       console.error('Erro ao carregar listas:', error);
       toast({
@@ -151,9 +173,23 @@ const VoiceOrderLists = () => {
       const updatedLists = [...lists];
       const list = { ...updatedLists[listIndex] };
       
-      // Adicionar o produto à lista como string (conforme o tipo definido)
-      // Convertendo o objeto em string JSON para manter a compatibilidade
-      list.products = [...list.products, JSON.stringify(product)];
+      // Verificar se o produto já está na lista
+      const existingItemIndex = list.products.findIndex(item => 
+        item.product && item.product.id === product.id
+      );
+      
+      // Se já existe, incrementar quantidade
+      if (existingItemIndex >= 0) {
+        list.products[existingItemIndex].quantity += 1;
+      } else {
+        // Se não, adicionar novo item
+        list.products.push({
+          id: crypto.randomUUID(),
+          product,
+          quantity: 1,
+          added: false
+        });
+      }
       
       // Atualizar lista local
       updatedLists[listIndex] = list;
@@ -187,7 +223,7 @@ const VoiceOrderLists = () => {
     }
   };
   
-  const removeItemFromList = async (listId: string, itemIndex: number) => {
+  const removeItemFromList = async (listId: string, itemId: string) => {
     try {
       // Encontrar a lista pelo ID
       const listIndex = lists.findIndex(list => list.id === listId);
@@ -198,9 +234,7 @@ const VoiceOrderLists = () => {
       const list = { ...updatedLists[listIndex] };
       
       // Remover o item da lista
-      const newProducts = [...list.products];
-      newProducts.splice(itemIndex, 1);
-      list.products = newProducts;
+      list.products = list.products.filter(item => item.id !== itemId);
       
       // Atualizar lista local
       updatedLists[listIndex] = list;
@@ -230,7 +264,7 @@ const VoiceOrderLists = () => {
     }
   };
   
-  const editItemInList = async (listId: string, itemIndex: number, newValue: string) => {
+  const toggleItemAdded = async (listId: string, itemId: string) => {
     try {
       // Encontrar a lista pelo ID
       const listIndex = lists.findIndex(list => list.id === listId);
@@ -240,10 +274,11 @@ const VoiceOrderLists = () => {
       const updatedLists = [...lists];
       const list = { ...updatedLists[listIndex] };
       
-      // Atualizar o item
-      const newProducts = [...list.products];
-      newProducts[itemIndex] = newValue;
-      list.products = newProducts;
+      // Encontrar e atualizar o item
+      const itemIndex = list.products.findIndex(item => item.id === itemId);
+      if (itemIndex === -1) return;
+      
+      list.products[itemIndex].added = !list.products[itemIndex].added;
       
       // Atualizar lista local
       updatedLists[listIndex] = list;
@@ -258,11 +293,6 @@ const VoiceOrderLists = () => {
         .eq('id', listId);
         
       if (error) throw error;
-      
-      toast({
-        title: "Item atualizado",
-        description: "Item atualizado com sucesso",
-      });
     } catch (error) {
       console.error('Erro ao atualizar item:', error);
       toast({
@@ -297,8 +327,12 @@ const VoiceOrderLists = () => {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // Converter para o tipo OrderList
-        setLists([data[0], ...lists]);
+        const newList: ShoppingList = {
+          ...data[0],
+          products: []
+        };
+        
+        setLists([newList, ...lists]);
         setNewListName('');
         
         toast({
@@ -341,37 +375,7 @@ const VoiceOrderLists = () => {
     }
   };
   
-  const clearAllLists = async () => {
-    try {
-      if (!user?.id || lists.length === 0) return;
-      
-      const listIds = lists.map(list => list.id);
-      
-      // Delete all lists for this user
-      const { error } = await supabase
-        .from('voice_order_lists')
-        .delete()
-        .in('id', listIds);
-        
-      if (error) throw error;
-      
-      setLists([]);
-      
-      toast({
-        title: "Listas excluídas",
-        description: "Todas as listas foram excluídas com sucesso",
-      });
-    } catch (error) {
-      console.error('Erro ao excluir listas:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível excluir as listas",
-      });
-    }
-  };
-  
-  const speakList = (list: OrderList) => {
+  const speakList = (list: ShoppingList) => {
     if (!('speechSynthesis' in window)) {
       toast({
         variant: "destructive",
@@ -392,8 +396,8 @@ const VoiceOrderLists = () => {
     } else {
       text += "Itens: ";
       list.products.forEach((item, index) => {
-        const productName = formatProductItem(item);
-        text += `${productName}, `;
+        const productName = item.product ? item.product.name : "Produto desconhecido";
+        text += `${productName}, ${item.quantity} unidades. `;
       });
     }
     
@@ -406,38 +410,17 @@ const VoiceOrderLists = () => {
     window.speechSynthesis.speak(utterance);
   };
   
-  const sendListToCheckout = (listId: string) => {
-    // Encontrar a lista pelo ID
-    const list = lists.find(l => l.id === listId);
-    if (!list) return;
-    
+  const sendListToCart = (list: ShoppingList) => {
     // Armazenar lista no sessionStorage para recuperar no carrinho
     sessionStorage.setItem('shopping_list_to_cart', JSON.stringify(list));
     navigate('/checkout');
-  };
-  
-  // Função para formatar itens de produto (usado tanto na lista como na síntese de voz)
-  const formatProductItem = (item: string): string => {
-    try {
-      // Check if the item is a JSON string
-      if (typeof item === 'string' && (item.startsWith('{') || item.startsWith('['))) {
-        const parsedItem = JSON.parse(item);
-        if (parsedItem && typeof parsedItem === 'object' && parsedItem.name) {
-          return parsedItem.name;
-        }
-      }
-      return item;
-    } catch (e) {
-      // If parsing fails, return the original item
-      return item;
-    }
   };
 
   // Create a simple ProductSuggestion component to replace the missing one
   const ProductSuggestion = ({ product, onSelect, lists }: { 
     product: Product;
     onSelect: (listId: string) => void;
-    lists: OrderList[];
+    lists: ShoppingList[];
   }) => {
     return (
       <div className="p-3 border rounded-lg bg-card">
@@ -551,14 +534,81 @@ const VoiceOrderLists = () => {
         </Card>
         
         {/* Listas existentes */}
-        <VoiceOrdersList
-          lists={lists}
-          onRemove={deleteList}
-          onClear={clearAllLists}
-          onToCheckout={sendListToCheckout}
-          onEditItem={editItemInList}
-          onRemoveItem={removeItemFromList}
-        />
+        <div className="space-y-6">
+          {lists.length > 0 ? (
+            lists.map((list) => (
+              <Card key={list.id}>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>{list.name || `Lista ${new Date(list.created_at).toLocaleDateString()}`}</CardTitle>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => speakList(list)}
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => sendListToCart(list)}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => deleteList(list.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {list.products.length > 0 ? (
+                    <ul className="space-y-2">
+                      {list.products.map((item) => (
+                        <li key={item.id} className="flex items-center justify-between p-2 rounded-md bg-background/50 border">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={item.added}
+                              onChange={() => toggleItemAdded(list.id, item.id)}
+                              className="h-4 w-4"
+                            />
+                            <span className={item.added ? "line-through text-muted-foreground" : ""}>
+                              {item.product ? item.product.name : "Produto desconhecido"}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              ({item.quantity})
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeItemFromList(list.id, item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-4">
+                      Esta lista está vazia. Adicione produtos falando o nome deles.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-muted-foreground">Você ainda não tem listas. Crie uma para começar.</p>
+            </div>
+          )}
+        </div>
       </div>
     </MainLayout>
   );

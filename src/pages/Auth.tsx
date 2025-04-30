@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +27,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogIn, UserPlus, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/contexts/AuthContext";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -41,9 +43,28 @@ const signupSchema = z.object({
 export default function Auth() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
+  const { user, isLoading } = useAuth();
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user && !isLoading) {
+      console.log("User already logged in, redirecting to dashboard");
+      navigate("/dashboard");
+    }
+  }, [user, isLoading, navigate]);
+
+  // Check for redirect parameters in URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const redirectTab = searchParams.get("tab");
+    if (redirectTab === "signup") {
+      setActiveTab("signup");
+    }
+  }, [location]);
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
@@ -69,8 +90,10 @@ export default function Auth() {
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
       clearError();
-      setIsLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      setIsAuthLoading(true);
+      console.log("Attempting login for:", values.email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
@@ -86,6 +109,7 @@ export default function Auth() {
         return;
       }
 
+      console.log("Login successful:", data.user?.email);
       toast({
         title: "Login bem-sucedido",
         description: "Você será redirecionado para a página inicial.",
@@ -93,7 +117,7 @@ export default function Auth() {
       
       navigate("/dashboard");
     } catch (error: any) {
-      console.error("Erro de login:", error);
+      console.error("Login error:", error);
       setAuthError(error?.message || "Ocorreu um erro inesperado. Por favor, tente novamente.");
       toast({
         title: "Erro ao fazer login",
@@ -101,14 +125,16 @@ export default function Auth() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsAuthLoading(false);
     }
   };
 
   const handleSignup = async (values: z.infer<typeof signupSchema>) => {
     try {
       clearError();
-      setIsLoading(true);
+      setIsAuthLoading(true);
+      console.log("Attempting signup for:", values.email);
+      
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -134,13 +160,13 @@ export default function Auth() {
       console.log("Signup successful:", data);
       toast({
         title: "Conta criada com sucesso",
-        description: "Você já pode fazer login com suas credenciais.",
+        description: data.user ? "Você já pode fazer login com suas credenciais." : "Verifique seu email para confirmar o cadastro.",
       });
 
       loginForm.setValue("email", values.email);
       setActiveTab("login");
     } catch (error: any) {
-      console.error("Erro de cadastro:", error);
+      console.error("Signup error:", error);
       setAuthError(error?.message || "Ocorreu um erro inesperado. Por favor, tente novamente.");
       toast({
         title: "Erro ao criar conta",
@@ -148,9 +174,18 @@ export default function Auth() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsAuthLoading(false);
     }
   };
+
+  // If loading auth status, show loading spinner
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -198,7 +233,7 @@ export default function Auth() {
                             placeholder="seu.email@exemplo.com" 
                             type="email" 
                             autoComplete="email"
-                            disabled={isLoading}
+                            disabled={isAuthLoading}
                             {...field}
                           />
                         </FormControl>
@@ -218,7 +253,7 @@ export default function Auth() {
                             placeholder="******" 
                             type="password" 
                             autoComplete="current-password"
-                            disabled={isLoading}
+                            disabled={isAuthLoading}
                             {...field}
                           />
                         </FormControl>
@@ -230,10 +265,10 @@ export default function Auth() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isLoading}
+                    disabled={isAuthLoading}
                   >
                     <LogIn className="mr-2 h-4 w-4" />
-                    {isLoading ? "Entrando..." : "Entrar"}
+                    {isAuthLoading ? "Entrando..." : "Entrar"}
                   </Button>
                 </form>
               </Form>
@@ -254,7 +289,7 @@ export default function Auth() {
                         <FormControl>
                           <Input 
                             placeholder="Seu nome" 
-                            disabled={isLoading}
+                            disabled={isAuthLoading}
                             {...field}
                           />
                         </FormControl>
@@ -273,7 +308,7 @@ export default function Auth() {
                           <Input 
                             placeholder="seu.email@exemplo.com" 
                             type="email"
-                            disabled={isLoading}
+                            disabled={isAuthLoading}
                             {...field}
                           />
                         </FormControl>
@@ -292,7 +327,7 @@ export default function Auth() {
                           <Input 
                             placeholder="******" 
                             type="password"
-                            disabled={isLoading}
+                            disabled={isAuthLoading}
                             {...field}
                           />
                         </FormControl>
@@ -304,10 +339,10 @@ export default function Auth() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isLoading}
+                    disabled={isAuthLoading}
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
-                    {isLoading ? "Cadastrando..." : "Cadastrar"}
+                    {isAuthLoading ? "Cadastrando..." : "Cadastrar"}
                   </Button>
                 </form>
               </Form>

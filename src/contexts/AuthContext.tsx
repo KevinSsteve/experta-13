@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -25,6 +26,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log("Fetching profile for user:", userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -32,7 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
       
       if (error) {
-        console.error("[AuthContext] Erro ao buscar perfil:", error);
+        console.error("[AuthContext] Error fetching profile:", error);
+        return null;
+      }
+      
+      if (!data) {
+        console.warn("[AuthContext] No profile found for user:", userId);
         return null;
       }
       
@@ -61,12 +69,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         needs_password_change: data.needs_password_change,
       };
       
-      // Verificar se a senha precisa ser alterada
+      // Verify if the password needs to be changed
       setMustChangePassword(!!data.needs_password_change);
+      console.log("[AuthContext] Profile loaded successfully. Password change needed:", !!data.needs_password_change);
       
       return profileData;
     } catch (error) {
-      console.error("[AuthContext] Erro ao buscar perfil:", error);
+      console.error("[AuthContext] Error fetching profile:", error);
       return null;
     }
   };
@@ -81,13 +90,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    console.log("[AuthContext] Setting up auth state change listener");
+    
+    // First, establish the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("[AuthContext] Auth state changed:", event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
         
         if (session?.user) {
+          // Use setTimeout to avoid any potential deadlock with Supabase's internal auth state management
           setTimeout(() => {
             fetchProfile(session.user.id).then(profileData => {
               if (profileData) {
@@ -102,12 +116,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("[AuthContext] Initial session check:", session ? "Logged in" : "Not logged in");
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session) {
+        setIsLoading(false);
+      }
+    });
+
     return () => {
       subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
+    console.log("[AuthContext] Signing out");
     await supabase.auth.signOut();
     setProfile(null);
     setMustChangePassword(false);

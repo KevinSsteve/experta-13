@@ -1,291 +1,490 @@
-import { MainLayout } from "@/components/layouts/MainLayout";
-import { VoiceOrdersCreator } from "@/components/voice-orders/VoiceOrdersCreator";
-import { VoiceOrdersList } from "@/components/voice-orders/VoiceOrdersList";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { parseVoiceInput } from "@/utils/voiceUtils";
+import { useState, useEffect } from 'react';
+import { MainLayout } from '@/components/layouts/MainLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Mic, Plus, ShoppingCart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Product } from '@/contexts/CartContext';
+import { useNavigate } from 'react-router-dom';
+import { OrderList, VoiceOrdersList } from '@/components/voice-orders/VoiceOrdersList';
+import { ProductSuggestions } from '@/components/voice-orders/ProductSuggestions';
 
-export interface OrderList {
-  id: string;
-  createdAt: string;
-  products: string[];
-  status: "aberto" | "enviado";
-}
-
-export default function VoiceOrderLists() {
-  const { user, isLoading: authLoading } = useAuth();
-  const [lists, setLists] = useState<OrderList[]>([]);
-  const [loading, setLoading] = useState(true);
+const VoiceOrderLists = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
-
+  const navigate = useNavigate();
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [lists, setLists] = useState<OrderList[]>([]);
+  const [newListName, setNewListName] = useState('');
+  const [selectedList, setSelectedList] = useState<string | null>(null);
+  
+  // Carregar listas do usuário
   useEffect(() => {
-    if (!user || authLoading) {
-      setLists([]);
+    if (user?.id) {
+      fetchLists();
+    }
+  }, [user?.id]);
+
+  const fetchLists = async () => {
+    try {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('voice_order_lists')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      setLists(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar listas:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar suas listas",
+      });
+    }
+  };
+
+  const startListening = () => {
+    setIsListening(true);
+    
+    if (!('webkitSpeechRecognition' in window)) {
+      toast({
+        variant: "destructive",
+        title: "Não suportado",
+        description: "Seu navegador não suporta reconhecimento de voz.",
+      });
+      setIsListening(false);
       return;
     }
-    setLoading(true);
-    supabase
-      .from("voice_order_lists")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          toast({
-            title: "Erro ao carregar listas",
-            description: "Não foi possível carregar suas listas.",
-            variant: "destructive"
-          });
-          setLists([]);
-        } else if (data) {
-          setLists(
-            data.map((row) => ({
-              id: row.id,
-              createdAt: row.created_at,
-              products: row.products,
-              status: row.status === "enviado" ? "enviado" : "aberto",
-            }))
-          );
-        }
-        setLoading(false);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
-
-  const addList = async (products: string[]) => {
-    if (!user) return;
     
-    const processedProducts = products.map(product => {
-      try {
-        if (typeof product === 'object') {
-          return JSON.stringify(product);
-        }
-        return product;
-      } catch (e) {
-        return product;
-      }
-    });
+    // @ts-ignore
+    const recognition = new webkitSpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'pt-BR';
     
-    const newList = {
-      products: processedProducts,
-      status: "aberto",
-      user_id: user.id,
+    recognition.onstart = () => setIsListening(true);
+    
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0])
+        .map((result: any) => result.transcript)
+        .join('');
+        
+      setTranscript(transcript);
     };
     
-    const { data, error } = await supabase
-      .from("voice_order_lists")
-      .insert([newList])
-      .select()
-      .single();
-      
-    if (error) {
+    recognition.onerror = (event: any) => {
+      console.error('Erro no reconhecimento de voz:', event.error);
+      setIsListening(false);
       toast({
+        variant: "destructive",
         title: "Erro",
-        description: "Não foi possível salvar a lista no banco de dados.",
-        variant: "destructive"
+        description: `Erro no reconhecimento de voz: ${event.error}`,
       });
-    } else if (data) {
-      setLists((prev) => [
-        {
-          id: data.id,
-          createdAt: data.created_at,
-          products: data.products,
-          status: data.status === "enviado" ? "enviado" : "aberto",
-        },
-        ...prev,
-      ]);
-      toast({
-        title: "Lista criada!",
-        description: "Sua lista foi salva com sucesso.",
-      });
-    }
-  };
-
-  const removeList = async (id: string) => {
-    const { error } = await supabase
-      .from("voice_order_lists")
-      .delete()
-      .eq("id", id);
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível remover a lista.",
-        variant: "destructive"
-      });
-      return;
-    }
-    setLists((prev) => prev.filter((l) => l.id !== id));
-  };
-
-  const clearLists = async () => {
-    if (!user) return;
-    const { error } = await supabase
-      .from("voice_order_lists")
-      .delete()
-      .eq("user_id", user.id);
-    if (error) {
-      toast({
-        title: "Erro ao limpar listas",
-        description: "Não foi possível limpar as listas.",
-        variant: "destructive"
-      });
-      return;
-    }
-    setLists([]);
-  };
-
-  const setToCheckout = async (id: string) => {
-    const { data, error } = await supabase
-      .from("voice_order_lists")
-      .update({ status: "enviado" })
-      .eq("id", id)
-      .select()
-      .single();
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível marcar como enviado.",
-        variant: "destructive"
-      });
-      return;
-    }
-    if (data) {
-      setLists((prev) =>
-        prev.map((l) =>
-          l.id === id
-            ? {
-                ...l,
-                status: "enviado",
-              }
-            : l
-        )
-      );
-    }
-  };
-
-  const editProductInList = async (
-    listId: string,
-    itemIndex: number,
-    newValue: string
-  ) => {
-    const list = lists.find((l) => l.id === listId);
-    if (!list) return;
-    const updatedProducts = [...list.products];
+    };
     
-    let currentItem = updatedProducts[itemIndex];
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+    
+    recognition.start();
+  };
+  
+  // Add product to list with proper typing
+  const addProductToList = async (listId: string, product: Product) => {
     try {
-      if (typeof currentItem === 'string' && (currentItem.startsWith('{') || currentItem.startsWith('['))) {
-        const parsedItem = JSON.parse(currentItem);
-        if (parsedItem && typeof parsedItem === 'object' && parsedItem.name) {
-          const updatedItem = {
-            ...parsedItem,
-            name: newValue
-          };
-          updatedProducts[itemIndex] = JSON.stringify(updatedItem);
-        } else {
-          updatedProducts[itemIndex] = newValue;
-        }
-      } else {
-        updatedProducts[itemIndex] = newValue;
-      }
-    } catch (e) {
-      updatedProducts[itemIndex] = newValue;
-    }
-    
-    const { data, error } = await supabase
-      .from("voice_order_lists")
-      .update({ products: updatedProducts })
-      .eq("id", listId)
-      .select()
-      .single();
+      // Find the list by ID
+      const listIndex = lists.findIndex(list => list.id === listId);
+      if (listIndex === -1) return;
       
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível editar o item.",
-        variant: "destructive"
+      // Create a copy of the list
+      const updatedLists = [...lists];
+      const list = { ...updatedLists[listIndex] };
+      
+      // Convert the product to a string (JSON) to maintain compatibility with the database schema
+      const productJson = JSON.stringify({
+        name: product.name,
+        price: product.price
       });
-      return;
+      
+      // Add the product to the list
+      list.products = [...list.products, productJson];
+      
+      // Update local list
+      updatedLists[listIndex] = list;
+      setLists(updatedLists);
+      
+      // Update database
+      const { error } = await supabase
+        .from('voice_order_lists')
+        .update({
+          products: list.products
+        })
+        .eq('id', listId);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Produto adicionado",
+        description: `${product.name} adicionado à lista`,
+      });
+      
+      // Clear transcript after adding
+      setTranscript('');
+    } catch (error) {
+      console.error('Erro ao adicionar produto:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível adicionar o produto à lista",
+      });
     }
-    setLists((prev) =>
-      prev.map((l) =>
-        l.id === listId
-          ? {
-              ...l,
-              products: updatedProducts,
-            }
-          : l
-      )
-    );
   };
-
+  
   const removeItemFromList = async (listId: string, itemIndex: number) => {
-    const list = lists.find((l) => l.id === listId);
-    if (!list) return;
-    const updatedProducts = [...list.products];
-    updatedProducts.splice(itemIndex, 1);
-    
-    const { error } = await supabase
-      .from("voice_order_lists")
-      .update({ products: updatedProducts })
-      .eq("id", listId);
+    try {
+      // Find the list by ID
+      const listIndex = lists.findIndex(list => list.id === listId);
+      if (listIndex === -1) return;
       
-    if (error) {
+      // Create a copy of the list
+      const updatedLists = [...lists];
+      const list = { ...updatedLists[listIndex] };
+      
+      // Remove the item from the list
+      const newProducts = [...list.products];
+      newProducts.splice(itemIndex, 1);
+      list.products = newProducts;
+      
+      // Update local list
+      updatedLists[listIndex] = list;
+      setLists(updatedLists);
+      
+      // Update database
+      const { error } = await supabase
+        .from('voice_order_lists')
+        .update({
+          products: list.products
+        })
+        .eq('id', listId);
+        
+      if (error) throw error;
+      
       toast({
+        title: "Item removido",
+        description: "Item removido da lista",
+      });
+    } catch (error) {
+      console.error('Erro ao remover item:', error);
+      toast({
+        variant: "destructive",
         title: "Erro",
-        description: "Não foi possível remover o item.",
-        variant: "destructive"
+        description: "Não foi possível remover o item da lista",
+      });
+    }
+  };
+  
+  const editItemInList = async (listId: string, itemIndex: number, newValue: string) => {
+    try {
+      // Find the list by ID
+      const listIndex = lists.findIndex(list => list.id === listId);
+      if (listIndex === -1) return;
+      
+      // Create a copy of the list
+      const updatedLists = [...lists];
+      const list = { ...updatedLists[listIndex] };
+      
+      // Update the item
+      const newProducts = [...list.products];
+      // Convert the edited value to a JSON string if necessary
+      try {
+        // Check if it's already JSON or if it needs to be wrapped
+        JSON.parse(newValue);
+        newProducts[itemIndex] = newValue;
+      } catch (e) {
+        // If parsing fails, wrap in a simple JSON object
+        newProducts[itemIndex] = JSON.stringify({ name: newValue });
+      }
+      list.products = newProducts;
+      
+      // Update local list
+      updatedLists[listIndex] = list;
+      setLists(updatedLists);
+      
+      // Update database
+      const { error } = await supabase
+        .from('voice_order_lists')
+        .update({
+          products: list.products
+        })
+        .eq('id', listId);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Item atualizado",
+        description: "Item atualizado com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar item:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o item na lista",
+      });
+    }
+  };
+  
+  const createNewList = async () => {
+    if (!newListName.trim() || !user?.id) {
+      toast({
+        variant: "destructive",
+        title: "Nome inválido",
+        description: "Digite um nome para a nova lista",
       });
       return;
     }
     
-    setLists((prev) =>
-      prev.map((l) =>
-        l.id === listId
-          ? {
-              ...l,
-              products: updatedProducts,
-            }
-          : l
-      )
-    );
+    try {
+      const { data, error } = await supabase
+        .from('voice_order_lists')
+        .insert({
+          user_id: user.id,
+          products: [],
+          status: 'aberto',
+          name: newListName
+        })
+        .select();
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setLists([data[0], ...lists]);
+        setNewListName('');
+        setSelectedList(data[0].id);
+        
+        toast({
+          title: "Lista criada",
+          description: `Lista "${newListName}" criada com sucesso`,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao criar lista:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível criar a nova lista",
+      });
+    }
+  };
+  
+  const deleteList = async (listId: string) => {
+    try {
+      const { error } = await supabase
+        .from('voice_order_lists')
+        .delete()
+        .eq('id', listId);
+        
+      if (error) throw error;
+      
+      setLists(lists.filter(list => list.id !== listId));
+      if (selectedList === listId) {
+        setSelectedList(null);
+      }
+      
+      toast({
+        title: "Lista excluída",
+        description: "Lista excluída com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir lista:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível excluir a lista",
+      });
+    }
+  };
+  
+  const clearAllLists = async () => {
+    try {
+      if (!user?.id || lists.length === 0) return;
+      
+      const listIds = lists.map(list => list.id);
+      
+      // Delete all lists for this user
+      const { error } = await supabase
+        .from('voice_order_lists')
+        .delete()
+        .in('id', listIds);
+        
+      if (error) throw error;
+      
+      setLists([]);
+      setSelectedList(null);
+      
+      toast({
+        title: "Listas excluídas",
+        description: "Todas as listas foram excluídas com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir listas:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível excluir as listas",
+      });
+    }
+  };
+  
+  const sendListToCheckout = (listId: string) => {
+    // Find the list by ID
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    // Store list in sessionStorage to retrieve in cart
+    sessionStorage.setItem('shopping_list_to_cart', JSON.stringify(list));
+    navigate('/checkout');
+  };
+  
+  // Function to format product item (used in both list and voice synthesis)
+  const formatProductItem = (item: string): string => {
+    try {
+      // Check if the item is a JSON string
+      if (typeof item === 'string' && (item.startsWith('{') || item.startsWith('['))) {
+        const parsedItem = JSON.parse(item);
+        if (parsedItem && typeof parsedItem === 'object' && parsedItem.name) {
+          return parsedItem.name;
+        }
+      }
+      return item;
+    } catch (e) {
+      // If parsing fails, return the original item
+      return item;
+    }
   };
 
   return (
     <MainLayout>
-      <div className={`mx-auto py-6 px-3 ${isMobile ? 'w-full' : 'max-w-2xl'} space-y-6`}>
-        <h1 className="text-xl sm:text-2xl font-bold mb-4">Listas de Compras por Voz</h1>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Listas de Compras por Voz</h1>
         
-        <Alert className="bg-muted/50 border-muted">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Nova funcionalidade!</AlertTitle>
-          <AlertDescription>
-            Agora você pode ver sugestões de produtos do seu inventário para cada item da lista.
-            Basta clicar no ícone ▼ ao lado de cada item para expandir as sugestões e adicioná-las diretamente ao carrinho.
-            Use o buscador para filtrar produtos por nome ou categoria!
-          </AlertDescription>
-        </Alert>
+        {/* Voice input section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Adicionar Produtos por Voz</CardTitle>
+            <CardDescription>
+              Clique no microfone e diga o nome do produto para buscar
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2 mb-4">
+              <Input 
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                placeholder="Fale ou digite o nome do produto..."
+                className="flex-1"
+              />
+              <Button 
+                variant={isListening ? "destructive" : "default"}
+                size="icon"
+                onClick={startListening}
+                disabled={isListening}
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Product suggestions - Limited to 2 items for better accessibility */}
+            {transcript && selectedList && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium mb-2">Adicionar "{transcript}" à lista:</h3>
+                <ProductSuggestions
+                  productName={transcript}
+                  userId={user?.id}
+                  onSelectProduct={(product) => {
+                    if (selectedList) {
+                      addProductToList(selectedList, product);
+                    } else {
+                      toast({
+                        variant: "destructive",
+                        title: "Nenhuma lista selecionada",
+                        description: "Selecione uma lista para adicionar produtos",
+                      });
+                    }
+                  }}
+                />
+              </div>
+            )}
+            
+            {loading && (
+              <p className="text-sm text-muted-foreground mt-2">Buscando sugestões...</p>
+            )}
+          </CardContent>
+        </Card>
         
-        <VoiceOrdersCreator onListCreated={addList} />
-        {loading ? (
-          <div className="text-center text-muted-foreground">Carregando listas...</div>
-        ) : (
-          <VoiceOrdersList
-            lists={lists}
-            onRemove={removeList}
-            onClear={clearLists}
-            onToCheckout={setToCheckout}
-            onEditItem={editProductInList}
-            onRemoveItem={removeItemFromList}
-          />
-        )}
+        {/* Create new list */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Criar Nova Lista</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                placeholder="Nome da nova lista..."
+                className="flex-1"
+              />
+              <Button onClick={createNewList}>
+                <Plus className="h-4 w-4 mr-2" />
+                Criar
+              </Button>
+            </div>
+            {lists.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">Selecione uma lista para adicionar produtos:</p>
+                <div className="flex flex-wrap gap-2">
+                  {lists.map(list => (
+                    <Button
+                      key={list.id}
+                      variant={selectedList === list.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedList(list.id)}
+                    >
+                      <ShoppingCart className="h-3 w-3 mr-1" />
+                      {list.name || `Lista ${list.id.substring(0, 4)}`}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Existing lists */}
+        <VoiceOrdersList
+          lists={lists}
+          onRemove={deleteList}
+          onClear={clearAllLists}
+          onToCheckout={sendListToCheckout}
+          onEditItem={editItemInList}
+          onRemoveItem={removeItemFromList}
+          onAddProduct={addProductToList}
+        />
       </div>
     </MainLayout>
   );
-}
+};
+
+export default VoiceOrderLists;

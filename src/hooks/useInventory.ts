@@ -1,7 +1,8 @@
+
 import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Product } from '@/lib/products/types';
+import { Product } from '@/contexts/CartContext';
 import { getProducts, getCategories } from '@/lib/products/queries';
 import { ProductFormValues } from '@/components/products/ProductForm';
 import { debounce } from '@/lib/utils';

@@ -8,7 +8,7 @@ import { Mic, Plus, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Product as CartProduct } from '@/contexts/CartContext';
+import { Product } from '@/lib/products/types';
 import { useNavigate } from 'react-router-dom';
 import { OrderList, VoiceOrdersList } from '@/components/voice-orders/VoiceOrdersList';
 import { ProductSuggestions } from '@/components/voice-orders/ProductSuggestions';
@@ -101,8 +101,7 @@ const VoiceOrderLists = () => {
     recognition.start();
   };
   
-  // Modified to handle type conversion properly
-  const addProductToList = async (listId: string, product: CartProduct) => {
+  const addProductToList = async (listId: string, product: Product) => {
     try {
       // Encontrar a lista pelo ID
       const listIndex = lists.findIndex(list => list.id === listId);

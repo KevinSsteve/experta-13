@@ -1,5 +1,4 @@
-
-import { createContext, useContext, useReducer, useMemo, useEffect } from 'react';
+import { createContext, useContext, useReducer, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -39,8 +38,7 @@ type CartAction =
   | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
   | { type: 'CLEAR_CART' }
   | { type: 'OPEN_CART' }
-  | { type: 'CLOSE_CART' }
-  | { type: 'LOAD_CART'; payload: CartItem[] };
+  | { type: 'CLOSE_CART' };
 
 // Cart context interface
 interface CartContextType {
@@ -57,9 +55,6 @@ interface CartContextType {
 
 // Create context
 const CartContext = createContext<CartContextType | undefined>(undefined);
-
-// LocalStorage key
-const CART_STORAGE_KEY = 'contascom-cart-items';
 
 // Reducer function
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -104,9 +99,6 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       
     case 'CLOSE_CART':
       return { ...state, isOpen: false };
-      
-    case 'LOAD_CART':
-      return { ...state, items: action.payload };
 
     default:
       return state;
@@ -123,32 +115,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     user: user,
     isOpen: false
   });
-  
-  // Load cart from localStorage on initial render
-  useEffect(() => {
-    const loadCart = () => {
-      try {
-        const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-        if (savedCart) {
-          const parsedCart = JSON.parse(savedCart) as CartItem[];
-          dispatch({ type: 'LOAD_CART', payload: parsedCart });
-        }
-      } catch (error) {
-        console.error('Erro ao carregar carrinho do localStorage:', error);
-      }
-    };
-    
-    loadCart();
-  }, []);
-  
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
-    } catch (error) {
-      console.error('Erro ao salvar carrinho no localStorage:', error);
-    }
-  }, [state.items]);
 
   // Add item to cart
   const addItem = (product: Product) => {
@@ -168,8 +134,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   // Clear cart
   const clearCart = () => {
     dispatch({ type: 'CLEAR_CART' });
-    // Também limpa o localStorage
-    localStorage.removeItem(CART_STORAGE_KEY);
   };
   
   // Open cart

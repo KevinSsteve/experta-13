@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -24,7 +23,6 @@ import CreditNotes from "./pages/CreditNotes";
 import ScanProducts from "./pages/ScanProducts";
 import NotFound from "./pages/NotFound";
 import VoiceOrderLists from "./pages/VoiceOrderLists";
-import VoiceToCart from "./pages/VoiceToCart";
 import Expenses from "./pages/Expenses";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import Suggestions from "./pages/Suggestions";
@@ -80,7 +78,6 @@ const App = () => {
                     <Route path="/credit-notes" element={<CreditNotes />} />
                     <Route path="/scan" element={<ScanProducts />} />
                     <Route path="/listas-voz" element={<VoiceOrderLists />} />
-                    <Route path="/pedido-voz" element={<VoiceToCart />} />
                     <Route path="/expenses" element={<Expenses />} />
                   </Route>
                   

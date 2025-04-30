@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Trash2, ShoppingCart, Edit, Check, X, ChevronDown, ChevronUp } from "lucide-react";
-import type { OrderList } from "@/pages/VoiceOrderLists";
+import { OrderList } from "@/pages/VoiceOrderLists";
 import { Input } from "@/components/ui/input";
 import { ProductSuggestions } from "./ProductSuggestions";
 import { useAuth } from "@/contexts/AuthContext";

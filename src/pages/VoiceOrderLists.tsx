@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { MainLayout } from '@/components/layouts/MainLayout';
+import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,24 +9,20 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product } from '@/lib/products/types';
+import { ProductSuggestion } from '@/components/products/ProductSuggestion';
 import { useNavigate } from 'react-router-dom';
 
-// Define the ShoppingList interface based on voice_order_lists table structure
 interface ShoppingList {
   id: string;
-  user_id: string;
-  products: Array<{
+  name: string;
+  items: Array<{
     id: string;
     product?: Product;
     quantity: number;
     added: boolean;
   }>;
   created_at: string;
-  status: string;
-  name?: string; // Added for compatibility
 }
-
-export type OrderList = ShoppingList; // Export type for other components
 
 const VoiceOrderLists = () => {
   const { user } = useAuth();
@@ -92,17 +88,16 @@ const VoiceOrderLists = () => {
       if (!user?.id) return;
       
       const { data, error } = await supabase
-        .from('voice_order_lists')
+        .from('shopping_lists')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
       if (error) throw error;
       
-      // Transform the data to match our ShoppingList interface
       const parsedLists = data.map(list => ({
         ...list,
-        products: list.products || []
+        items: list.items ? JSON.parse(list.items) : []
       }));
       
       setLists(parsedLists);
@@ -174,16 +169,16 @@ const VoiceOrderLists = () => {
       const list = { ...updatedLists[listIndex] };
       
       // Verificar se o produto já está na lista
-      const existingItemIndex = list.products.findIndex(item => 
+      const existingItemIndex = list.items.findIndex(item => 
         item.product && item.product.id === product.id
       );
       
       // Se já existe, incrementar quantidade
       if (existingItemIndex >= 0) {
-        list.products[existingItemIndex].quantity += 1;
+        list.items[existingItemIndex].quantity += 1;
       } else {
         // Se não, adicionar novo item
-        list.products.push({
+        list.items.push({
           id: crypto.randomUUID(),
           product,
           quantity: 1,
@@ -197,9 +192,9 @@ const VoiceOrderLists = () => {
       
       // Persistir no banco de dados
       const { error } = await supabase
-        .from('voice_order_lists')
+        .from('shopping_lists')
         .update({
-          products: list.products
+          items: JSON.stringify(list.items)
         })
         .eq('id', listId);
         
@@ -234,7 +229,7 @@ const VoiceOrderLists = () => {
       const list = { ...updatedLists[listIndex] };
       
       // Remover o item da lista
-      list.products = list.products.filter(item => item.id !== itemId);
+      list.items = list.items.filter(item => item.id !== itemId);
       
       // Atualizar lista local
       updatedLists[listIndex] = list;
@@ -242,9 +237,9 @@ const VoiceOrderLists = () => {
       
       // Persistir no banco de dados
       const { error } = await supabase
-        .from('voice_order_lists')
+        .from('shopping_lists')
         .update({
-          products: list.products
+          items: JSON.stringify(list.items)
         })
         .eq('id', listId);
         
@@ -275,10 +270,10 @@ const VoiceOrderLists = () => {
       const list = { ...updatedLists[listIndex] };
       
       // Encontrar e atualizar o item
-      const itemIndex = list.products.findIndex(item => item.id === itemId);
+      const itemIndex = list.items.findIndex(item => item.id === itemId);
       if (itemIndex === -1) return;
       
-      list.products[itemIndex].added = !list.products[itemIndex].added;
+      list.items[itemIndex].added = !list.items[itemIndex].added;
       
       // Atualizar lista local
       updatedLists[listIndex] = list;
@@ -286,9 +281,9 @@ const VoiceOrderLists = () => {
       
       // Persistir no banco de dados
       const { error } = await supabase
-        .from('voice_order_lists')
+        .from('shopping_lists')
         .update({
-          products: list.products
+          items: JSON.stringify(list.items)
         })
         .eq('id', listId);
         
@@ -315,12 +310,11 @@ const VoiceOrderLists = () => {
     
     try {
       const { data, error } = await supabase
-        .from('voice_order_lists')
+        .from('shopping_lists')
         .insert({
+          name: newListName,
           user_id: user.id,
-          products: [],
-          status: 'aberto',
-          name: newListName // Store name in a custom field if needed
+          items: "[]"
         })
         .select();
         
@@ -329,7 +323,7 @@ const VoiceOrderLists = () => {
       if (data && data.length > 0) {
         const newList: ShoppingList = {
           ...data[0],
-          products: []
+          items: []
         };
         
         setLists([newList, ...lists]);
@@ -353,7 +347,7 @@ const VoiceOrderLists = () => {
   const deleteList = async (listId: string) => {
     try {
       const { error } = await supabase
-        .from('voice_order_lists')
+        .from('shopping_lists')
         .delete()
         .eq('id', listId);
         
@@ -389,13 +383,13 @@ const VoiceOrderLists = () => {
     window.speechSynthesis.cancel();
     
     // Criar texto para síntese
-    let text = `Lista de compras: ${list.name || 'Sem nome'}. `;
+    let text = `Lista de compras: ${list.name}. `;
     
-    if (list.products.length === 0) {
+    if (list.items.length === 0) {
       text += "Esta lista está vazia.";
     } else {
       text += "Itens: ";
-      list.products.forEach((item, index) => {
+      list.items.forEach((item, index) => {
         const productName = item.product ? item.product.name : "Produto desconhecido";
         text += `${productName}, ${item.quantity} unidades. `;
       });
@@ -416,48 +410,8 @@ const VoiceOrderLists = () => {
     navigate('/checkout');
   };
 
-  // Create a simple ProductSuggestion component to replace the missing one
-  const ProductSuggestion = ({ product, onSelect, lists }: { 
-    product: Product;
-    onSelect: (listId: string) => void;
-    lists: ShoppingList[];
-  }) => {
-    return (
-      <div className="p-3 border rounded-lg bg-card">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-medium">{product.name}</h3>
-            <p className="text-sm text-muted-foreground">{product.category} · {product.price} AOA</p>
-          </div>
-          {lists.length > 0 ? (
-            <div className="flex flex-col gap-1">
-              {lists.slice(0, 2).map((list) => (
-                <Button 
-                  key={list.id} 
-                  size="sm" 
-                  variant="secondary"
-                  onClick={() => onSelect(list.id)}
-                >
-                  + {list.name || `Lista ${list.id.substring(0, 4)}`}
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <Button 
-              variant="secondary" 
-              size="sm"
-              disabled
-            >
-              Nenhuma lista
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <MainLayout>
+    <Layout>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Listas de Compras por Voz</h1>
         
@@ -540,7 +494,7 @@ const VoiceOrderLists = () => {
               <Card key={list.id}>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>{list.name || `Lista ${new Date(list.created_at).toLocaleDateString()}`}</CardTitle>
+                    <CardTitle>{list.name}</CardTitle>
                     <div className="flex gap-2">
                       <Button 
                         variant="outline" 
@@ -567,9 +521,9 @@ const VoiceOrderLists = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {list.products.length > 0 ? (
+                  {list.items.length > 0 ? (
                     <ul className="space-y-2">
-                      {list.products.map((item) => (
+                      {list.items.map((item) => (
                         <li key={item.id} className="flex items-center justify-between p-2 rounded-md bg-background/50 border">
                           <div className="flex items-center gap-2">
                             <input
@@ -610,7 +564,7 @@ const VoiceOrderLists = () => {
           )}
         </div>
       </div>
-    </MainLayout>
+    </Layout>
   );
 };
 

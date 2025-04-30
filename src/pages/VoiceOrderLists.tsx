@@ -4,13 +4,14 @@ import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, Plus, ShoppingCart, Trash2, Volume2 } from 'lucide-react';
+import { Mic, Plus, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product } from '@/lib/products/types';
 import { useNavigate } from 'react-router-dom';
 import { OrderList, VoiceOrdersList } from '@/components/voice-orders/VoiceOrdersList';
+import { ProductSuggestions } from '@/components/voice-orders/ProductSuggestions';
 
 const VoiceOrderLists = () => {
   const { user } = useAuth();
@@ -18,58 +19,17 @@ const VoiceOrderLists = () => {
   const navigate = useNavigate();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [lists, setLists] = useState<OrderList[]>([]);
   const [newListName, setNewListName] = useState('');
+  const [selectedList, setSelectedList] = useState<string | null>(null);
   
-  // Limitando a apenas 2 sugestões de produtos para melhorar a acessibilidade
-  const maxSuggestions = 2;
-
   // Carregar listas do usuário
   useEffect(() => {
     if (user?.id) {
       fetchLists();
     }
   }, [user?.id]);
-
-  // Buscar sugestões de produtos baseadas no texto transcrito
-  useEffect(() => {
-    const getSuggestions = async () => {
-      if (!transcript.trim() || !user?.id) return;
-      
-      try {
-        setLoading(true);
-        // Busca produtos que correspondam ao texto falado
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('user_id', user.id)
-          .ilike('name', `%${transcript}%`)
-          .order('name', { ascending: true })
-          .limit(maxSuggestions); // Limitando a apenas 2 sugestões
-        
-        if (error) throw error;
-        
-        setSuggestions(data || []);
-      } catch (error) {
-        console.error('Erro ao buscar sugestões:', error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Não foi possível buscar sugestões de produtos",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      getSuggestions();
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [transcript, user?.id, toast]);
 
   const fetchLists = async () => {
     try {
@@ -176,7 +136,6 @@ const VoiceOrderLists = () => {
       
       // Limpar transcrição depois de adicionar
       setTranscript('');
-      setSuggestions([]);
     } catch (error) {
       console.error('Erro ao adicionar produto:', error);
       toast({
@@ -290,16 +249,16 @@ const VoiceOrderLists = () => {
           user_id: user.id,
           products: [],
           status: 'aberto',
-          name: newListName // Store name in a custom field if needed
+          name: newListName
         })
         .select();
         
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // Converter para o tipo OrderList
         setLists([data[0], ...lists]);
         setNewListName('');
+        setSelectedList(data[0].id);
         
         toast({
           title: "Lista criada",
@@ -326,6 +285,9 @@ const VoiceOrderLists = () => {
       if (error) throw error;
       
       setLists(lists.filter(list => list.id !== listId));
+      if (selectedList === listId) {
+        setSelectedList(null);
+      }
       
       toast({
         title: "Lista excluída",
@@ -356,6 +318,7 @@ const VoiceOrderLists = () => {
       if (error) throw error;
       
       setLists([]);
+      setSelectedList(null);
       
       toast({
         title: "Listas excluídas",
@@ -369,41 +332,6 @@ const VoiceOrderLists = () => {
         description: "Não foi possível excluir as listas",
       });
     }
-  };
-  
-  const speakList = (list: OrderList) => {
-    if (!('speechSynthesis' in window)) {
-      toast({
-        variant: "destructive",
-        title: "Não suportado",
-        description: "Seu navegador não suporta síntese de voz.",
-      });
-      return;
-    }
-    
-    // Parar qualquer fala em andamento
-    window.speechSynthesis.cancel();
-    
-    // Criar texto para síntese
-    let text = `Lista de compras: ${list.name || 'Sem nome'}. `;
-    
-    if (list.products.length === 0) {
-      text += "Esta lista está vazia.";
-    } else {
-      text += "Itens: ";
-      list.products.forEach((item, index) => {
-        const productName = formatProductItem(item);
-        text += `${productName}, `;
-      });
-    }
-    
-    // Criar e configurar o objeto de fala
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 1.0;
-    
-    // Iniciar síntese
-    window.speechSynthesis.speak(utterance);
   };
   
   const sendListToCheckout = (listId: string) => {
@@ -431,46 +359,6 @@ const VoiceOrderLists = () => {
       // If parsing fails, return the original item
       return item;
     }
-  };
-
-  // Create a simple ProductSuggestion component to replace the missing one
-  const ProductSuggestion = ({ product, onSelect, lists }: { 
-    product: Product;
-    onSelect: (listId: string) => void;
-    lists: OrderList[];
-  }) => {
-    return (
-      <div className="p-3 border rounded-lg bg-card">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-medium">{product.name}</h3>
-            <p className="text-sm text-muted-foreground">{product.category} · {product.price} AOA</p>
-          </div>
-          {lists.length > 0 ? (
-            <div className="flex flex-col gap-1">
-              {lists.slice(0, 2).map((list) => (
-                <Button 
-                  key={list.id} 
-                  size="sm" 
-                  variant="secondary"
-                  onClick={() => onSelect(list.id)}
-                >
-                  + {list.name || `Lista ${list.id.substring(0, 4)}`}
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <Button 
-              variant="secondary" 
-              size="sm"
-              disabled
-            >
-              Nenhuma lista
-            </Button>
-          )}
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -505,21 +393,24 @@ const VoiceOrderLists = () => {
             </div>
             
             {/* Sugestões de produtos - Limitado a 2 itens para melhorar acessibilidade */}
-            {suggestions.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <p className="text-sm font-medium">Sugestões:</p>
-                <div className="grid grid-cols-1 gap-3">
-                  {suggestions.map((product) => (
-                    <ProductSuggestion
-                      key={product.id}
-                      product={product}
-                      onSelect={(selectedList) => {
-                        addProductToList(selectedList, product);
-                      }}
-                      lists={lists}
-                    />
-                  ))}
-                </div>
+            {transcript && selectedList && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium mb-2">Adicionar "{transcript}" à lista:</h3>
+                <ProductSuggestions
+                  productName={transcript}
+                  userId={user?.id}
+                  onSelectProduct={(product) => {
+                    if (selectedList) {
+                      addProductToList(selectedList, product);
+                    } else {
+                      toast({
+                        variant: "destructive",
+                        title: "Nenhuma lista selecionada",
+                        description: "Selecione uma lista para adicionar produtos",
+                      });
+                    }
+                  }}
+                />
               </div>
             )}
             
@@ -547,6 +438,24 @@ const VoiceOrderLists = () => {
                 Criar
               </Button>
             </div>
+            {lists.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">Selecione uma lista para adicionar produtos:</p>
+                <div className="flex flex-wrap gap-2">
+                  {lists.map(list => (
+                    <Button
+                      key={list.id}
+                      variant={selectedList === list.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedList(list.id)}
+                    >
+                      <ShoppingCart className="h-3 w-3 mr-1" />
+                      {list.name || `Lista ${list.id.substring(0, 4)}`}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
         
@@ -558,6 +467,7 @@ const VoiceOrderLists = () => {
           onToCheckout={sendListToCheckout}
           onEditItem={editItemInList}
           onRemoveItem={removeItemFromList}
+          onAddProduct={addProductToList}
         />
       </div>
     </MainLayout>

@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
 import { parseVoiceInput } from "@/utils/voiceUtils";
+import { Product } from "@/contexts/CartContext";
 
 // Define the OrderList type here to be consistent with the page component
 export interface OrderList {
@@ -36,6 +37,7 @@ interface VoiceOrdersListProps {
   onToCheckout: (id: string) => void;
   onEditItem: (listId: string, itemIndex: number, newValue: string) => void;
   onRemoveItem: (listId: string, itemIndex: number) => void;
+  onAddProduct?: (listId: string, product: Product) => void;
 }
 
 export function VoiceOrdersList({
@@ -44,7 +46,8 @@ export function VoiceOrdersList({
   onClear,
   onToCheckout,
   onEditItem,
-  onRemoveItem
+  onRemoveItem,
+  onAddProduct
 }: VoiceOrdersListProps) {
   const { user } = useAuth();
   const [editing, setEditing] = useState<{ [k: string]: boolean }>({});
@@ -75,6 +78,13 @@ export function VoiceOrdersList({
     } catch (e) {
       // If parsing fails, return the original item
       return item;
+    }
+  };
+  
+  // Função para adicionar produto sugerido à lista
+  const handleAddProductToList = (listId: string, product: Product) => {
+    if (onAddProduct) {
+      onAddProduct(listId, product);
     }
   };
 
@@ -257,6 +267,7 @@ export function VoiceOrdersList({
                       <ProductSuggestions 
                         productName={formattedProduct} 
                         userId={user?.id}
+                        onSelectProduct={(product) => handleAddProductToList(l.id, product)}
                       />
                     </div>
                   )}

@@ -22,7 +22,7 @@ import debounce from "lodash/debounce";
 interface ProductSuggestionsProps {
   productName: string;
   userId: string | undefined;
-  onSelectProduct?: (product: Product) => void; // Nova propriedade para adicionar à lista
+  onSelectProduct?: (product: Product) => void; // No type change needed here as it uses the import
 }
 
 export function ProductSuggestions({ productName, userId, onSelectProduct }: ProductSuggestionsProps) {

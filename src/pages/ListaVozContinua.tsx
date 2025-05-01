@@ -1,4 +1,3 @@
-
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { VozContinuaCreator } from "@/components/voice-orders/VozContinuaCreator";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +8,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Mic } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { VoiceOrdersList } from "@/components/voice-orders/VoiceOrdersList";
-import { OrderList } from "@/pages/VoiceOrderLists";
+
+// Define the OrderList interface directly in this file
+export interface OrderList {
+  id: string;
+  createdAt: string;
+  products: string[];
+  status: 'enviado' | 'aberto';
+}
 
 export default function ListaVozContinua() {
   const { user, isLoading: authLoading } = useAuth();

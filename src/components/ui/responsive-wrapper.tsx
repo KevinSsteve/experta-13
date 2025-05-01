@@ -1,39 +1,30 @@
 
-import React from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface ResponsiveWrapperProps {
   children: React.ReactNode;
+  className?: string;
   mobileClassName?: string;
   desktopClassName?: string;
-  className?: string;
 }
 
-export function ResponsiveWrapper({
-  children,
-  mobileClassName = "",
-  desktopClassName = "",
-  className = "",
-}: ResponsiveWrapperProps) {
+export const ResponsiveWrapper = ({ 
+  children, 
+  className, 
+  mobileClassName, 
+  desktopClassName 
+}: ResponsiveWrapperProps) => {
   const isMobile = useIsMobile();
   
   return (
-    <div className={`${className} ${isMobile ? mobileClassName : desktopClassName}`}>
+    <div 
+      className={cn(
+        className,
+        isMobile ? mobileClassName : desktopClassName
+      )}
+    >
       {children}
     </div>
   );
-}
-
-export function MobileOnly({ children }: { children: React.ReactNode }) {
-  const isMobile = useIsMobile();
-  
-  if (!isMobile) return null;
-  return <>{children}</>;
-}
-
-export function DesktopOnly({ children }: { children: React.ReactNode }) {
-  const isMobile = useIsMobile();
-  
-  if (isMobile) return null;
-  return <>{children}</>;
-}
+};

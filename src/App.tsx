@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -28,8 +27,39 @@ import VoiceToCart from "./pages/VoiceToCart";
 import Expenses from "./pages/Expenses";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import Suggestions from "./pages/Suggestions";
+import ModuleSelection from "./pages/ModuleSelection";
+
+// Butcher Module Pages
+import ButcherDashboard from "./pages/butcher/Dashboard";
+import ButcherProducts from "./pages/butcher/Products";
+import ButcherSales from "./pages/butcher/Sales";
 
 const App = () => {
+  const ModuleRouter = () => {
+    const { isLoading } = useAuth();
+    const selectedModule = localStorage.getItem("userModule");
+
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    // If no module is selected, go to module selection
+    if (!selectedModule) {
+      return <Navigate to="/select-module" replace />;
+    }
+
+    // Otherwise, go to the appropriate dashboard based on the module
+    if (selectedModule === 'butcher') {
+      return <Navigate to="/butcher/dashboard" replace />;
+    }
+
+    return <Navigate to="/dashboard" replace />;
+  };
+
   const PasswordChangeRoute = () => {
     const { mustChangePassword, isLoading } = useAuth();
 
@@ -63,10 +93,15 @@ const App = () => {
                   
                   {/* Nova rota para alteração de senha */}
                   <Route path="/change-password" element={<PasswordChangeRoute />} />
+
+                  {/* Nova rota para seleção de módulo */}
+                  <Route path="/select-module" element={<ModuleSelection />} />
                   
-                  {/* Rotas protegidas */}
+                  {/* Root - redireciona para o módulo apropriado */}
+                  <Route path="/" element={<ModuleRouter />} />
+                  
+                  {/* Rotas protegidas - Módulo de Supermercado */}
                   <Route element={<ProtectedRoute />}>
-                    <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/products" element={<Products />} />
                     <Route path="/suggestions" element={<Suggestions />} />
@@ -82,6 +117,18 @@ const App = () => {
                     <Route path="/listas-voz" element={<ListaVozContinua />} />
                     <Route path="/pedido-voz" element={<VoiceToCart />} />
                     <Route path="/expenses" element={<Expenses />} />
+                  </Route>
+
+                  {/* Rotas protegidas - Módulo de Talho */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/butcher/dashboard" element={<ButcherDashboard />} />
+                    <Route path="/butcher/products" element={<ButcherProducts />} />
+                    <Route path="/butcher/sales" element={<ButcherSales />} />
+                    <Route path="/butcher/inventory" element={<ButcherDashboard />} /> {/* Placeholder */}
+                    <Route path="/butcher/recipes" element={<ButcherDashboard />} /> {/* Placeholder */}
+                    <Route path="/butcher/finances" element={<ButcherDashboard />} /> {/* Placeholder */}
+                    <Route path="/butcher/history" element={<ButcherDashboard />} /> {/* Placeholder */}
+                    <Route path="/butcher/settings" element={<Settings />} />
                   </Route>
                   
                   {/* Rota para página não encontrada */}

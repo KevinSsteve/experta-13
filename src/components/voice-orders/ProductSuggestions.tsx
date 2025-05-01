@@ -91,11 +91,16 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
 
   // Efeito para buscar produtos quando o componente monta ou quando o termo de busca muda
   useEffect(() => {
+    if (productName) {
+      // Inicializa a busca com o nome do produto
+      setSearchQuery(productName);
+    }
+    
     fetchProducts(searchQuery);
     return () => {
       fetchProducts.cancel();
     };
-  }, [searchQuery, userId]);
+  }, [searchQuery, userId, productName]);
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
@@ -261,3 +266,4 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
     </div>
   );
 }
+

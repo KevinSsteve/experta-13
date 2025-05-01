@@ -3,9 +3,9 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ProtectedRoute() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, mustChangePassword } = useAuth();
   
-  // Mostra um indicador de carregamento enquanto verifica a autenticação
+  // Show a loading indicator while checking authentication
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -14,11 +14,18 @@ export default function ProtectedRoute() {
     );
   }
   
-  // Redireciona para a página de login se não estiver autenticado
+  // Redirect to login page if not authenticated
   if (!user) {
+    console.log("User not authenticated, redirecting to login");
     return <Navigate to="/auth" replace />;
   }
   
-  // Renderiza o conteúdo da rota protegida
+  // Redirect to password change page if needed
+  if (mustChangePassword) {
+    console.log("User needs to change password, redirecting");
+    return <Navigate to="/change-password" replace />;
+  }
+  
+  // Render the protected route content
   return <Outlet />;
 }

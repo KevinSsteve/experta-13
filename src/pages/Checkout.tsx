@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -279,8 +278,9 @@ const Checkout = () => {
     }
   };
   
+  // Função para finalizar e navegar (modificada para limpar o carrinho apenas ao finalizar)
   const finishAndNavigate = (to: string = '/dashboard') => {
-    clearCart();
+    clearCart();  // Agora só limpa o carrinho quando a venda é concluída
     form.reset();
     navigate(to);
   };

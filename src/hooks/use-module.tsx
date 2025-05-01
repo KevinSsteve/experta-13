@@ -20,12 +20,9 @@ export const useModule = () => {
     if (user) {
       if (module === 'butcher') {
         try {
-          const sampleMeatCuts = importSampleMeatCuts(user.id);
-          
           // Importar dados de amostra para o módulo de talho
-          const promises = sampleMeatCuts.map(meatCut => createMeatCut(meatCut));
-          
-          await Promise.all(promises);
+          // A função importSampleMeatCuts agora importa os dados diretamente
+          await importSampleMeatCuts(user.id);
           
           toast.success('Módulo de Talho selecionado com sucesso!');
         } catch (error) {

@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Trash2, ShoppingCart, Edit, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import type { OrderList } from "@/pages/VoiceOrderLists";
 import { Input } from "@/components/ui/input";
 import { ProductSuggestions } from "./ProductSuggestions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,14 +18,7 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
-
-// Define OrderList type here since the file it was imported from will be deleted
-export interface OrderList {
-  id: string;
-  createdAt: string;
-  products: string[];
-  status: "aberto" | "enviado";
-}
+import { parseVoiceInput } from "@/utils/voiceUtils";
 
 interface VoiceOrdersListProps {
   lists: OrderList[];
@@ -63,12 +58,8 @@ export function VoiceOrdersList({
       // Check if the item is a JSON string
       if (typeof item === 'string' && (item.startsWith('{') || item.startsWith('['))) {
         const parsedItem = JSON.parse(item);
-        if (parsedItem && typeof parsedItem === 'object') {
-          // Formata nome com preço e quantidade
-          const name = parsedItem.name || '';
-          const price = parsedItem.price ? ` (${parsedItem.price})` : '';
-          const quantity = parsedItem.quantity && parsedItem.quantity > 1 ? `${parsedItem.quantity}x ` : '';
-          return `${quantity}${name}${price}`;
+        if (parsedItem && typeof parsedItem === 'object' && parsedItem.name) {
+          return parsedItem.name;
         }
       }
       return item;
@@ -255,7 +246,7 @@ export function VoiceOrdersList({
                   {!isEditing && isExpanded && (
                     <div className="mt-1 ml-2 sm:ml-5">
                       <ProductSuggestions 
-                        productName={prod} 
+                        productName={formattedProduct} 
                         userId={user?.id}
                       />
                     </div>

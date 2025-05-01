@@ -23,53 +23,14 @@ import SaleDetails from "./pages/SaleDetails";
 import CreditNotes from "./pages/CreditNotes";
 import ScanProducts from "./pages/ScanProducts";
 import NotFound from "./pages/NotFound";
-import ListaVozContinua from "./pages/ListaVozContinua";
+import VoiceOrderLists from "./pages/VoiceOrderLists";
 import VoiceToCart from "./pages/VoiceToCart";
+import ListaVozContinua from "./pages/ListaVozContinua";
 import Expenses from "./pages/Expenses";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import Suggestions from "./pages/Suggestions";
-import ModuleSelection from "./pages/ModuleSelection";
-
-// Butcher Module Pages
-import ButcherDashboard from "./pages/butcher/Dashboard";
-import ButcherProducts from "./pages/butcher/Products";
-import ButcherSales from "./pages/butcher/Sales";
-
-// Supermarket Module Pages
-import SupermarketDashboard from "./pages/supermarket/Dashboard";
-import SupermarketProducts from "./pages/supermarket/Products";
-import SupermarketSales from "./pages/supermarket/Sales";
 
 const App = () => {
-  const ModuleRouter = () => {
-    const { isLoading } = useAuth();
-    const selectedModule = localStorage.getItem("userModule");
-
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      );
-    }
-
-    // If no module is selected, go to module selection
-    if (!selectedModule) {
-      return <Navigate to="/select-module" replace />;
-    }
-
-    // Otherwise, go to the appropriate dashboard based on the module
-    if (selectedModule === 'butcher') {
-      return <Navigate to="/butcher/dashboard" replace />;
-    }
-    
-    if (selectedModule === 'supermarket') {
-      return <Navigate to="/supermarket/dashboard" replace />;
-    }
-
-    return <Navigate to="/dashboard" replace />;
-  };
-
   const PasswordChangeRoute = () => {
     const { mustChangePassword, isLoading } = useAuth();
 
@@ -103,15 +64,10 @@ const App = () => {
                   
                   {/* Nova rota para alteração de senha */}
                   <Route path="/change-password" element={<PasswordChangeRoute />} />
-
-                  {/* Nova rota para seleção de módulo */}
-                  <Route path="/select-module" element={<ModuleSelection />} />
                   
-                  {/* Root - redireciona para o módulo apropriado */}
-                  <Route path="/" element={<ModuleRouter />} />
-                  
-                  {/* Rotas protegidas - Módulo de Supermercado */}
+                  {/* Rotas protegidas */}
                   <Route element={<ProtectedRoute />}>
+                    <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/products" element={<Products />} />
                     <Route path="/suggestions" element={<Suggestions />} />
@@ -124,33 +80,10 @@ const App = () => {
                     <Route path="/sales-history/:id" element={<SaleDetails />} />
                     <Route path="/credit-notes" element={<CreditNotes />} />
                     <Route path="/scan" element={<ScanProducts />} />
-                    <Route path="/listas-voz" element={<ListaVozContinua />} />
+                    <Route path="/listas-voz" element={<VoiceOrderLists />} />
                     <Route path="/pedido-voz" element={<VoiceToCart />} />
+                    <Route path="/lista-voz-continua" element={<ListaVozContinua />} />
                     <Route path="/expenses" element={<Expenses />} />
-                  </Route>
-
-                  {/* Rotas protegidas - Módulo de Talho */}
-                  <Route element={<ProtectedRoute />}>
-                    <Route path="/butcher/dashboard" element={<ButcherDashboard />} />
-                    <Route path="/butcher/products" element={<ButcherProducts />} />
-                    <Route path="/butcher/sales" element={<ButcherSales />} />
-                    <Route path="/butcher/inventory" element={<ButcherDashboard />} /> {/* Placeholder */}
-                    <Route path="/butcher/recipes" element={<ButcherDashboard />} /> {/* Placeholder */}
-                    <Route path="/butcher/finances" element={<ButcherDashboard />} /> {/* Placeholder */}
-                    <Route path="/butcher/history" element={<ButcherDashboard />} /> {/* Placeholder */}
-                    <Route path="/butcher/settings" element={<Settings />} />
-                  </Route>
-                  
-                  {/* Rotas protegidas - Módulo de Supermercado */}
-                  <Route element={<ProtectedRoute />}>
-                    <Route path="/supermarket/dashboard" element={<SupermarketDashboard />} />
-                    <Route path="/supermarket/products" element={<SupermarketProducts />} />
-                    <Route path="/supermarket/sales" element={<SupermarketSales />} />
-                    <Route path="/supermarket/promotions" element={<SupermarketDashboard />} /> {/* Placeholder */}
-                    <Route path="/supermarket/inventory" element={<SupermarketDashboard />} /> {/* Placeholder */}
-                    <Route path="/supermarket/finances" element={<SupermarketDashboard />} /> {/* Placeholder */}
-                    <Route path="/supermarket/history" element={<SupermarketDashboard />} /> {/* Placeholder */}
-                    <Route path="/supermarket/settings" element={<Settings />} />
                   </Route>
                   
                   {/* Rota para página não encontrada */}

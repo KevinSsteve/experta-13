@@ -12,7 +12,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ParsedVoiceItem } from "@/utils/voiceUtils";
 import { Input } from "@/components/ui/input";
 import { normalizeSearch } from "@/utils/searchUtils";
-import { findSimilarProducts } from "@/utils/productMatchUtils";
 import { 
   Tooltip,
   TooltipContent,
@@ -27,7 +26,7 @@ interface ProductSuggestionsProps {
 }
 
 export function ProductSuggestions({ productName, userId }: ProductSuggestionsProps) {
-  const [suggestions, setSuggestions] = useState<(Product & { similarity?: number })[]>([]);
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,21 +35,6 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
   const isMobile = useIsMobile();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Função para extrair nome do produto se for um objeto JSON
-  const extractProductName = (text: string): string => {
-    try {
-      if (typeof text === 'string' && (text.startsWith('{') || text.startsWith('['))) {
-        const parsed = JSON.parse(text);
-        if (parsed && typeof parsed === 'object' && parsed.name) {
-          return parsed.name;
-        }
-      }
-      return text;
-    } catch (e) {
-      return text;
-    }
-  };
-
   // Função para buscar produtos com debounce
   const fetchProducts = debounce(async (query: string) => {
     if (!userId) return;
@@ -58,45 +42,41 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
     setNoResults(false);
 
     try {
-      // Se não houver query explícita, usa o nome do produto como query
-      const searchTerm = query || extractProductName(productName);
-      console.log(`Buscando sugestões para: "${searchTerm}"`);
-
-      // Busca todos os produtos do usuário
-      const { data: products, error } = await supabase
+      let supabaseQuery = supabase
         .from('products')
         .select('*')
-        .eq('user_id', userId)
-        .order('name');
+        .eq('user_id', userId);
+
+      // Se houver busca, aplica os filtros
+      if (query) {
+        const normalizedQuery = normalizeSearch(query);
+        const terms = normalizedQuery.split(' ');
+        
+        // Cria uma condição OR para cada termo da busca
+        const searchConditions = terms.map(term => {
+          const likeQuery = `%${term}%`;
+          return `or(name.ilike.${likeQuery},category.ilike.${likeQuery},code.ilike.${likeQuery})`;
+        }).join(',');
+
+        supabaseQuery = supabaseQuery.or(searchConditions);
+      }
+
+      // Ordena por nome e limita a 15 resultados
+      const { data, error } = await supabaseQuery
+        .order('name')
+        .limit(15);
 
       if (error) throw error;
 
-      if (!products || products.length === 0) {
-        setNoResults(true);
-        setSuggestions([]);
-        setLoading(false);
-        return;
+      if (data) {
+        setSuggestions(data as Product[]);
+        setNoResults(data.length === 0);
       }
-
-      // Usa o algoritmo avançado de correspondência fonética
-      const similarProducts = findSimilarProducts(
-        searchTerm, 
-        products as Product[],
-        0.25 // Reduz o threshold para encontrar mais correspondências
-      );
-
-      console.log(`Encontradas ${similarProducts.length} sugestões relevantes para "${searchTerm}"`);
-      
-      // Ordena por similaridade
-      const sortedProducts = similarProducts.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
-      
-      setSuggestions(sortedProducts);
-      setNoResults(sortedProducts.length === 0);
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
       toast({
-        title: "Erro ao buscar sugestões",
-        description: "Não foi possível carregar as sugestões para este item.",
+        title: "Erro ao buscar produtos",
+        description: "Não foi possível carregar as sugestões.",
         variant: "destructive"
       });
     } finally {
@@ -110,7 +90,7 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
     return () => {
       fetchProducts.cancel();
     };
-  }, [searchQuery, userId, productName]);
+  }, [searchQuery, userId]);
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
@@ -145,7 +125,7 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
     <div className="mt-2">
       <div className="flex items-center gap-1 mb-2 text-sm text-muted-foreground">
         <Search className="h-3.5 w-3.5" />
-        <span>Sugestões para "{extractProductName(productName)}"</span>
+        <span>Sugestões para "{productName}"</span>
       </div>
       
       {/* Search Input with improved UX */}
@@ -199,10 +179,7 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
           {suggestions.map((product) => (
             <div 
               key={product.id} 
-              className={`flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 border rounded-md hover:bg-accent/20 transition-colors ${
-                (product.similarity || 0) > 0.7 ? 'bg-green-100/30 dark:bg-green-900/20' : 
-                (product.similarity || 0) > 0.4 ? 'bg-yellow-100/30 dark:bg-yellow-900/20' : ''
-              }`}
+              className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 border rounded-md hover:bg-accent/20 transition-colors"
             >
               <div className="flex-1 mb-2 sm:mb-0">
                 <div className="font-medium">{product.name}</div>
@@ -211,11 +188,6 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
                   <Badge variant="secondary" className="text-xs font-medium">{formatPrice(product.price)}</Badge>
                   {product.code && (
                     <span className="text-xs">Código: {product.code}</span>
-                  )}
-                  {product.similarity && (
-                    <Badge variant={product.similarity > 0.7 ? "success" : product.similarity > 0.4 ? "warning" : "outline"} className="text-xs">
-                      {Math.round(product.similarity * 100)}% correspondência
-                    </Badge>
                   )}
                   {product.stock > 0 ? (
                     <span className="text-xs">Em estoque: {product.stock}</span>

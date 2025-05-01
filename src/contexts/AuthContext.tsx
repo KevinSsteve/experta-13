@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      console.log("[AuthContext] Fetching profile for user:", userId);
+      console.log("Fetching profile for user:", userId);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -43,8 +43,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn("[AuthContext] No profile found for user:", userId);
         return null;
       }
-      
-      console.log("[AuthContext] Profile data loaded:", data);
       
       const profileData: ExtendedProfile = {
         id: data.id,
@@ -97,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // First, establish the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("[AuthContext] Auth state changed:", event, session?.user?.id);
+        console.log("[AuthContext] Auth state changed:", event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
@@ -120,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("[AuthContext] Initial session check:", session ? `Logged in as ${session.user?.email}` : "Not logged in");
+      console.log("[AuthContext] Initial session check:", session ? "Logged in" : "Not logged in");
       setSession(session);
       setUser(session?.user ?? null);
       

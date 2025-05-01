@@ -63,7 +63,7 @@ const SidebarNav = () => {
       icon: Barcode,
     },
     {
-      title: "Lista por Voz",
+      title: "Listas de Voz",
       href: "/listas-voz",
       icon: Headphones,
     },
@@ -121,6 +121,6 @@ const SidebarNav = () => {
       </nav>
     </div>
   );
-}
+};
 
 export default SidebarNav;

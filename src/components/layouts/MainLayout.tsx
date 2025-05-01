@@ -5,6 +5,7 @@ import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
 import { ShoppingCart } from "@/components/shop/ShoppingCart";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/contexts/ThemeContext"; 
 import { Menu, X } from "lucide-react";
 
 interface MainLayoutProps {
@@ -14,13 +15,14 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
   
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
   
   return (
-    <div className="flex min-h-screen w-full overflow-x-hidden">
+    <div className={`${theme} flex min-h-screen w-full overflow-x-hidden`}>
       {/* Sidebar para desktop */}
       <aside 
         className={`fixed top-0 left-0 z-30 h-full w-64 transform bg-sidebar border-r border-sidebar-border transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${

@@ -1,25 +1,31 @@
 
 import { MainLayout } from "@/components/layouts/MainLayout";
-import { VozContinuaCreator } from "@/components/voice-orders/VozContinuaCreator";
-import { useAuth } from "@/contexts/AuthContext";
+import { VoiceOrdersCreator } from "@/components/voice-orders/VoiceOrdersCreator";
+import { VoiceOrdersList } from "@/components/voice-orders/VoiceOrdersList";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, ArrowLeft, Mic } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { parseVoiceInput } from "@/utils/voiceUtils";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { VoiceOrdersList } from "@/components/voice-orders/VoiceOrdersList";
-import { OrderList } from "@/pages/VoiceOrderLists";
 
-export default function ListaVozContinua() {
+export interface OrderList {
+  id: string;
+  createdAt: string;
+  products: string[];
+  status: "aberto" | "enviado";
+}
+
+export default function VoiceOrderLists() {
   const { user, isLoading: authLoading } = useAuth();
   const [lists, setLists] = useState<OrderList[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user || authLoading) {
@@ -257,35 +263,27 @@ export default function ListaVozContinua() {
   return (
     <MainLayout>
       <div className={`mx-auto py-6 px-3 ${isMobile ? 'w-full' : 'max-w-2xl'} space-y-6`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="h-4 w-4" />
+        <h1 className="text-xl sm:text-2xl font-bold mb-4">Listas de Compras por Voz</h1>
+        
+        <div className="flex justify-end">
+          <Link to="/lista-voz-continua">
+            <Button variant="outline" className="gap-2 text-primary">
+              <span className="hidden sm:inline">Experimentar</span> Gravação Contínua
             </Button>
-            <div className="flex items-center gap-1">
-              <Mic className="h-5 w-5 text-primary" />
-              <h1 className="text-xl sm:text-2xl font-bold">Lista por Voz Contínua</h1>
-            </div>
-          </div>
+          </Link>
         </div>
         
         <Alert className="bg-muted/50 border-muted">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Nova funcionalidade!</AlertTitle>
           <AlertDescription>
-            Agora você pode ditar múltiplos itens para sua lista com gravação contínua. 
-            Fale cada item e faça uma pausa de 3 segundos entre eles. 
-            A gravação só será interrompida quando você pressionar o botão novamente.
+            Agora você pode ver sugestões de produtos do seu inventário para cada item da lista.
+            Basta clicar no ícone ▼ ao lado de cada item para expandir as sugestões e adicioná-las diretamente ao carrinho.
+            Use o buscador para filtrar produtos por nome ou categoria!
           </AlertDescription>
         </Alert>
         
-        <VozContinuaCreator onListCreated={addList} />
-        
+        <VoiceOrdersCreator onListCreated={addList} />
         {loading ? (
           <div className="text-center text-muted-foreground">Carregando listas...</div>
         ) : (

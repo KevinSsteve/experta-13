@@ -2,7 +2,7 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { Menu, ShoppingCart, Bell, AlertTriangle, User, LogOut, Settings } from "lucide-react";
+import { Menu, ShoppingCart, Bell, Moon, Sun, AlertTriangle, User, LogOut, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +20,7 @@ interface TopBarProps {
 }
 
 export function TopBar({ toggleSidebar }: TopBarProps) {
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { openCart, getTotalItems } = useCart();
   const { signOut, profile } = useAuth();
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
             <img 
               src="/logo.png" 
               alt="Contascom" 
-              className="h-8 transition-all"
+              className={`h-8 ${theme === 'dark' ? 'invert' : ''} transition-all`}
             />
             <div className="hidden sm:flex flex-col ml-2">
               <span className="text-sm font-medium">Contascom</span>
@@ -80,6 +80,18 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
           
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleTheme} 
+            title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
           <div className="relative">
             <Button 
               variant="ghost" 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -67,7 +68,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const Settings = () => {
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { profile, refreshProfile } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [notifications, setNotifications] = useState({
@@ -92,7 +93,7 @@ const Settings = () => {
       receiptFooterText: '',
       companyNeighborhood: '',
       companyCity: '',
-      companySocialSecurity: '',
+      companySocialSecurity: '', // Alterado de companySocialMedia para companySocialSecurity
     },
   });
 
@@ -383,13 +384,23 @@ const Settings = () => {
                     <CardHeader>
                       <CardTitle>Aparência</CardTitle>
                       <CardDescription>
-                        Personalização visual do sistema
+                        Personalize a aparência do sistema
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-sm mb-4">
-                        Este sistema utiliza o tema claro para melhor visibilidade.
-                      </p>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="dark-mode">Tema Escuro</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Alterar entre tema claro e escuro
+                          </p>
+                        </div>
+                        <Switch
+                          id="dark-mode"
+                          checked={theme === 'dark'}
+                          onCheckedChange={toggleTheme}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                   

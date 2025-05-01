@@ -11,15 +11,13 @@ export function parseVoiceInput(text: string): ParsedVoiceItem {
     .replace(/(comprar|adicionar|lista|pendente|pagar|quero|gostaria de|por favor)/g, "")
     .trim();
 
-  // Padrões melhorados para encontrar preços
+  // Padrões para encontrar preços
   const pricePatterns = [
-    /\b(?:de|por|custa|vale)\s+(\d+(?:[,.]\d{1,2})?)\b/,  // "de 100" ou "por 10,50"
-    /\b(?:de|por|custa|vale)\s+(\d+)\s*(?:reais|real)\b/, // "de 50 reais"
-    /\b(?:de|por|custa|vale)\s+(?:r\$\s*)?(\d+(?:[,.]\d{1,2})?)\b/, // "de R$ 29,90"
-    /\b(\d+(?:[,.]\d{1,2})?)\s*(?:reais|real)\b/, // "10 reais"
-    /\b(?:r\$\s*)?(\d+(?:[,.]\d{1,2})?)\b/, // "R$ 29,90" ou número isolado 
-    /\s+(\d+(?:[,.]\d{1,2})?)\s*$/, // Número no final da string "açúcar 10"
-    /\s+(\d+(?:[,.]\d{1,2})?)\s*(?:reais|real|r\$)?$/ // "açúcar 10 reais" no final
+    /\b(?:de|por|custa|vale)\s+(\d+(?:\.\d{1,2})?)\b/,  // Números com ou sem decimais
+    /\b(?:de|por|custa|vale)\s+(\d+)\s*(?:reais|real)\b/,
+    /\b(?:de|por|custa|vale)\s+(?:r\$\s*)?(\d+(?:\.\d{1,2})?)\b/,
+    /\b(\d+(?:\.\d{1,2})?)\s*(?:reais|real)\b/, // Preço seguido de 'reais' ou 'real'
+    /\b(?:r\$\s*)?(\d+(?:\.\d{1,2})?)\b/ // Número isolado ou com R$
   ];
 
   let price: number | undefined;
@@ -29,28 +27,12 @@ export function parseVoiceInput(text: string): ParsedVoiceItem {
   for (const pattern of pricePatterns) {
     const match = cleanText.match(pattern);
     if (match) {
-      const priceStr = match[1].replace(',', '.');
-      price = parseFloat(priceStr);
-      
+      price = parseFloat(match[1]);
       // Remove a parte do preço do nome do produto
-      // Usa o índice do começo do match para preservar o nome corretamente
-      const matchIndex = cleanText.indexOf(match[0]);
-      if (matchIndex > 0) {
-        name = cleanText.substring(0, matchIndex).trim();
-      } else {
-        name = cleanText.replace(pattern, "").trim();
-      }
-      
-      console.log(`Preço encontrado: ${price}, Nome: ${name}, Padrão: ${pattern}`);
+      name = cleanText.replace(pattern, "").trim();
       break;
     }
   }
-
-  // Limpa o nome de possíveis resíduos
-  name = name
-    .replace(/\s+(de|por|custa|vale)\s*$/, '')  // Remove palavras de preço no final
-    .replace(/^\s*(de|do|da)\s+/, '')  // Remove preposições no início
-    .trim();
 
   return {
     name,

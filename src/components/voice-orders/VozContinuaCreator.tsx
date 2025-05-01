@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle, Timer } from "lucide-react";
@@ -5,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { parseVoiceOrder } from "@/utils/voiceCartUtils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { normalizeSearch } from "@/utils/searchUtils";
 import {
   Tooltip,
   TooltipContent,
@@ -26,10 +26,12 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
   const [lastSpeechTime, setLastSpeechTime] = useState<number | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
+  const [errorCounter, setErrorCounter] = useState(0);
+  const [processingItem, setProcessingItem] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
-  const recognitionRef = useRef<any>(null); // Changed from SpeechRecognition to any
+  const recognitionRef = useRef<any>(null);
   const timerRef = useRef<number | null>(null);
   const idleTimerRef = useRef<number | null>(null);
   const autoRestartRef = useRef<boolean>(true);
@@ -47,7 +49,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
   
   // Efeito para processar pausas no reconhecimento
   useEffect(() => {
-    if (lastSpeechTime && transcriptBuffer) {
+    if (lastSpeechTime && transcriptBuffer && !processingItem) {
       const SILENCE_DURATION = 3000; // 3 segundos de silêncio
       
       // Limpar o timer anterior para evitar processamentos duplicados
@@ -57,15 +59,28 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       
       idleTimerRef.current = window.setTimeout(() => {
         console.log(`Silêncio detectado após: ${transcriptBuffer}`);
+        setProcessingItem(true); // Impede processamento duplicado
+        
         processItemAfterSilence(transcriptBuffer);
         
-        // Reiniciar o reconhecimento de voz após processar o item
-        if (isListening && autoRestartRef.current) {
-          restartSpeechRecognition();
+        // Importante: Parar completamente o reconhecimento atual
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+          recognitionRef.current = null;
         }
         
-        setTranscriptBuffer(""); // Limpar o buffer após processar o item
+        // Limpar buffer e estado
+        setTranscriptBuffer("");
         setLastSpeechTime(null);
+        
+        // Pequeno delay e então reiniciar se ainda estiver em modo de escuta
+        setTimeout(() => {
+          if (isListening && autoRestartRef.current) {
+            startSpeechRecognition();
+            setErrorCounter(0); // Reseta o contador de erros após reiniciar com sucesso
+          }
+          setProcessingItem(false);
+        }, 500);
       }, SILENCE_DURATION);
       
       return () => {
@@ -73,21 +88,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       };
     }
     return () => {};
-  }, [lastSpeechTime, transcriptBuffer, isListening]);
-  
-  // Reiniciar o reconhecimento de voz para garantir que novos itens sejam capturados corretamente
-  const restartSpeechRecognition = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      
-      // Pequeno delay antes de reiniciar para garantir que o reconhecimento anterior terminou
-      setTimeout(() => {
-        if (isListening && autoRestartRef.current) {
-          startSpeechRecognition();
-        }
-      }, 300);
-    }
-  };
+  }, [lastSpeechTime, transcriptBuffer, isListening, processingItem]);
   
   // Iniciar o reconhecimento de voz com as configurações corretas
   const startSpeechRecognition = () => {
@@ -100,75 +101,104 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       return;
     }
     
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognitionAPI();
-    recognition.lang = "pt-BR";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    
-    recognition.onstart = () => {
-      setIsListening(true);
-    };
-    
-    recognition.onresult = (event) => {
-      // Pegar o resultado mais recente
-      const current = event.resultIndex;
-      const transcript = event.results[current][0].transcript;
+    try {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognitionAPI();
+      recognition.lang = "pt-BR";
+      recognition.continuous = true;
+      recognition.interimResults = true;
       
-      // Atualizar o buffer de transcrição com o novo texto
-      setTranscriptBuffer(transcript);
-      setLastSpeechTime(Date.now());
+      recognition.onstart = () => {
+        setIsListening(true);
+        console.log("Reconhecimento de voz iniciado");
+      };
       
-      // Resetar o timer de silêncio quando detecta fala
-      if (idleTimerRef.current) {
-        clearTimeout(idleTimerRef.current);
-        idleTimerRef.current = null;
-      }
-    };
-    
-    recognition.onerror = (e) => {
-      console.error('Erro de reconhecimento de voz:', e);
-      
-      // Apenas mostra toast de erro para erros não relacionados a "no-speech"
-      if (e.error !== 'no-speech') {
-        toast({
-          title: "Erro",
-          description: "Houve um erro no reconhecimento de voz. Tente novamente.",
-          variant: "destructive"
-        });
-      }
-      
-      // Reinicia o reconhecimento em caso de erro
-      if (isListening && autoRestartRef.current) {
-        try {
-          restartSpeechRecognition();
-        } catch (err) {
-          console.error("Falha ao reiniciar reconhecimento após erro:", err);
+      recognition.onresult = (event) => {
+        // Pegar o resultado mais recente
+        const current = event.resultIndex;
+        const transcript = event.results[current][0].transcript;
+        
+        // Atualizar o buffer de transcrição com o novo texto
+        setTranscriptBuffer(transcript);
+        setLastSpeechTime(Date.now());
+        
+        // Resetar o timer de silêncio quando detecta fala
+        if (idleTimerRef.current) {
+          clearTimeout(idleTimerRef.current);
+          idleTimerRef.current = null;
         }
-      }
-    };
-    
-    recognition.onend = () => {
-      // Apenas reinicia se o usuário não tiver interrompido manualmente
-      if (isListening && autoRestartRef.current) {
-        try {
-          recognition.start();
-        } catch (err) {
-          console.error("Falha ao reiniciar reconhecimento:", err);
-          // Tenta novamente após um pequeno delay
+      };
+      
+      recognition.onerror = (e: any) => {
+        console.log('Erro de reconhecimento de voz:', e);
+        
+        // Incrementa contador de erros
+        setErrorCounter(prev => prev + 1);
+        
+        // Se houver muitos erros consecutivos, para completamente
+        if (errorCounter > 5) {
+          console.log("Muitos erros consecutivos, parando completamente");
+          autoRestartRef.current = false;
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+          }
+          setIsListening(false);
+          setRecordingTime(0);
+          
+          toast({
+            title: "Erro recorrente",
+            description: "Muitos erros consecutivos. Reconhecimento de voz interrompido.",
+            variant: "destructive"
+          });
+          
+          return;
+        }
+        
+        // Apenas mostra toast de erro para erros não relacionados a "no-speech"
+        if (e.error !== 'no-speech') {
+          // Limitamos os toasts de erro para não sobrecarregar a interface
+          if (errorCounter < 3) {
+            toast({
+              title: "Erro",
+              description: "Houve um erro no reconhecimento de voz. Tentando reiniciar...",
+              variant: "destructive"
+            });
+          }
+        }
+        
+        // Para o reconhecimento atual
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+          recognitionRef.current = null;
+        }
+        
+        // Reinicia após um pequeno delay
+        setTimeout(() => {
+          if (isListening && autoRestartRef.current) {
+            console.log("Tentando reiniciar após erro...");
+            startSpeechRecognition();
+          }
+        }, 1000);
+      };
+      
+      recognition.onend = () => {
+        console.log("Reconhecimento de voz encerrado");
+        // Se não foi um término manual e ainda estamos em modo de escuta
+        if (isListening && autoRestartRef.current && !processingItem) {
+          console.log("Reiniciando reconhecimento automaticamente...");
+          // Curto delay para evitar repetição infinita de erros
           setTimeout(() => {
             if (isListening && autoRestartRef.current) {
               startSpeechRecognition();
             }
-          }, 500);
+          }, 1000);
+        } else if (!autoRestartRef.current || !isListening) {
+          setIsListening(false);
+          setRecordingTime(0);
         }
-      } else if (!autoRestartRef.current) {
-        setIsListening(false);
-        setRecordingTime(0);
-      }
-    };
-    
-    try {
+      };
+      
       recognition.start();
       recognitionRef.current = recognition;
     } catch (err) {
@@ -231,6 +261,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       setTranscriptBuffer("");
       setLastSpeechTime(null);
       setRecordingTime(0);
+      setErrorCounter(0);
       
       if (idleTimerRef.current) {
         clearTimeout(idleTimerRef.current);
@@ -242,6 +273,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
     
     // Ativa o reinício automático quando o usuário inicia a gravação
     autoRestartRef.current = true;
+    setErrorCounter(0);
     startSpeechRecognition();
   };
   

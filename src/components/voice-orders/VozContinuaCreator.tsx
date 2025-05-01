@@ -1,8 +1,8 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle, Timer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { parseVoiceInput } from "@/utils/voiceUtils"; // Importando a função parseVoiceInput
 import { parseVoiceOrder } from "@/utils/voiceCartUtils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -217,27 +217,45 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
     if (!text.trim()) return;
     
     try {
-      // Processar o texto usando a função de parseVoiceOrder
+      // Primeiro tentamos processar usando parseVoiceInput para capturar o nome e preço
+      const parsedInput = parseVoiceInput(text.trim());
+      
+      // Depois processamos com parseVoiceOrder para obter informações adicionais como quantidade
       const processedItem = parseVoiceOrder(text.trim());
+
+      // Combinamos as informações de ambas funções para garantir que capturamos tanto
+      // o nome quanto o preço corretamente
       const itemJson = JSON.stringify({
-        name: processedItem.name,
-        quantity: processedItem.quantity,
-        originalText: processedItem.originalText
+        name: parsedInput.name || processedItem.name, // Usamos o nome de qualquer função que retornou um resultado
+        price: parsedInput.price || processedItem.price, // Priorizamos o preço capturado
+        quantity: processedItem.quantity || 1,
+        originalText: text.trim()
       });
+      
+      console.log("Item processado:", JSON.parse(itemJson));
       
       // Adicionar o item à lista de produtos
       setProducts(prev => [...prev, itemJson]);
       
       // Feedback visual/sonoro
+      const displayName = parsedInput.name || processedItem.name;
+      const displayPrice = parsedInput.price || processedItem.price;
+      
+      const priceDisplay = displayPrice ? ` (${displayPrice})` : '';
       toast({
         title: "Item adicionado",
-        description: `Item "${processedItem.name}" adicionado à lista.`,
+        description: `Item "${displayName}${priceDisplay}" adicionado à lista.`,
         duration: 1500
       });
     } catch (error) {
       console.error("Erro ao processar item:", error);
       // Fallback para texto simples se houver erro no processamento
       setProducts(prev => [...prev, text.trim()]);
+      toast({
+        title: "Item adicionado (texto bruto)",
+        description: `"${text.trim()}" adicionado à lista.`,
+        duration: 1500
+      });
     }
   };
   
@@ -304,8 +322,11 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
   const getItemName = (item: string): string => {
     try {
       const parsed = JSON.parse(item);
-      if (parsed && typeof parsed === 'object' && parsed.name) {
-        return parsed.name;
+      if (parsed && typeof parsed === 'object') {
+        // Formatar o nome com o preço, se disponível
+        const name = parsed.name || '';
+        const price = parsed.price ? ` (${parsed.price})` : '';
+        return `${name}${price}`;
       }
       return item;
     } catch (e) {

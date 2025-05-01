@@ -1,4 +1,3 @@
-
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { VozContinuaCreator } from "@/components/voice-orders/VozContinuaCreator";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,12 +5,17 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, ArrowLeft, Mic } from "lucide-react";
+import { AlertCircle, Mic } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { VoiceOrdersList } from "@/components/voice-orders/VoiceOrdersList";
-import { OrderList } from "@/pages/VoiceOrderLists";
+
+// Define the OrderList interface directly in this file
+export interface OrderList {
+  id: string;
+  createdAt: string;
+  products: string[];
+  status: 'enviado' | 'aberto';
+}
 
 export default function ListaVozContinua() {
   const { user, isLoading: authLoading } = useAuth();
@@ -19,7 +23,6 @@ export default function ListaVozContinua() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user || authLoading) {
@@ -259,24 +262,14 @@ export default function ListaVozContinua() {
       <div className={`mx-auto py-6 px-3 ${isMobile ? 'w-full' : 'max-w-2xl'} space-y-6`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-1">
-              <Mic className="h-5 w-5 text-primary" />
-              <h1 className="text-xl sm:text-2xl font-bold">Lista por Voz Contínua</h1>
-            </div>
+            <Mic className="h-5 w-5 text-primary" />
+            <h1 className="text-xl sm:text-2xl font-bold">Lista por Voz</h1>
           </div>
         </div>
         
         <Alert className="bg-muted/50 border-muted">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Nova funcionalidade!</AlertTitle>
+          <AlertTitle>Função de Lista por Voz</AlertTitle>
           <AlertDescription>
             Agora você pode ditar múltiplos itens para sua lista com gravação contínua. 
             Fale cada item e faça uma pausa de 3 segundos entre eles. 

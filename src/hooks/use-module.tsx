@@ -39,13 +39,14 @@ export const useModule = () => {
           const sampleProducts = importSampleSupermarketProducts(user.id);
           
           // Importar dados de amostra para o módulo de supermercado
-          for (const product of sampleProducts) {
-            await createSupermarketProduct(product);
-          }
+          Promise.all(sampleProducts.map(product => createSupermarketProduct(product)))
+            .catch(error => {
+              console.error('Erro ao importar dados de amostra para o módulo de supermercado:', error);
+            });
           
           toast.success('Módulo de Supermercado selecionado com sucesso!');
         } catch (error) {
-          console.error('Erro ao importar dados de amostra para o módulo de supermercado:', error);
+          console.error('Erro ao preparar dados de amostra para o módulo de supermercado:', error);
         }
         
         navigate('/supermarket/dashboard');

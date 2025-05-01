@@ -14,7 +14,24 @@ export async function getSupermarketProducts(): Promise<SupermarketProduct[]> {
       return [];
     }
 
-    return data as unknown as SupermarketProduct[];
+    return data.map(product => ({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      cost: product.purchase_price || 0,
+      stock: product.stock || 0,
+      category_type: product.category,
+      description: product.description || '',
+      barcode: product.code || '',
+      user_id: product.user_id,
+      created_at: product.created_at,
+      updated_at: product.updated_at,
+      brand: '', // Default values for fields not in the database
+      unit: '',
+      discount_percentage: 0,
+      featured: false,
+      expiry_date: ''
+    })) as SupermarketProduct[];
   } catch (error) {
     console.error("Exception fetching supermarket products:", error);
     return [];
@@ -34,7 +51,26 @@ export async function getSupermarketProduct(id: string): Promise<SupermarketProd
       return null;
     }
 
-    return data as unknown as SupermarketProduct;
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      name: data.name,
+      price: data.price,
+      cost: data.purchase_price || 0,
+      stock: data.stock || 0,
+      category_type: data.category,
+      description: data.description || '',
+      barcode: data.code || '',
+      user_id: data.user_id,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      brand: '', // Default values for fields not in the database
+      unit: '',
+      discount_percentage: 0,
+      featured: false,
+      expiry_date: ''
+    } as SupermarketProduct;
   } catch (error) {
     console.error("Exception fetching supermarket product:", error);
     return null;
@@ -47,11 +83,11 @@ export async function createSupermarketProduct(product: Omit<SupermarketProduct,
     const productData = {
       name: product.name,
       price: product.price,
-      cost: product.cost || 0,
+      purchase_price: product.cost || 0,
       stock: product.stock || 0,
       category: product.category_type,
-      description: product.description,
-      barcode: product.barcode,
+      description: product.description || '',
+      code: product.barcode || '',
       user_id: product.user_id,
       is_public: false
     };
@@ -72,19 +108,19 @@ export async function createSupermarketProduct(product: Omit<SupermarketProduct,
       id: data.id,
       name: data.name,
       price: data.price,
-      cost: data.cost || 0,
+      cost: data.purchase_price || 0,
       stock: data.stock || 0,
       category_type: data.category,
-      description: data.description,
-      barcode: data.code,
+      description: data.description || '',
+      barcode: data.code || '',
       user_id: data.user_id,
       created_at: data.created_at,
       updated_at: data.updated_at,
-      brand: data.brand,
-      unit: data.unit,
-      discount_percentage: data.discount_percentage,
-      featured: data.featured,
-      expiry_date: data.expiry_date
+      brand: '', // Default values for fields not in the database
+      unit: '',
+      discount_percentage: 0,
+      featured: false,
+      expiry_date: ''
     } as SupermarketProduct;
   } catch (error) {
     console.error("Exception creating supermarket product:", error);
@@ -98,7 +134,7 @@ export async function updateSupermarketProduct(id: string, product: Partial<Supe
     const productData: any = {};
     if (product.name) productData.name = product.name;
     if (product.price !== undefined) productData.price = product.price;
-    if (product.cost !== undefined) productData.cost = product.cost;
+    if (product.cost !== undefined) productData.purchase_price = product.cost;
     if (product.stock !== undefined) productData.stock = product.stock;
     if (product.category_type) productData.category = product.category_type;
     if (product.description !== undefined) productData.description = product.description;
@@ -121,19 +157,19 @@ export async function updateSupermarketProduct(id: string, product: Partial<Supe
       id: data.id,
       name: data.name,
       price: data.price,
-      cost: data.cost || 0,
+      cost: data.purchase_price || 0,
       stock: data.stock || 0,
       category_type: data.category,
-      description: data.description,
-      barcode: data.code,
+      description: data.description || '',
+      barcode: data.code || '',
       user_id: data.user_id,
       created_at: data.created_at,
       updated_at: data.updated_at,
-      brand: data.brand,
-      unit: data.unit,
-      discount_percentage: data.discount_percentage,
-      featured: data.featured,
-      expiry_date: data.expiry_date
+      brand: '', // Default values for fields not in the database
+      unit: '',
+      discount_percentage: 0,
+      featured: false,
+      expiry_date: ''
     } as SupermarketProduct;
   } catch (error) {
     console.error("Exception updating supermarket product:", error);

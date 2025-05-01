@@ -23,9 +23,9 @@ export const useModule = () => {
           const sampleMeatCuts = importSampleMeatCuts(user.id);
           
           // Importar dados de amostra para o módulo de talho
-          for (const meatCut of sampleMeatCuts) {
-            await createMeatCut(meatCut);
-          }
+          const promises = sampleMeatCuts.map(meatCut => createMeatCut(meatCut));
+          
+          await Promise.all(promises);
           
           toast.success('Módulo de Talho selecionado com sucesso!');
         } catch (error) {
@@ -39,7 +39,9 @@ export const useModule = () => {
           const sampleProducts = importSampleSupermarketProducts(user.id);
           
           // Importar dados de amostra para o módulo de supermercado
-          Promise.all(sampleProducts.map(product => createSupermarketProduct(product)))
+          const promises = sampleProducts.map(product => createSupermarketProduct(product));
+          
+          await Promise.all(promises)
             .catch(error => {
               console.error('Erro ao importar dados de amostra para o módulo de supermercado:', error);
             });

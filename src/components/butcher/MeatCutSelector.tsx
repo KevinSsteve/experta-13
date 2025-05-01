@@ -15,13 +15,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-
-export interface MeatCut {
-  id: string;
-  name: string;
-  animal: string;
-  pricePerKg: number;
-}
+import { MeatCut } from '@/lib/butcher/types';
 
 interface MeatCutSelectorProps {
   cuts: MeatCut[];
@@ -71,11 +65,11 @@ export const MeatCutSelector = ({ cuts = [], value, onChange }: MeatCutSelectorP
                   )}>
                     <span>{cut.name}</span>
                     <span className="ml-2 text-sm text-muted-foreground">
-                      ({cut.animal})
+                      ({cut.animal_type})
                     </span>
                   </div>
                   <span className="font-medium">
-                    R$ {cut.pricePerKg.toFixed(2)}/kg
+                    R$ {cut.price_per_kg.toFixed(2)}/kg
                   </span>
                   <Check
                     className={cn(

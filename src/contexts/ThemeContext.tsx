@@ -1,50 +1,23 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-
-type Theme = 'light' | 'dark';
+import React, { createContext, useContext } from 'react';
 
 type ThemeContextType = {
-  theme: Theme;
-  toggleTheme: () => void;
+  theme: 'light';
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const storedTheme = localStorage.getItem('moloja-theme');
-    
-    if (storedTheme) {
-      return storedTheme as Theme;
-    }
-    
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    
-    return 'light';
-  });
+  // We now only use light theme
+  const theme: 'light' = 'light';
 
-  const toggleTheme = () => {
-    setTheme(prevTheme => {
-      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('moloja-theme', newTheme);
-      return newTheme;
-    });
-  };
-
-  // Aplica a classe ao elemento root quando o tema muda
-  useEffect(() => {
+  // Apply light theme class to root element
+  React.useEffect(() => {
     const root = window.document.documentElement;
-    
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [theme]);
+    root.classList.remove('dark');
+  }, []);
 
-  const value = { theme, toggleTheme };
+  const value = { theme };
 
   return (
     <ThemeContext.Provider value={value}>

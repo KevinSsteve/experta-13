@@ -1,134 +1,123 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ButcherLayout } from '@/components/layouts/ButcherLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductForm } from '@/components/butcher/ProductForm';
-import { MeatProduct, MeatProductCard } from '@/components/butcher/MeatProductCard';
+import { MeatProductCard } from '@/components/butcher/MeatProductCard';
 import { Beef, Search, Plus } from 'lucide-react';
+import { getMeatCuts, createMeatCut, updateMeatCut, deleteMeatCut } from '@/lib/butcher/api';
+import { MeatCut } from '@/lib/butcher/types';
 import { toast } from 'sonner';
-
-// Mock data for testing
-const mockProducts: MeatProduct[] = [
-  {
-    id: '1',
-    name: 'Picanha Premium',
-    code: '7891234567890',
-    animalType: 'beef',
-    cutType: 'rump',
-    pricePerKg: 89.90,
-    stock: 15.5,
-    expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days in the future
-    description: 'Picanha premium de alta qualidade, macia e suculenta.'
-  },
-  {
-    id: '2',
-    name: 'Filé Mignon',
-    code: '7891234567891',
-    animalType: 'beef',
-    cutType: 'filet',
-    pricePerKg: 99.90,
-    stock: 8.2,
-    expirationDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days in the future
-    description: 'Filé mignon macio e suculento, ideal para ocasiões especiais.'
-  },
-  {
-    id: '3',
-    name: 'Costela Suína',
-    code: '7891234567892',
-    animalType: 'pork',
-    cutType: 'ribs',
-    pricePerKg: 39.90,
-    stock: 12.0,
-    expirationDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days in the future
-    description: 'Costela suína ideal para churrasco ou assado.'
-  },
-  {
-    id: '4',
-    name: 'Peito de Frango',
-    code: '7891234567893',
-    animalType: 'chicken',
-    cutType: 'breast',
-    pricePerKg: 22.90,
-    stock: 20.5,
-    expirationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days in the future
-    description: 'Peito de frango sem pele e sem osso.'
-  },
-  {
-    id: '5',
-    name: 'Linguiça Toscana',
-    code: '7891234567894',
-    animalType: 'pork',
-    cutType: 'belly',
-    pricePerKg: 28.90,
-    stock: 18.0,
-    expirationDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 6 days in the future
-    description: 'Linguiça toscana temperada pronta para o churrasco.'
-  },
-  {
-    id: '6',
-    name: 'Contra Filé',
-    code: '7891234567895',
-    animalType: 'beef',
-    cutType: 'ribeye',
-    pricePerKg: 59.90,
-    stock: 10.0,
-    expirationDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days in the future
-    description: 'Contra filé macio com marmoreio perfeito.'
-  }
-];
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ButcherProducts() {
-  const [products, setProducts] = useState<MeatProduct[]>(mockProducts);
+  const [products, setProducts] = useState<MeatCut[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<MeatProduct | null>(null);
+  const [editingProduct, setEditingProduct] = useState<MeatCut | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getMeatCuts();
+      setProducts(data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                         (product.description?.toLowerCase().includes(searchQuery.toLowerCase()));
     
     if (activeTab === "all") return matchesSearch;
-    if (activeTab === "beef") return matchesSearch && product.animalType === "beef";
-    if (activeTab === "pork") return matchesSearch && product.animalType === "pork";
-    if (activeTab === "poultry") return matchesSearch && (product.animalType === "chicken");
-    if (activeTab === "other") return matchesSearch && !["beef", "pork", "chicken"].includes(product.animalType);
+    if (activeTab === "beef") return matchesSearch && product.animal_type === "beef";
+    if (activeTab === "pork") return matchesSearch && product.animal_type === "pork";
+    if (activeTab === "poultry") return matchesSearch && (product.animal_type === "chicken");
+    if (activeTab === "other") return matchesSearch && !["beef", "pork", "chicken"].includes(product.animal_type);
     
     return matchesSearch;
   });
 
-  const handleAddProduct = (data: any) => {
-    const newProduct: MeatProduct = {
-      id: Date.now().toString(), // In a real app, this would be generated by the database
-      ...data
-    };
+  const handleAddProduct = async (data: any) => {
+    if (!user?.id) {
+      toast.error("Você precisa estar logado para adicionar produtos");
+      return;
+    }
     
-    setProducts([...products, newProduct]);
-    setIsDialogOpen(false);
-    toast.success("Produto adicionado com sucesso");
-  };
-
-  const handleEditProduct = (data: any) => {
-    if (editingProduct) {
-      const updatedProducts = products.map(product => 
-        product.id === editingProduct.id ? { ...product, ...data } : product
-      );
-      setProducts(updatedProducts);
-      setEditingProduct(null);
-      setIsDialogOpen(false);
-      toast.success("Produto atualizado com sucesso");
+    setIsSubmitting(true);
+    
+    try {
+      const newProduct = await createMeatCut({
+        ...data,
+        user_id: user.id
+      });
+      
+      if (newProduct) {
+        setProducts([...products, newProduct]);
+        setIsDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const openEditDialog = (product: MeatProduct) => {
+  const handleEditProduct = async (data: any) => {
+    if (editingProduct) {
+      setIsSubmitting(true);
+      
+      try {
+        const updatedProduct = await updateMeatCut(editingProduct.id, data);
+        
+        if (updatedProduct) {
+          const updatedProducts = products.map(product => 
+            product.id === editingProduct.id ? updatedProduct : product
+          );
+          setProducts(updatedProducts);
+          setEditingProduct(null);
+          setIsDialogOpen(false);
+        }
+      } catch (error) {
+        console.error("Error updating product:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const success = await deleteMeatCut(productId);
+      
+      if (success) {
+        setProducts(products.filter(product => product.id !== productId));
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
+  };
+
+  const openEditDialog = (product: MeatCut) => {
     setEditingProduct(product);
     setIsDialogOpen(true);
   };
 
-  const handleAddToCart = (product: MeatProduct) => {
+  const handleAddToCart = (product: MeatCut) => {
     toast.success(`${product.name} adicionado ao carrinho`);
     // In a real app, this would add the product to the cart
   };
@@ -168,33 +157,41 @@ export default function ButcherProducts() {
         </TabsList>
         
         <TabsContent value={activeTab} className="mt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredProducts.map(product => (
-              <MeatProductCard 
-                key={product.id} 
-                product={product} 
-                onEdit={openEditDialog}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-            
-            {filteredProducts.length === 0 && (
-              <div className="col-span-full flex flex-col items-center justify-center py-12">
-                <Beef className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-xl font-medium">Nenhum produto encontrado</h3>
-                <p className="text-muted-foreground mt-1">
-                  Tente ajustar sua pesquisa ou adicione novos produtos.
-                </p>
-                <Button className="mt-4" onClick={() => {
-                  setEditingProduct(null);
-                  setIsDialogOpen(true);
-                }}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Adicionar Produto
-                </Button>
-              </div>
-            )}
-          </div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="h-48 rounded-lg bg-muted animate-pulse"></div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredProducts.map(product => (
+                <MeatProductCard 
+                  key={product.id} 
+                  product={product} 
+                  onEdit={openEditDialog}
+                  onAddToCart={handleAddToCart}
+                />
+              ))}
+              
+              {filteredProducts.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-12">
+                  <Beef className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                  <h3 className="text-xl font-medium">Nenhum produto encontrado</h3>
+                  <p className="text-muted-foreground mt-1">
+                    Tente ajustar sua pesquisa ou adicione novos produtos.
+                  </p>
+                  <Button className="mt-4" onClick={() => {
+                    setEditingProduct(null);
+                    setIsDialogOpen(true);
+                  }}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar Produto
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
       
@@ -206,6 +203,7 @@ export default function ButcherProducts() {
           <ProductForm 
             initialData={editingProduct || undefined}
             onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
+            isLoading={isSubmitting}
           />
         </DialogContent>
       </Dialog>

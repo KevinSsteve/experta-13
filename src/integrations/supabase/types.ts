@@ -190,6 +190,48 @@ export type Database = {
         }
         Relationships: []
       }
+      meat_cuts: {
+        Row: {
+          animal_type: string
+          barcode: string | null
+          cost_per_kg: number
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price_per_kg: number
+          stock_weight: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          animal_type: string
+          barcode?: string | null
+          cost_per_kg: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price_per_kg: number
+          stock_weight?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          animal_type?: string
+          barcode?: string | null
+          cost_per_kg?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price_per_kg?: number
+          stock_weight?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string
@@ -265,6 +307,7 @@ export type Database = {
           receipt_show_signature: boolean | null
           receipt_title: string | null
           role: Database["public"]["Enums"]["user_role"]
+          selected_module: string | null
           tax_id: string | null
           tax_rate: number | null
           updated_at: string | null
@@ -292,6 +335,7 @@ export type Database = {
           receipt_show_signature?: boolean | null
           receipt_title?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          selected_module?: string | null
           tax_id?: string | null
           tax_rate?: number | null
           updated_at?: string | null
@@ -319,6 +363,7 @@ export type Database = {
           receipt_show_signature?: boolean | null
           receipt_title?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          selected_module?: string | null
           tax_id?: string | null
           tax_rate?: number | null
           updated_at?: string | null

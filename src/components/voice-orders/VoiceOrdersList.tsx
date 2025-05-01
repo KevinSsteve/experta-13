@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Trash2, ShoppingCart, Edit, Check, X, ChevronDown, ChevronUp } from "lucide-react";
-import type { OrderList } from "@/pages/VoiceOrderLists";
 import { Input } from "@/components/ui/input";
 import { ProductSuggestions } from "./ProductSuggestions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +16,14 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
-import { parseVoiceInput } from "@/utils/voiceUtils";
+
+// Define OrderList type here since the file it was imported from will be deleted
+export interface OrderList {
+  id: string;
+  createdAt: string;
+  products: string[];
+  status: "aberto" | "enviado";
+}
 
 interface VoiceOrdersListProps {
   lists: OrderList[];

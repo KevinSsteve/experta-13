@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -152,7 +151,7 @@ export function SideNavigation({ className, isCollapsed }: SideNavigationProps) 
             onClick={() => handleNavigate("/listas-voz")}
           >
             <List className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Listas por Voz</span>}
+            {!isCollapsed && <span>Lista por Voz</span>}
           </Button>
 
           <Button

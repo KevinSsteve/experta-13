@@ -23,9 +23,8 @@ import SaleDetails from "./pages/SaleDetails";
 import CreditNotes from "./pages/CreditNotes";
 import ScanProducts from "./pages/ScanProducts";
 import NotFound from "./pages/NotFound";
-import VoiceOrderLists from "./pages/VoiceOrderLists";
-import VoiceToCart from "./pages/VoiceToCart";
 import ListaVozContinua from "./pages/ListaVozContinua";
+import VoiceToCart from "./pages/VoiceToCart";
 import Expenses from "./pages/Expenses";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import Suggestions from "./pages/Suggestions";
@@ -80,9 +79,8 @@ const App = () => {
                     <Route path="/sales-history/:id" element={<SaleDetails />} />
                     <Route path="/credit-notes" element={<CreditNotes />} />
                     <Route path="/scan" element={<ScanProducts />} />
-                    <Route path="/listas-voz" element={<VoiceOrderLists />} />
+                    <Route path="/listas-voz" element={<ListaVozContinua />} />
                     <Route path="/pedido-voz" element={<VoiceToCart />} />
-                    <Route path="/lista-voz-continua" element={<ListaVozContinua />} />
                     <Route path="/expenses" element={<Expenses />} />
                   </Route>
                   

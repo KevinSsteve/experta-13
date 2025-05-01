@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,48 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
   // References for continuous listening
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accumulatedTextRef = useRef<string>("");
+  const isSpeakingRef = useRef<boolean>(false);
+
+  // Sound effect for item registration
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio();
+      audio.src = "data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaGAIAUAhCQGAOAx/8kxBTUUzLjk5LjVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=";
+      audio.volume = 0.5;
+      audio.play();
+    } catch (error) {
+      console.error("Error playing notification sound:", error);
+    }
+  };
+  
+  // Cleanup function for recognition
+  const cleanupRecognition = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.onresult = null;
+      recognitionRef.current.onerror = null;
+      recognitionRef.current.onend = null;
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    
+    if (speechTimeoutRef.current) {
+      clearTimeout(speechTimeoutRef.current);
+      speechTimeoutRef.current = null;
+    }
+  };
+  
+  useEffect(() => {
+    return () => {
+      cleanupRecognition();
+    };
+  }, []);
 
   const startNewSilenceTimer = () => {
     // Clear any existing silence timer
@@ -36,10 +77,11 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
     
     // Start a new silence timer (3 seconds)
     silenceTimerRef.current = setTimeout(() => {
-      // If we have accumulated text, treat it as a complete item
-      if (accumulatedTextRef.current.trim()) {
+      // If we have accumulated text and we were speaking, treat it as a complete item
+      if (accumulatedTextRef.current.trim() && isSpeakingRef.current) {
         processItemFromSpeech(accumulatedTextRef.current);
         accumulatedTextRef.current = ""; // Reset accumulated text
+        isSpeakingRef.current = false;
       }
     }, 3000);
   };
@@ -58,11 +100,14 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
     
     if (productList.length > 0) {
       setProducts(prev => [...prev, ...productList]);
+      setRecognizedText(cleanText);
+      
+      // Play notification sound and show toast
+      playNotificationSound();
       toast({
         title: `${productList.length} item(s) adicionado(s)`,
         description: productList.join(", "),
       });
-      setRecognizedText(cleanText);
     }
   };
 
@@ -78,24 +123,14 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
     
     if (isListening) {
       // Stop listening
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-      }
-      
-      // Clear any pending silence timer
-      if (silenceTimerRef.current) {
-        clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = null;
-      }
+      cleanupRecognition();
+      setIsListening(false);
       
       // Process any accumulated text
       if (accumulatedTextRef.current.trim()) {
         processItemFromSpeech(accumulatedTextRef.current);
         accumulatedTextRef.current = "";
       }
-      
-      setIsListening(false);
     } else {
       // Start listening
       setIsListening(true);
@@ -108,21 +143,63 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
       
       recognitionRef.current = recognition;
       
+      // Set up event handlers
+      recognition.onstart = () => {
+        console.log("Voice recognition started");
+      };
+      
       recognition.onresult = (event) => {
         const lastResultIndex = event.results.length - 1;
         const transcript = event.results[lastResultIndex][0].transcript;
-        const isFinal = event.results[lastResultIndex].isFinal;
         
+        // Mark that we're speaking
+        isSpeakingRef.current = true;
+        
+        // Update the accumulated text
         accumulatedTextRef.current = transcript;
+        
+        // Reset speech detection timeout
+        if (speechTimeoutRef.current) {
+          clearTimeout(speechTimeoutRef.current);
+        }
         
         // Restart silence timer whenever we get a result
         startNewSilenceTimer();
         
-        // If this is a final result and it's substantial
-        if (isFinal && transcript.trim().length > 1) {
-          processItemFromSpeech(transcript);
-          accumulatedTextRef.current = "";
+        console.log("Recognized speech:", transcript);
+      };
+      
+      recognition.onaudiostart = () => {
+        console.log("Audio capturing started");
+      };
+      
+      recognition.onaudioend = () => {
+        console.log("Audio capturing ended");
+      };
+      
+      recognition.onsoundstart = () => {
+        console.log("Sound detected");
+      };
+      
+      recognition.onsoundend = () => {
+        console.log("Sound ended");
+      };
+      
+      recognition.onspeechstart = () => {
+        console.log("Speech started");
+        isSpeakingRef.current = true;
+      };
+      
+      recognition.onspeechend = () => {
+        console.log("Speech ended");
+        // Use a small delay to confirm speech has ended
+        if (speechTimeoutRef.current) {
+          clearTimeout(speechTimeoutRef.current);
         }
+        
+        speechTimeoutRef.current = setTimeout(() => {
+          isSpeakingRef.current = false;
+        }, 500);
       };
       
       recognition.onerror = (e) => {
@@ -134,24 +211,36 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
         });
         
         // Clean up
-        if (silenceTimerRef.current) {
-          clearTimeout(silenceTimerRef.current);
-        }
-        
+        cleanupRecognition();
         setIsListening(false);
-        recognitionRef.current = null;
       };
       
       recognition.onend = () => {
-        // Only reset listening state if we're stopping intentionally
-        // If we're still supposed to be listening, restart the recognition
-        if (isListening && recognitionRef.current) {
-          recognition.start();
+        console.log("Recognition ended");
+        // Only restart if we're still supposed to be listening
+        if (isListening) {
+          try {
+            recognition.start();
+            console.log("Recognition restarted");
+          } catch (error) {
+            console.error("Failed to restart recognition:", error);
+            setIsListening(false);
+          }
         }
       };
       
       // Start the recognition process
-      recognition.start();
+      try {
+        recognition.start();
+      } catch (error) {
+        console.error("Failed to start recognition:", error);
+        setIsListening(false);
+        toast({
+          title: "Erro",
+          description: "Não foi possível iniciar o reconhecimento de voz.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -183,7 +272,7 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
                 <p className="max-w-xs">
                   Pressione o microfone para iniciar a gravação. Clique novamente para parar.
                   Uma pausa de 3 segundos separa automaticamente um item do outro.
-                  Separe também os itens com "e" ou vírgulas para adicionar vários produtos de uma vez.
+                  Cada frase completa é registrada como um item na lista após 3 segundos de silêncio.
                 </p>
               </TooltipContent>
             </Tooltip>

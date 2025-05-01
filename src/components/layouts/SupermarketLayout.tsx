@@ -4,17 +4,17 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Beef, ShoppingCart, Package, DollarSign, History, Settings, BarChart2, Utensils, LogOut } from 'lucide-react';
+import { Store, ShoppingCart, Package, DollarSign, History, Settings, BarChart2, Tag, LogOut, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-interface ButcherLayoutProps {
+interface SupermarketLayoutProps {
   children: React.ReactNode;
 }
 
-export const ButcherLayout = ({ children }: ButcherLayoutProps) => {
+export const SupermarketLayout = ({ children }: SupermarketLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -41,14 +41,14 @@ export const ButcherLayout = ({ children }: ButcherLayoutProps) => {
   };
 
   const navigation = [
-    { name: "Dashboard", icon: BarChart2, href: "/butcher/dashboard" },
-    { name: "Produtos", icon: Beef, href: "/butcher/products" },
-    { name: "Vendas", icon: ShoppingCart, href: "/butcher/sales" },
-    { name: "Estoque", icon: Package, href: "/butcher/inventory" },
-    { name: "Receitas", icon: Utensils, href: "/butcher/recipes" },
-    { name: "Financeiro", icon: DollarSign, href: "/butcher/finances" },
-    { name: "Histórico", icon: History, href: "/butcher/history" },
-    { name: "Configurações", icon: Settings, href: "/butcher/settings" },
+    { name: "Dashboard", icon: BarChart2, href: "/supermarket/dashboard" },
+    { name: "Produtos", icon: Package, href: "/supermarket/products" },
+    { name: "Vendas", icon: ShoppingCart, href: "/supermarket/sales" },
+    { name: "Promoções", icon: Tag, href: "/supermarket/promotions" },
+    { name: "Estoque", icon: Package, href: "/supermarket/inventory" },
+    { name: "Financeiro", icon: DollarSign, href: "/supermarket/finances" },
+    { name: "Histórico", icon: History, href: "/supermarket/history" },
+    { name: "Configurações", icon: Settings, href: "/supermarket/settings" },
   ];
 
   return (
@@ -60,8 +60,8 @@ export const ButcherLayout = ({ children }: ButcherLayoutProps) => {
       )}>
         <div className="flex h-16 items-center px-6 border-b">
           <div className="flex items-center gap-2">
-            <Beef className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-lg">TalhoDigital</span>
+            <Store className="h-6 w-6 text-primary" />
+            <span className="font-semibold text-lg">Supermercado Digital</span>
           </div>
         </div>
         <div className="flex-1 overflow-auto py-2">
@@ -96,7 +96,7 @@ export const ButcherLayout = ({ children }: ButcherLayoutProps) => {
                 {user?.email}
               </p>
               <p className="text-xs leading-none text-muted-foreground">
-                Talho Digital
+                Supermercado Digital
               </p>
             </div>
           </div>
@@ -116,8 +116,8 @@ export const ButcherLayout = ({ children }: ButcherLayoutProps) => {
       {isMobile && (
         <div className="fixed inset-x-0 top-0 h-16 z-30 bg-card border-b flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <Beef className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-lg">TalhoDigital</span>
+            <Store className="h-6 w-6 text-primary" />
+            <span className="font-semibold text-lg">Supermercado</span>
           </div>
           <Button 
             variant="ghost" 

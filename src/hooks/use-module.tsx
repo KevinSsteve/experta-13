@@ -1,108 +1,69 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { initializeMeatCuts } from '@/lib/butcher/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { importSampleMeatCuts } from '@/lib/butcher/sample-data';
+import { createMeatCut } from '@/lib/butcher/api';
+import { importSampleSupermarketProducts } from '@/lib/supermarket/sample-data';
+import { createSupermarketProduct } from '@/lib/supermarket/api';
+import { toast } from 'sonner';
 
-export type ModuleType = 'supermarket' | 'butcher';
-
-export function useModule() {
-  const [currentModule, setCurrentModule] = useState<ModuleType | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const useModule = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const selectedModule = localStorage.getItem('userModule');
 
-  // Fetch user's selected module from database or localStorage
-  useEffect(() => {
-    const fetchModulePreference = async () => {
-      try {
-        setIsLoading(true);
-        
-        // First try to get from localStorage for quick loading
-        const storedModule = localStorage.getItem('userModule') as ModuleType | null;
-        
-        if (storedModule && (storedModule === 'supermarket' || storedModule === 'butcher')) {
-          setCurrentModule(storedModule);
-        }
-        
-        // If user is logged in, try to get from database
-        if (user?.id) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('selected_module')
-            .eq('id', user.id)
-            .single();
-            
-          if (!error && data?.selected_module) {
-            const dbModule = data.selected_module as ModuleType;
-            // Update local storage and state if needed
-            if (dbModule !== storedModule) {
-              localStorage.setItem('userModule', dbModule);
-              setCurrentModule(dbModule);
-            }
-          } else if (storedModule) {
-            // If we have a module in localStorage but not in DB, update DB
-            await supabase
-              .from('profiles')
-              .update({ selected_module: storedModule })
-              .eq('id', user.id);
-          }
-        }
-      } catch (error) {
-        console.error("Error retrieving module preference:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchModulePreference();
-  }, [user]);
-
-  // Change module function (updates both localStorage and DB if user is logged in)
-  const changeModule = async (moduleType: ModuleType) => {
-    try {
-      // Update localStorage
-      localStorage.setItem('userModule', moduleType);
-      setCurrentModule(moduleType);
-      
-      // Update in database if user is logged in
-      if (user?.id) {
-        await supabase
-          .from('profiles')
-          .update({ selected_module: moduleType })
-          .eq('id', user.id);
+  const selectModule = async (module: string) => {
+    localStorage.setItem('userModule', module);
+    
+    // Importar dados de amostra com base no módulo selecionado
+    if (user) {
+      if (module === 'butcher') {
+        try {
+          const sampleMeatCuts = importSampleMeatCuts(user.id);
           
-        // Se o módulo selecionado for o talho, inicializar dados de exemplo se necessário
-        if (moduleType === 'butcher') {
-          await initializeMeatCuts(user.id);
+          // Importar dados de amostra para o módulo de talho
+          for (const meatCut of sampleMeatCuts) {
+            await createMeatCut(meatCut);
+          }
+          
+          toast.success('Módulo de Talho selecionado com sucesso!');
+        } catch (error) {
+          console.error('Erro ao importar dados de amostra para o módulo de talho:', error);
         }
-      }
-      
-      // Navigate to the appropriate dashboard
-      if (moduleType === 'butcher') {
+        
         navigate('/butcher/dashboard');
-      } else {
+      } 
+      else if (module === 'supermarket') {
+        try {
+          const sampleProducts = importSampleSupermarketProducts(user.id);
+          
+          // Importar dados de amostra para o módulo de supermercado
+          for (const product of sampleProducts) {
+            await createSupermarketProduct(product);
+          }
+          
+          toast.success('Módulo de Supermercado selecionado com sucesso!');
+        } catch (error) {
+          console.error('Erro ao importar dados de amostra para o módulo de supermercado:', error);
+        }
+        
+        navigate('/supermarket/dashboard');
+      }
+      else {
         navigate('/dashboard');
       }
-    } catch (error) {
-      console.error("Error changing module:", error);
+    } else {
+      navigate('/auth');
     }
   };
 
-  // Function to ensure a module is selected before accessing certain pages
-  const ensureModuleSelected = () => {
-    if (!currentModule && !isLoading) {
+  useEffect(() => {
+    // Se não há módulo selecionado, redirecionar para a página de seleção
+    if (!selectedModule) {
       navigate('/select-module');
-      return false;
     }
-    return true;
-  };
+  }, [selectedModule, navigate]);
 
-  return {
-    currentModule,
-    isLoading,
-    changeModule,
-    ensureModuleSelected
-  };
-}
+  return { selectModule, selectedModule };
+};

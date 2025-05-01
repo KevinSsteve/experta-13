@@ -1,117 +1,240 @@
 
-import { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Beef, ShoppingCart } from 'lucide-react';
-
-interface ModuleOption {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  route: string;
-}
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Beef, Store } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ModuleSelection() {
-  const { user } = useAuth();
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [selectedModule, setSelectedModule] = useState<string>("supermarket");
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const modules: ModuleOption[] = [
-    {
-      id: "supermarket",
-      name: "Supermercado",
-      description: "Gestão de produtos, vendas e estoque para supermercados e minimercados.",
-      icon: <ShoppingCart className="h-8 w-8 text-primary" />,
-      route: "/dashboard"
-    },
-    {
-      id: "butcher",
-      name: "Talho",
-      description: "Gestão especializada para talhos, com controle de carnes, cortes e validade.",
-      icon: <Beef className="h-8 w-8 text-primary" />,
-      route: "/butcher/dashboard"
-    }
-  ];
+  const handleModuleSelect = (module: string) => {
+    setSelectedModule(module === selectedModule ? null : module);
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast.error("Você precisa estar autenticado para selecionar um módulo");
+  const handleContinue = () => {
+    if (!selectedModule) {
+      toast({
+        title: "Selecione um módulo",
+        description: "Por favor, selecione um módulo para continuar",
+        variant: "destructive"
+      });
       return;
     }
-    
-    setIsLoading(true);
-    
-    try {
-      // In a real implementation, this would update the user's profile with the selected module
-      // For now, we'll just use localStorage to simulate this
-      localStorage.setItem("userModule", selectedModule);
-      
-      // Simulate an API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success("Módulo selecionado com sucesso!");
-      
-      // Navigate to the appropriate dashboard
-      const selectedModuleOption = modules.find(m => m.id === selectedModule);
-      navigate(selectedModuleOption?.route || "/dashboard");
-      
-    } catch (error) {
-      console.error("Erro ao selecionar módulo:", error);
-      toast.error("Ocorreu um erro ao selecionar o módulo");
-    } finally {
-      setIsLoading(false);
+
+    // Salvar seleção no localStorage
+    localStorage.setItem('userModule', selectedModule);
+
+    // Redirecionar para o dashboard do módulo selecionado
+    if (selectedModule === 'butcher') {
+      navigate('/butcher/dashboard');
+    } else if (selectedModule === 'supermarket') {
+      navigate('/supermarket/dashboard');
+    } else {
+      navigate('/dashboard');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Bem-vindo ao ContasCom</CardTitle>
-          <CardDescription>
-            Selecione o módulo que você deseja utilizar. Essa configuração pode ser alterada posteriormente.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent>
-            <RadioGroup value={selectedModule} onValueChange={setSelectedModule} className="space-y-4">
-              {modules.map((module) => (
-                <div key={module.id}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value={module.id} id={module.id} />
-                    <Label htmlFor={module.id} className="flex items-center">
-                      <div className="ml-2 flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-full">
-                          {module.icon}
-                        </div>
-                        <div>
-                          <p className="font-medium text-lg">{module.name}</p>
-                          <p className="text-sm text-muted-foreground">{module.description}</p>
-                        </div>
-                      </div>
-                    </Label>
+    <div className="flex min-h-screen flex-col bg-background">
+      <div className="container max-w-6xl flex-1 flex items-center justify-center py-12">
+        <Card className="w-full max-w-3xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl">Selecione o Módulo</CardTitle>
+            <CardDescription>
+              Escolha o módulo que melhor atende às suas necessidades
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <Card 
+              className={cn(
+                "cursor-pointer border-2 transition-all hover:shadow-md",
+                selectedModule === "butcher" ? "border-primary" : "border-transparent"
+              )}
+              onClick={() => handleModuleSelect("butcher")}
+            >
+              <CardHeader>
+                <div className="flex justify-center mb-2">
+                  <div className="p-3 bg-primary/10 rounded-full">
+                    <Beef className="h-10 w-10 text-primary" />
                   </div>
                 </div>
-              ))}
-            </RadioGroup>
+                <CardTitle className="text-center">Talho Digital</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Gestão de cortes de carne
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Controle de pesagem
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Vendas por peso
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Etiquetas especiais
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+            
+            <Card 
+              className={cn(
+                "cursor-pointer border-2 transition-all hover:shadow-md",
+                selectedModule === "supermarket" ? "border-primary" : "border-transparent"
+              )}
+              onClick={() => handleModuleSelect("supermarket")}
+            >
+              <CardHeader>
+                <div className="flex justify-center mb-2">
+                  <div className="p-3 bg-primary/10 rounded-full">
+                    <Store className="h-10 w-10 text-primary" />
+                  </div>
+                </div>
+                <CardTitle className="text-center">Supermercado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Gestão multi-categorias
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Sistema de promoções
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Controle de validade
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Gestão de fornecedores
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Configurando..." : "Continuar"}
+          <CardFooter className="flex justify-center pt-4">
+            <Button size="lg" onClick={handleContinue} className="w-full md:w-auto">
+              Continuar
             </Button>
           </CardFooter>
-        </form>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

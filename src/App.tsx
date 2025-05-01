@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -34,6 +35,11 @@ import ButcherDashboard from "./pages/butcher/Dashboard";
 import ButcherProducts from "./pages/butcher/Products";
 import ButcherSales from "./pages/butcher/Sales";
 
+// Supermarket Module Pages
+import SupermarketDashboard from "./pages/supermarket/Dashboard";
+import SupermarketProducts from "./pages/supermarket/Products";
+import SupermarketSales from "./pages/supermarket/Sales";
+
 const App = () => {
   const ModuleRouter = () => {
     const { isLoading } = useAuth();
@@ -55,6 +61,10 @@ const App = () => {
     // Otherwise, go to the appropriate dashboard based on the module
     if (selectedModule === 'butcher') {
       return <Navigate to="/butcher/dashboard" replace />;
+    }
+    
+    if (selectedModule === 'supermarket') {
+      return <Navigate to="/supermarket/dashboard" replace />;
     }
 
     return <Navigate to="/dashboard" replace />;
@@ -129,6 +139,18 @@ const App = () => {
                     <Route path="/butcher/finances" element={<ButcherDashboard />} /> {/* Placeholder */}
                     <Route path="/butcher/history" element={<ButcherDashboard />} /> {/* Placeholder */}
                     <Route path="/butcher/settings" element={<Settings />} />
+                  </Route>
+                  
+                  {/* Rotas protegidas - Módulo de Supermercado */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/supermarket/dashboard" element={<SupermarketDashboard />} />
+                    <Route path="/supermarket/products" element={<SupermarketProducts />} />
+                    <Route path="/supermarket/sales" element={<SupermarketSales />} />
+                    <Route path="/supermarket/promotions" element={<SupermarketDashboard />} /> {/* Placeholder */}
+                    <Route path="/supermarket/inventory" element={<SupermarketDashboard />} /> {/* Placeholder */}
+                    <Route path="/supermarket/finances" element={<SupermarketDashboard />} /> {/* Placeholder */}
+                    <Route path="/supermarket/history" element={<SupermarketDashboard />} /> {/* Placeholder */}
+                    <Route path="/supermarket/settings" element={<Settings />} />
                   </Route>
                   
                   {/* Rota para página não encontrada */}

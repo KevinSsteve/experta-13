@@ -29,7 +29,7 @@ interface MeatCutSelectorProps {
   onChange: (value: string) => void;
 }
 
-export const MeatCutSelector = ({ cuts, value, onChange }: MeatCutSelectorProps) => {
+export const MeatCutSelector = ({ cuts = [], value, onChange }: MeatCutSelectorProps) => {
   const [open, setOpen] = useState(false);
   const selectedCut = cuts.find(cut => cut.id === value);
 
@@ -54,36 +54,40 @@ export const MeatCutSelector = ({ cuts, value, onChange }: MeatCutSelectorProps)
           <CommandInput placeholder="Procurar corte de carne..." className="h-9" />
           <CommandEmpty>Nenhum corte encontrado.</CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-y-auto">
-            {cuts.map((cut) => (
-              <CommandItem
-                key={cut.id}
-                value={cut.name}
-                onSelect={() => {
-                  onChange(cut.id);
-                  setOpen(false);
-                }}
-                className="flex items-center"
-              >
-                <div className={cn(
-                  "flex items-center flex-1",
-                  value === cut.id ? "font-medium" : ""
-                )}>
-                  <span>{cut.name}</span>
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    ({cut.animal})
+            {Array.isArray(cuts) && cuts.length > 0 ? (
+              cuts.map((cut) => (
+                <CommandItem
+                  key={cut.id}
+                  value={cut.name}
+                  onSelect={() => {
+                    onChange(cut.id);
+                    setOpen(false);
+                  }}
+                  className="flex items-center"
+                >
+                  <div className={cn(
+                    "flex items-center flex-1",
+                    value === cut.id ? "font-medium" : ""
+                  )}>
+                    <span>{cut.name}</span>
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      ({cut.animal})
+                    </span>
+                  </div>
+                  <span className="font-medium">
+                    R$ {cut.pricePerKg.toFixed(2)}/kg
                   </span>
-                </div>
-                <span className="font-medium">
-                  R$ {cut.pricePerKg.toFixed(2)}/kg
-                </span>
-                <Check
-                  className={cn(
-                    "ml-auto h-4 w-4",
-                    value === cut.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-              </CommandItem>
-            ))}
+                  <Check
+                    className={cn(
+                      "ml-auto h-4 w-4",
+                      value === cut.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+              ))
+            ) : (
+              <div className="py-6 text-center text-sm">Nenhum corte disponível</div>
+            )}
           </CommandGroup>
         </Command>
       </PopoverContent>

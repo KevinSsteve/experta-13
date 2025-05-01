@@ -12,22 +12,35 @@ export function useModule() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedModule = localStorage.getItem('userModule') as ModuleType | null;
-    if (storedModule) {
-      setCurrentModule(storedModule);
-    }
-    setIsLoading(false);
+    const fetchStoredModule = () => {
+      try {
+        const storedModule = localStorage.getItem('userModule') as ModuleType | null;
+        if (storedModule && (storedModule === 'supermarket' || storedModule === 'butcher')) {
+          setCurrentModule(storedModule);
+        }
+      } catch (error) {
+        console.error("Error retrieving module from localStorage:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStoredModule();
   }, [user]);
 
   const changeModule = (moduleType: ModuleType) => {
-    localStorage.setItem('userModule', moduleType);
-    setCurrentModule(moduleType);
-    
-    // Navigate to the appropriate dashboard
-    if (moduleType === 'butcher') {
-      navigate('/butcher/dashboard');
-    } else {
-      navigate('/dashboard');
+    try {
+      localStorage.setItem('userModule', moduleType);
+      setCurrentModule(moduleType);
+      
+      // Navigate to the appropriate dashboard
+      if (moduleType === 'butcher') {
+        navigate('/butcher/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error("Error changing module:", error);
     }
   };
 

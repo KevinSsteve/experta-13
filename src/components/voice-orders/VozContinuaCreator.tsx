@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle, Timer } from "lucide-react";
@@ -33,6 +32,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
   const recognitionRef = useRef<any>(null); // Changed from SpeechRecognition to any
   const timerRef = useRef<number | null>(null);
   const idleTimerRef = useRef<number | null>(null);
+  const autoRestartRef = useRef<boolean>(true);
   
   // Timer para contar o tempo de gravação
   useEffect(() => {
@@ -58,6 +58,12 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       idleTimerRef.current = window.setTimeout(() => {
         console.log(`Silêncio detectado após: ${transcriptBuffer}`);
         processItemAfterSilence(transcriptBuffer);
+        
+        // Reiniciar o reconhecimento de voz após processar o item
+        if (isListening && autoRestartRef.current) {
+          restartSpeechRecognition();
+        }
+        
         setTranscriptBuffer(""); // Limpar o buffer após processar o item
         setLastSpeechTime(null);
       }, SILENCE_DURATION);
@@ -67,7 +73,114 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       };
     }
     return () => {};
-  }, [lastSpeechTime, transcriptBuffer]);
+  }, [lastSpeechTime, transcriptBuffer, isListening]);
+  
+  // Reiniciar o reconhecimento de voz para garantir que novos itens sejam capturados corretamente
+  const restartSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      
+      // Pequeno delay antes de reiniciar para garantir que o reconhecimento anterior terminou
+      setTimeout(() => {
+        if (isListening && autoRestartRef.current) {
+          startSpeechRecognition();
+        }
+      }, 300);
+    }
+  };
+  
+  // Iniciar o reconhecimento de voz com as configurações corretas
+  const startSpeechRecognition = () => {
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      toast({
+        title: "Não suportado!",
+        description: "Seu navegador não suporta reconhecimento de voz.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = "pt-BR";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+    
+    recognition.onresult = (event) => {
+      // Pegar o resultado mais recente
+      const current = event.resultIndex;
+      const transcript = event.results[current][0].transcript;
+      
+      // Atualizar o buffer de transcrição com o novo texto
+      setTranscriptBuffer(transcript);
+      setLastSpeechTime(Date.now());
+      
+      // Resetar o timer de silêncio quando detecta fala
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = null;
+      }
+    };
+    
+    recognition.onerror = (e) => {
+      console.error('Erro de reconhecimento de voz:', e);
+      
+      // Apenas mostra toast de erro para erros não relacionados a "no-speech"
+      if (e.error !== 'no-speech') {
+        toast({
+          title: "Erro",
+          description: "Houve um erro no reconhecimento de voz. Tente novamente.",
+          variant: "destructive"
+        });
+      }
+      
+      // Reinicia o reconhecimento em caso de erro
+      if (isListening && autoRestartRef.current) {
+        try {
+          restartSpeechRecognition();
+        } catch (err) {
+          console.error("Falha ao reiniciar reconhecimento após erro:", err);
+        }
+      }
+    };
+    
+    recognition.onend = () => {
+      // Apenas reinicia se o usuário não tiver interrompido manualmente
+      if (isListening && autoRestartRef.current) {
+        try {
+          recognition.start();
+        } catch (err) {
+          console.error("Falha ao reiniciar reconhecimento:", err);
+          // Tenta novamente após um pequeno delay
+          setTimeout(() => {
+            if (isListening && autoRestartRef.current) {
+              startSpeechRecognition();
+            }
+          }, 500);
+        }
+      } else if (!autoRestartRef.current) {
+        setIsListening(false);
+        setRecordingTime(0);
+      }
+    };
+    
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (err) {
+      console.error("Erro ao iniciar reconhecimento de voz:", err);
+      setIsListening(false);
+      toast({
+        title: "Erro",
+        description: "Não foi possível iniciar o reconhecimento de voz.",
+        variant: "destructive"
+      });
+    }
+  };
   
   // Processar um item após o silêncio
   const processItemAfterSilence = (text: string) => {
@@ -100,6 +213,9 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
   
   const handleListen = () => {
     if (isListening) {
+      // Desativa o reinício automático quando o usuário pressiona o botão para parar
+      autoRestartRef.current = false;
+      
       // Parar a gravação
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -124,80 +240,9 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       return;
     }
     
-    // Iniciar a gravação
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      toast({
-        title: "Não suportado!",
-        description: "Seu navegador não suporta reconhecimento de voz.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognitionAPI();
-    recognition.lang = "pt-BR";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    
-    recognition.onstart = () => {
-      setIsListening(true);
-      setRecordingTime(0);
-    };
-    
-    recognition.onresult = (event) => {
-      // Pegar o resultado mais recente
-      const current = event.resultIndex;
-      const transcript = event.results[current][0].transcript;
-      
-      // Atualizar o buffer de transcrição com o novo texto
-      setTranscriptBuffer(transcript);
-      setLastSpeechTime(Date.now());
-      
-      // Resetar o timer de silêncio quando detecta fala
-      if (idleTimerRef.current) {
-        clearTimeout(idleTimerRef.current);
-        idleTimerRef.current = null;
-      }
-    };
-    
-    recognition.onerror = (e) => {
-      console.error('Erro de reconhecimento de voz:', e);
-      
-      // Apenas mostra toast de erro para erros não relacionados a "no-speech"
-      if (e.error !== 'no-speech') {
-        toast({
-          title: "Erro",
-          description: "Houve um erro no reconhecimento de voz. Tente novamente.",
-          variant: "destructive"
-        });
-      }
-      
-      // Reinicia o reconhecimento em caso de erro
-      if (isListening) {
-        try {
-          recognition.start();
-        } catch (err) {
-          console.error("Falha ao reiniciar reconhecimento:", err);
-          setIsListening(false);
-        }
-      }
-    };
-    
-    recognition.onend = () => {
-      // Reiniciar o reconhecimento para manter a gravação contínua, a menos que o usuário tenha interrompido manualmente
-      if (isListening) {
-        try {
-          recognition.start();
-        } catch (err) {
-          console.error("Falha ao reiniciar reconhecimento:", err);
-          setIsListening(false);
-        }
-      }
-    };
-    
-    recognition.start();
-    recognitionRef.current = recognition;
+    // Ativa o reinício automático quando o usuário inicia a gravação
+    autoRestartRef.current = true;
+    startSpeechRecognition();
   };
   
   const handleCreateList = () => {

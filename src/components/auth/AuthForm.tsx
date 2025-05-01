@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from 'sonner';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { AlertTriangle } from 'lucide-react';
 
 export function AuthForm() {
   const navigate = useNavigate();
@@ -159,7 +159,7 @@ export function AuthForm() {
               
               {error && (
                 <Alert variant="destructive">
-                  <ExclamationTriangleIcon className="h-4 w-4" />
+                  <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -212,7 +212,7 @@ export function AuthForm() {
               
               {error && (
                 <Alert variant="destructive">
-                  <ExclamationTriangleIcon className="h-4 w-4" />
+                  <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}

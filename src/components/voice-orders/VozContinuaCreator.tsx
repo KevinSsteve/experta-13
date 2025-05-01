@@ -50,10 +50,15 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
     if (lastSpeechTime && transcriptBuffer) {
       const SILENCE_DURATION = 3000; // 3 segundos de silêncio
       
+      // Limpar o timer anterior para evitar processamentos duplicados
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+      
       idleTimerRef.current = window.setTimeout(() => {
         console.log(`Silêncio detectado após: ${transcriptBuffer}`);
         processItemAfterSilence(transcriptBuffer);
-        setTranscriptBuffer("");
+        setTranscriptBuffer(""); // Limpar o buffer após processar o item
         setLastSpeechTime(null);
       }, SILENCE_DURATION);
       
@@ -141,11 +146,11 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
     };
     
     recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map(result => result[0])
-        .map(result => result.transcript)
-        .join(" ");
+      // Pegar o resultado mais recente
+      const current = event.resultIndex;
+      const transcript = event.results[current][0].transcript;
       
+      // Atualizar o buffer de transcrição com o novo texto
       setTranscriptBuffer(transcript);
       setLastSpeechTime(Date.now());
       

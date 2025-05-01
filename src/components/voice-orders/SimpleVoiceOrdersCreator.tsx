@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,8 +22,51 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
   const [recognizedText, setRecognizedText] = useState<string>("");
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  
+  // References for continuous listening
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const accumulatedTextRef = useRef<string>("");
 
-  const handleListen = () => {
+  const startNewSilenceTimer = () => {
+    // Clear any existing silence timer
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+    }
+    
+    // Start a new silence timer (3 seconds)
+    silenceTimerRef.current = setTimeout(() => {
+      // If we have accumulated text, treat it as a complete item
+      if (accumulatedTextRef.current.trim()) {
+        processItemFromSpeech(accumulatedTextRef.current);
+        accumulatedTextRef.current = ""; // Reset accumulated text
+      }
+    }, 3000);
+  };
+  
+  const processItemFromSpeech = (text: string) => {
+    const cleanText = text.trim();
+    if (!cleanText) return;
+    
+    // Identificar produtos separados por vírgulas, "e" ou "mais"
+    const productList = cleanText
+      .toLowerCase()
+      .replace(/^(quero|adicionar|comprar|preciso|lista|listar)/g, "")
+      .split(/\s*(?:,|e|mais)\s*/)
+      .filter(item => item.trim().length > 1)
+      .map(item => item.trim());
+    
+    if (productList.length > 0) {
+      setProducts(prev => [...prev, ...productList]);
+      toast({
+        title: `${productList.length} item(s) adicionado(s)`,
+        description: productList.join(", "),
+      });
+      setRecognizedText(cleanText);
+    }
+  };
+
+  const handleToggleListen = () => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
       toast({
         title: "Não suportado!",
@@ -33,46 +76,83 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
       return;
     }
     
-    setIsListening(true);
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = "pt-BR";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setRecognizedText(transcript);
-      
-      // Identificar produtos separados por vírgulas, "e" ou "mais"
-      const productList = transcript
-        .toLowerCase()
-        .replace(/^(quero|adicionar|comprar|preciso|lista|listar)/g, "")
-        .split(/\s*(?:,|e|mais)\s*/)
-        .filter(item => item.trim().length > 1)
-        .map(item => item.trim());
-      
-      if (productList.length > 0) {
-        setProducts(prev => [...prev, ...productList]);
-        toast({
-          title: `${productList.length} item(s) adicionado(s)`,
-          description: productList.join(", "),
-        });
+    if (isListening) {
+      // Stop listening
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
       }
-    };
-
-    recognition.onerror = (e) => {
-      console.error('Erro de reconhecimento de voz:', e);
-      toast({
-        title: "Erro",
-        description: "Houve um erro no reconhecimento de voz.",
-        variant: "destructive"
-      });
+      
+      // Clear any pending silence timer
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      
+      // Process any accumulated text
+      if (accumulatedTextRef.current.trim()) {
+        processItemFromSpeech(accumulatedTextRef.current);
+        accumulatedTextRef.current = "";
+      }
+      
       setIsListening(false);
-    };
-    
-    recognition.onend = () => setIsListening(false);
-    recognition.start();
+    } else {
+      // Start listening
+      setIsListening(true);
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pt-BR";
+      recognition.continuous = true;  // Enable continuous recognition
+      recognition.interimResults = true;  // Get partial results
+      
+      recognitionRef.current = recognition;
+      
+      recognition.onresult = (event) => {
+        const lastResultIndex = event.results.length - 1;
+        const transcript = event.results[lastResultIndex][0].transcript;
+        const isFinal = event.results[lastResultIndex].isFinal;
+        
+        accumulatedTextRef.current = transcript;
+        
+        // Restart silence timer whenever we get a result
+        startNewSilenceTimer();
+        
+        // If this is a final result and it's substantial
+        if (isFinal && transcript.trim().length > 1) {
+          processItemFromSpeech(transcript);
+          accumulatedTextRef.current = "";
+        }
+      };
+      
+      recognition.onerror = (e) => {
+        console.error('Erro de reconhecimento de voz:', e);
+        toast({
+          title: "Erro",
+          description: "Houve um erro no reconhecimento de voz.",
+          variant: "destructive"
+        });
+        
+        // Clean up
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+        }
+        
+        setIsListening(false);
+        recognitionRef.current = null;
+      };
+      
+      recognition.onend = () => {
+        // Only reset listening state if we're stopping intentionally
+        // If we're still supposed to be listening, restart the recognition
+        if (isListening && recognitionRef.current) {
+          recognition.start();
+        }
+      };
+      
+      // Start the recognition process
+      recognition.start();
+    }
   };
 
   const handleAdd = () => {
@@ -101,8 +181,9 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs">
-                  Pressione o microfone e fale os itens da sua lista. 
-                  Separe os itens com "e" ou vírgulas para adicionar vários produtos de uma vez.
+                  Pressione o microfone para iniciar a gravação. Clique novamente para parar.
+                  Uma pausa de 3 segundos separa automaticamente um item do outro.
+                  Separe também os itens com "e" ou vírgulas para adicionar vários produtos de uma vez.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -112,16 +193,15 @@ export function SimpleVoiceOrdersCreator({ onListCreated }: SimpleVoiceOrdersCre
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-3">
           <Button
-            onClick={handleListen}
+            onClick={handleToggleListen}
             variant={isListening ? "destructive" : "secondary"}
             size="sm"
             className="flex-grow-0"
-            disabled={isListening}
           >
             {isListening ? (
-              <><MicOff className="h-4 w-4 mr-1" /> Ouvindo...</>
+              <><MicOff className="h-4 w-4 mr-1" /> Parar gravação</>
             ) : (
-              <><Mic className="h-4 w-4 mr-1" /> Adicionar por voz</>
+              <><Mic className="h-4 w-4 mr-1" /> Iniciar gravação</>
             )}
           </Button>
           {recognizedText && (

@@ -30,7 +30,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
   
   const { toast } = useToast();
   const { user } = useAuth();
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null); // Changed from SpeechRecognition to any
   const timerRef = useRef<number | null>(null);
   const idleTimerRef = useRef<number | null>(null);
   
@@ -129,8 +129,8 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       return;
     }
     
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
     recognition.lang = "pt-BR";
     recognition.continuous = true;
     recognition.interimResults = true;

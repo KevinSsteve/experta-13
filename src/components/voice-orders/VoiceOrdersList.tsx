@@ -58,8 +58,12 @@ export function VoiceOrdersList({
       // Check if the item is a JSON string
       if (typeof item === 'string' && (item.startsWith('{') || item.startsWith('['))) {
         const parsedItem = JSON.parse(item);
-        if (parsedItem && typeof parsedItem === 'object' && parsedItem.name) {
-          return parsedItem.name;
+        if (parsedItem && typeof parsedItem === 'object') {
+          // Formata nome com preço e quantidade
+          const name = parsedItem.name || '';
+          const price = parsedItem.price ? ` (${parsedItem.price})` : '';
+          const quantity = parsedItem.quantity && parsedItem.quantity > 1 ? `${parsedItem.quantity}x ` : '';
+          return `${quantity}${name}${price}`;
         }
       }
       return item;
@@ -246,7 +250,7 @@ export function VoiceOrdersList({
                   {!isEditing && isExpanded && (
                     <div className="mt-1 ml-2 sm:ml-5">
                       <ProductSuggestions 
-                        productName={formattedProduct} 
+                        productName={prod} 
                         userId={user?.id}
                       />
                     </div>

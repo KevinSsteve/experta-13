@@ -35,3 +35,13 @@ export const animalTypeLabels: Record<string, string> = {
   'goat': 'Caprino',
   'game': 'Caça'
 };
+
+// Imagens para os diferentes tipos de animais
+export const animalTypeImages: Record<string, string> = {
+  'beef': '/images/meat/beef.jpg',
+  'pork': '/images/meat/pork.jpg',
+  'lamb': '/images/meat/lamb.jpg',
+  'chicken': '/images/meat/chicken.jpg',
+  'goat': '/images/meat/goat.jpg',
+  'game': '/images/meat/game.jpg'
+};

@@ -89,3 +89,5 @@ export const MeatProductCard = ({ product, onAddToCart, onEdit }: MeatProductCar
     </Card>
   );
 };
+
+export { type MeatCut, type MeatProduct };

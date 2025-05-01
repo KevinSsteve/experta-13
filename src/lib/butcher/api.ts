@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { MeatCut } from './types';
 import { toast } from 'sonner';
+import { importSampleMeatCuts, sampleMeatCuts } from './sample-data';
 
 export const getMeatCuts = async (): Promise<MeatCut[]> => {
   try {
@@ -103,4 +104,8 @@ export const deleteMeatCut = async (id: string): Promise<boolean> => {
     toast.error('Erro ao excluir corte de carne');
     return false;
   }
+};
+
+export const initializeMeatCuts = async (userId: string): Promise<boolean> => {
+  return importSampleMeatCuts(userId);
 };

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { initializeMeatCuts } from '@/lib/butcher/api';
 
 export type ModuleType = 'supermarket' | 'butcher';
 
@@ -71,6 +72,11 @@ export function useModule() {
           .from('profiles')
           .update({ selected_module: moduleType })
           .eq('id', user.id);
+          
+        // Se o módulo selecionado for o talho, inicializar dados de exemplo se necessário
+        if (moduleType === 'butcher') {
+          await initializeMeatCuts(user.id);
+        }
       }
       
       // Navigate to the appropriate dashboard

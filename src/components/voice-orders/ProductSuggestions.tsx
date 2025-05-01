@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, X } from "lucide-react";
+import { ShoppingCart, Search, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -30,16 +30,21 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
   const [loading, setLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const { addItem } = useCart();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Número de sugestões a mostrar inicialmente
+  const initialSuggestionsCount = 2;
 
   // Função para buscar produtos com debounce
   const fetchProducts = debounce(async (query: string) => {
     if (!userId) return;
     setLoading(true);
     setNoResults(false);
+    setShowAllSuggestions(false);
 
     try {
       let supabaseQuery = supabase
@@ -110,6 +115,17 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
       searchInputRef.current.focus();
     }
   };
+  
+  const toggleShowAllSuggestions = () => {
+    setShowAllSuggestions(prev => !prev);
+  };
+
+  // Função para filtrar as sugestões a serem exibidas
+  const visibleSuggestions = showAllSuggestions 
+    ? suggestions 
+    : suggestions.slice(0, initialSuggestionsCount);
+  
+  const hasMoreSuggestions = suggestions.length > initialSuggestionsCount;
 
   if (!productName) return null;
 
@@ -175,47 +191,71 @@ export function ProductSuggestions({ productName, userId }: ProductSuggestionsPr
           </p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          {suggestions.map((product) => (
-            <div 
-              key={product.id} 
-              className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 border rounded-md hover:bg-accent/20 transition-colors"
-            >
-              <div className="flex-1 mb-2 sm:mb-0">
-                <div className="font-medium">{product.name}</div>
-                <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="text-xs">{product.category}</Badge>
-                  <Badge variant="secondary" className="text-xs font-medium">{formatPrice(product.price)}</Badge>
-                  {product.code && (
-                    <span className="text-xs">Código: {product.code}</span>
-                  )}
-                  {product.stock > 0 ? (
-                    <span className="text-xs">Em estoque: {product.stock}</span>
-                  ) : (
-                    <span className="text-xs text-destructive">Fora de estoque</span>
-                  )}
+        <div className="space-y-2">
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {visibleSuggestions.map((product) => (
+              <div 
+                key={product.id} 
+                className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 border rounded-md hover:bg-accent/20 transition-colors"
+              >
+                <div className="flex-1 mb-2 sm:mb-0">
+                  <div className="font-medium">{product.name}</div>
+                  <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                    <Badge variant="secondary" className="text-xs font-medium">{formatPrice(product.price)}</Badge>
+                    {product.code && (
+                      <span className="text-xs">Código: {product.code}</span>
+                    )}
+                    {product.stock > 0 ? (
+                      <span className="text-xs">Em estoque: {product.stock}</span>
+                    ) : (
+                      <span className="text-xs text-destructive">Fora de estoque</span>
+                    )}
+                  </div>
                 </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        size={isMobile ? "sm" : "default"}
+                        onClick={() => handleAddToCart(product)}
+                        disabled={product.stock <= 0}
+                        className="w-full sm:w-auto"
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-1" /> 
+                        {isMobile ? "+" : "Adicionar"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Adicionar ao carrinho</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      size={isMobile ? "sm" : "default"}
-                      onClick={() => handleAddToCart(product)}
-                      disabled={product.stock <= 0}
-                      className="w-full sm:w-auto"
-                    >
-                      <ShoppingCart className="h-4 w-4 mr-1" /> 
-                      {isMobile ? "+" : "Adicionar"}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Adicionar ao carrinho</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          ))}
+            ))}
+          </div>
+          
+          {/* Botão "Ver mais" ou "Ver menos" */}
+          {hasMoreSuggestions && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={toggleShowAllSuggestions}
+              className="w-full mt-2 flex items-center justify-center text-xs"
+            >
+              {showAllSuggestions ? (
+                <>
+                  <ChevronUp className="h-3 w-3 mr-1" />
+                  Ver menos
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3 w-3 mr-1" />
+                  Ver mais ({suggestions.length - initialSuggestionsCount} produtos)
+                </>
+              )}
+            </Button>
+          )}
         </div>
       )}
     </div>

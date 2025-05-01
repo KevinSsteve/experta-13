@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { MeatCut } from '@/lib/butcher/types';
 
-interface MeatCutSelectorProps {
+export interface MeatCutSelectorProps {
   cuts: MeatCut[];
   value: string;
   onChange: (value: string) => void;

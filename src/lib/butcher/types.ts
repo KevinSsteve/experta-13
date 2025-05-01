@@ -13,6 +13,18 @@ export interface MeatCut {
   user_id: string;
 }
 
+export interface MeatProduct {
+  id: string;
+  name: string;
+  animalType: string;
+  cutType?: string;
+  pricePerKg: number;
+  stock: number;
+  expirationDate?: Date;
+  description?: string;
+  code?: string;
+}
+
 export type AnimalType = 'beef' | 'pork' | 'lamb' | 'chicken' | 'goat' | 'game';
 
 export const animalTypeLabels: Record<string, string> = {

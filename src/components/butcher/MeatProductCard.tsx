@@ -3,20 +3,30 @@ import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatCurrency, formatDate } from '@/lib/utils';
-import { Beef, Tag, ShoppingCart, AlertTriangle, Clock } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import { Beef, Tag, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MeatCut, animalTypeLabels } from '@/lib/butcher/types';
+import { MeatCut, MeatProduct, animalTypeLabels } from '@/lib/butcher/types';
 
-interface MeatProductCardProps {
-  product: MeatCut;
-  onAddToCart?: (product: MeatCut) => void;
-  onEdit?: (product: MeatCut) => void;
+export interface MeatProductCardProps {
+  product: MeatProduct | MeatCut;
+  onAddToCart?: (product: MeatProduct | MeatCut) => void;
+  onEdit?: (product: MeatProduct | MeatCut) => void;
 }
 
 export const MeatProductCard = ({ product, onAddToCart, onEdit }: MeatProductCardProps) => {
-  const isLowStock = product.stock_weight > 0 && product.stock_weight < 5;
-  const isOutOfStock = product.stock_weight <= 0;
+  // Convert MeatCut to MeatProduct if needed for consistent property access
+  const displayProduct = 'animal_type' in product 
+    ? {
+        ...product,
+        animalType: product.animal_type,
+        pricePerKg: product.price_per_kg,
+        stock: product.stock_weight
+      } 
+    : product;
+  
+  const isLowStock = displayProduct.stock > 0 && displayProduct.stock < 5;
+  const isOutOfStock = displayProduct.stock <= 0;
   
   return (
     <Card className="overflow-hidden">
@@ -30,15 +40,15 @@ export const MeatProductCard = ({ product, onAddToCart, onEdit }: MeatProductCar
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="font-medium text-lg">{product.name}</h3>
+            <h3 className="font-medium text-lg">{displayProduct.name}</h3>
             <div className="flex items-center text-sm text-muted-foreground mt-1">
               <Beef className="h-3 w-3 mr-1" />
-              <span>{animalTypeLabels[product.animal_type] || product.animal_type}</span>
+              <span>{animalTypeLabels[displayProduct.animalType] || displayProduct.animalType}</span>
             </div>
           </div>
           
           <div className="text-right">
-            <div className="font-bold text-lg">{formatCurrency(product.price_per_kg)}</div>
+            <div className="font-bold text-lg">{formatCurrency(displayProduct.pricePerKg)}</div>
             <div className="text-sm text-muted-foreground">por Kg</div>
           </div>
         </div>
@@ -47,13 +57,13 @@ export const MeatProductCard = ({ product, onAddToCart, onEdit }: MeatProductCar
           <Badge variant={isOutOfStock ? "destructive" : isLowStock ? "outline" : "secondary"} className="flex items-center gap-1">
             {isOutOfStock || isLowStock ? <AlertTriangle className="h-3 w-3" /> : <Tag className="h-3 w-3" />}
             {isOutOfStock ? "Sem estoque" : 
-             isLowStock ? `Baixo estoque: ${product.stock_weight.toFixed(2)} Kg` : 
-             `${product.stock_weight.toFixed(2)} Kg em estoque`}
+             isLowStock ? `Baixo estoque: ${displayProduct.stock.toFixed(2)} Kg` : 
+             `${displayProduct.stock.toFixed(2)} Kg em estoque`}
           </Badge>
         </div>
         
-        {product.description && (
-          <p className="mt-3 text-sm line-clamp-2">{product.description}</p>
+        {'description' in displayProduct && displayProduct.description && (
+          <p className="mt-3 text-sm line-clamp-2">{displayProduct.description}</p>
         )}
       </CardContent>
       

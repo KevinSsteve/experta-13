@@ -1,15 +1,17 @@
 
 import React, { createContext, useContext } from 'react';
 
+type ThemeType = 'light';
+
 type ThemeContextType = {
-  theme: 'light';
+  theme: ThemeType;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // We now only use light theme
-  const theme: 'light' = 'light';
+  const theme: ThemeType = 'light';
 
   // Apply light theme class to root element
   React.useEffect(() => {

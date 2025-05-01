@@ -8,10 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { WeightInput } from '@/components/butcher/WeightInput';
-import { MeatCutSelector, MeatCut } from '@/components/butcher/MeatCutSelector';
+import { MeatCutSelector } from '@/components/butcher/MeatCutSelector';
 import { formatCurrency } from '@/lib/utils';
 import { Search, Plus, ShoppingCart, Trash2, Beef, Printer, CreditCard } from 'lucide-react';
-import { MeatProduct } from '@/components/butcher/MeatProductCard';
+import { MeatProductCard } from '@/components/butcher/MeatProductCard';
+import { MeatCut, MeatProduct } from '@/lib/butcher/types';
 import { toast } from 'sonner';
 
 // Mock data for testing
@@ -44,8 +45,11 @@ const mockProducts: MeatProduct[] = [
 const mockCuts: MeatCut[] = mockProducts.map(product => ({
   id: product.id,
   name: product.name,
-  animal: product.animalType,
-  pricePerKg: product.pricePerKg
+  animal_type: product.animalType,
+  price_per_kg: product.pricePerKg,
+  cost_per_kg: product.pricePerKg * 0.7, // Estimated cost as 70% of price
+  stock_weight: product.stock,
+  user_id: '1' // Placeholder user ID
 }));
 
 interface CartItem {

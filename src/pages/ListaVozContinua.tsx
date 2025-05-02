@@ -1,3 +1,4 @@
+
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { VozContinuaCreator } from "@/components/voice-orders/VozContinuaCreator";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,9 +38,10 @@ export default function ListaVozContinua() {
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) {
+          console.error("Erro ao carregar listas:", error);
           toast({
             title: "Erro ao carregar listas",
-            description: "Não foi possível carregar suas listas.",
+            description: "Não foi possível carregar suas listas: " + error.message,
             variant: "destructive"
           });
           setLists([]);
@@ -59,50 +61,85 @@ export default function ListaVozContinua() {
   }, [user, authLoading]);
 
   const addList = async (products: string[]) => {
-    if (!user) return;
-    
-    const processedProducts = products.map(product => {
-      try {
-        if (typeof product === 'object') {
-          return JSON.stringify(product);
-        }
-        return product;
-      } catch (e) {
-        return product;
-      }
-    });
-    
-    const newList = {
-      products: processedProducts,
-      status: "aberto",
-      user_id: user.id,
-    };
-    
-    const { data, error } = await supabase
-      .from("voice_order_lists")
-      .insert([newList])
-      .select()
-      .single();
-      
-    if (error) {
+    if (!user) {
       toast({
-        title: "Erro",
-        description: "Não foi possível salvar a lista no banco de dados.",
+        title: "Necessário fazer login",
+        description: "Você precisa estar logado para criar uma lista.",
         variant: "destructive"
       });
-    } else if (data) {
-      setLists((prev) => [
-        {
-          id: data.id,
-          createdAt: data.created_at,
-          products: data.products,
-          status: data.status === "enviado" ? "enviado" : "aberto",
-        },
-        ...prev,
-      ]);
+      return;
+    }
+    
+    // Verificar se a lista de produtos está vazia
+    if (!products || products.length === 0) {
       toast({
-        title: "Lista criada!",
-        description: "Sua lista foi salva com sucesso.",
+        title: "Lista vazia",
+        description: "Não foi possível salvar uma lista sem produtos.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Adicionar logs para depuração
+    console.log("Tentando salvar lista:", products);
+    console.log("User ID:", user.id);
+    
+    try {
+      const processedProducts = products.map(product => {
+        try {
+          if (typeof product === 'object') {
+            return JSON.stringify(product);
+          }
+          return product;
+        } catch (e) {
+          console.error("Erro ao processar produto:", e);
+          return product;
+        }
+      });
+      
+      const newList = {
+        products: processedProducts,
+        status: "aberto",
+        user_id: user.id,
+      };
+      
+      console.log("Enviando para o Supabase:", newList);
+      
+      const { data, error } = await supabase
+        .from("voice_order_lists")
+        .insert([newList])
+        .select()
+        .single();
+        
+      if (error) {
+        console.error("Erro ao salvar lista:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível salvar a lista no banco de dados: " + error.message,
+          variant: "destructive"
+        });
+      } else if (data) {
+        console.log("Lista salva com sucesso:", data);
+        setLists((prev) => [
+          {
+            id: data.id,
+            createdAt: data.created_at,
+            products: data.products,
+            status: data.status === "enviado" ? "enviado" : "aberto",
+          },
+          ...prev,
+        ]);
+        toast({
+          title: "Lista criada!",
+          description: "Sua lista foi salva com sucesso.",
+        });
+      }
+    } catch (err) {
+      console.error("Exceção ao salvar lista:", err);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao tentar salvar sua lista.",
+        variant: "destructive"
       });
     }
   };

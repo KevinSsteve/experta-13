@@ -1,4 +1,3 @@
-
 import { formatCurrency } from '@/lib/utils';
 import { Product } from '@/lib/products/types';
 import { Edit, Trash2 } from 'lucide-react';
@@ -80,6 +79,7 @@ export const ProductTableDesktop = ({ products, onEdit, onDelete }: ProductTable
   }
 
   return (
+    
     <div className="flex flex-col rounded-md border">
       <div className="overflow-x-auto -mx-1 px-1">
         <Table>
@@ -197,5 +197,6 @@ export const ProductTableDesktop = ({ products, onEdit, onDelete }: ProductTable
         </Table>
       </div>
     </div>
+  
   );
 };

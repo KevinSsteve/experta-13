@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Bell, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Product } from '@/lib/products-data';
+import { ProductFromSupabase } from '@/lib/products/types';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const StockAlertsBanner = () => {
-  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+  const [lowStockProducts, setLowStockProducts] = useState<ProductFromSupabase[]>([]);
   const [isVisible, setIsVisible] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();

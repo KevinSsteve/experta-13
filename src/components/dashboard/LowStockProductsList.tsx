@@ -1,5 +1,5 @@
 
-import { Product } from '@/lib/products-data';
+import { Product } from '@/lib/products/types';
 import { formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';

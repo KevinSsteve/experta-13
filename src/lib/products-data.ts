@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Product } from './products/types';
 
 export async function getCategories(userId?: string): Promise<string[]> {
   try {
@@ -33,3 +34,6 @@ export async function getCategories(userId?: string): Promise<string[]> {
             "Bebidas", "Limpeza", "Higiene", "Outros"];
   }
 }
+
+// Re-export the Product type from the products module for backward compatibility
+export type { Product } from './products/types';

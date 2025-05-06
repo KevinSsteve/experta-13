@@ -21,7 +21,7 @@ export async function getCategories(userId?: string): Promise<string[]> {
     // Se não houver dados, retornar categorias padrão
     if (!data || data.length === 0) {
       return ["Alimentos Básicos", "Laticínios", "Hortifruti", "Carnes", "Padaria", 
-              "Bebidas", "Limpeza", "Higiene", "Outros"];
+              "Bebidas", "Limpeza", "Higiene", "Pet Shop", "Outros"];
     }
     
     // Extrair categorias únicas do resultado
@@ -31,7 +31,34 @@ export async function getCategories(userId?: string): Promise<string[]> {
     console.error('Erro ao buscar categorias:', error);
     // Retornar categorias padrão em caso de erro
     return ["Alimentos Básicos", "Laticínios", "Hortifruti", "Carnes", "Padaria", 
-            "Bebidas", "Limpeza", "Higiene", "Outros"];
+            "Bebidas", "Limpeza", "Higiene", "Pet Shop", "Outros"];
+  }
+}
+
+// Adicionando função para listar produtos com melhor venda
+export async function getTopSellingProducts(userId?: string, limit: number = 10): Promise<Product[]> {
+  try {
+    if (!userId) {
+      console.warn('getTopSellingProducts: Nenhum ID de usuário fornecido');
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('user_id', userId)
+      .order('stock', { ascending: true }) // Ordenando por estoque baixo como exemplo
+      .limit(limit);
+    
+    if (error) {
+      console.error('Erro ao buscar produtos mais vendidos:', error);
+      throw error;
+    }
+    
+    return data as Product[];
+  } catch (error) {
+    console.error('Erro ao obter produtos mais vendidos:', error);
+    return [];
   }
 }
 

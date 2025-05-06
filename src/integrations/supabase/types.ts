@@ -9,7 +9,414 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      credit_notes: {
+        Row: {
+          customer: Json | null
+          date: string
+          id: string
+          items: Json
+          observations: string | null
+          original_sale_id: string
+          reason: string
+          status: string
+          total: number
+          user_id: string
+        }
+        Insert: {
+          customer?: Json | null
+          date?: string
+          id?: string
+          items: Json
+          observations?: string | null
+          original_sale_id: string
+          reason: string
+          status?: string
+          total: number
+          user_id: string
+        }
+        Update: {
+          customer?: Json | null
+          date?: string
+          id?: string
+          items?: Json
+          observations?: string | null
+          original_sale_id?: string
+          reason?: string
+          status?: string
+          total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          notes: string | null
+          payment_method: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          date?: string
+          description: string
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      financial_metrics: {
+        Row: {
+          comparison_value: number | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          percentage_change: number | null
+          report_id: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          comparison_value?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type: string
+          percentage_change?: number | null
+          report_id: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          comparison_value?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          percentage_change?: number | null
+          report_id?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      financial_reports: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          metrics: Json | null
+          period_end: string
+          period_start: string
+          report_type: string
+          title: string
+          total_cost: number
+          total_profit: number
+          total_revenue: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metrics?: Json | null
+          period_end: string
+          period_start: string
+          report_type: string
+          title: string
+          total_cost?: number
+          total_profit?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metrics?: Json | null
+          period_end?: string
+          period_start?: string
+          report_type?: string
+          title?: string
+          total_cost?: number
+          total_profit?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meat_cuts: {
+        Row: {
+          animal_type: string
+          barcode: string | null
+          cost_per_kg: number
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price_per_kg: number
+          stock_weight: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          animal_type: string
+          barcode?: string | null
+          cost_per_kg: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price_per_kg: number
+          stock_weight?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          animal_type?: string
+          barcode?: string | null
+          cost_per_kg?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price_per_kg?: number
+          stock_weight?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string
+          code: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image: string | null
+          is_public: boolean | null
+          name: string
+          price: number
+          profit_margin: number | null
+          purchase_price: number
+          stock: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image?: string | null
+          is_public?: boolean | null
+          name: string
+          price: number
+          profit_margin?: number | null
+          purchase_price?: number
+          stock?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image?: string | null
+          is_public?: boolean | null
+          name?: string
+          price?: number
+          profit_margin?: number | null
+          purchase_price?: number
+          stock?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          company_city: string | null
+          company_neighborhood: string | null
+          company_social_media: string | null
+          created_at: string | null
+          currency: string | null
+          email: string
+          has_changed_password: boolean | null
+          id: string
+          name: string | null
+          needs_password_change: boolean | null
+          phone: string | null
+          position: string | null
+          receipt_additional_info: string | null
+          receipt_footer_text: string | null
+          receipt_logo: string | null
+          receipt_message: string | null
+          receipt_show_logo: boolean | null
+          receipt_show_signature: boolean | null
+          receipt_title: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          selected_module: string | null
+          tax_id: string | null
+          tax_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          company_city?: string | null
+          company_neighborhood?: string | null
+          company_social_media?: string | null
+          created_at?: string | null
+          currency?: string | null
+          email: string
+          has_changed_password?: boolean | null
+          id: string
+          name?: string | null
+          needs_password_change?: boolean | null
+          phone?: string | null
+          position?: string | null
+          receipt_additional_info?: string | null
+          receipt_footer_text?: string | null
+          receipt_logo?: string | null
+          receipt_message?: string | null
+          receipt_show_logo?: boolean | null
+          receipt_show_signature?: boolean | null
+          receipt_title?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          selected_module?: string | null
+          tax_id?: string | null
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          company_city?: string | null
+          company_neighborhood?: string | null
+          company_social_media?: string | null
+          created_at?: string | null
+          currency?: string | null
+          email?: string
+          has_changed_password?: boolean | null
+          id?: string
+          name?: string | null
+          needs_password_change?: boolean | null
+          phone?: string | null
+          position?: string | null
+          receipt_additional_info?: string | null
+          receipt_footer_text?: string | null
+          receipt_logo?: string | null
+          receipt_message?: string | null
+          receipt_show_logo?: boolean | null
+          receipt_show_signature?: boolean | null
+          receipt_title?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          selected_module?: string | null
+          tax_id?: string | null
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sales: {
+        Row: {
+          amount_paid: number
+          change: number
+          customer: string | null
+          date: string | null
+          id: string
+          items: Json
+          notes: string | null
+          payment_method: string | null
+          total: number
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          change: number
+          customer?: string | null
+          date?: string | null
+          id?: string
+          items: Json
+          notes?: string | null
+          payment_method?: string | null
+          total: number
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          change?: number
+          customer?: string | null
+          date?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          payment_method?: string | null
+          total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      voice_order_lists: {
+        Row: {
+          created_at: string
+          id: string
+          products: string[]
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          products: string[]
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          products?: string[]
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +425,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "gerente" | "vendedor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +540,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "gerente", "vendedor"],
+    },
   },
 } as const

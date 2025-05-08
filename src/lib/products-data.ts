@@ -43,11 +43,15 @@ export async function getTopSellingProducts(userId?: string, limit: number = 10)
       return [];
     }
 
+    // Buscamos produtos com base em dois critérios:
+    // 1. Produtos com estoque baixo (prioridade alta)
+    // 2. Produtos com preço mais alto (maior valor)
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('user_id', userId)
-      .order('stock', { ascending: true }) // Ordenando por estoque baixo como exemplo
+      .order('stock', { ascending: true }) // Primeiro por estoque baixo
+      .order('price', { ascending: false }) // Depois por preço mais alto
       .limit(limit);
     
     if (error) {

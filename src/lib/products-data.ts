@@ -66,5 +66,31 @@ export async function getTopSellingProducts(userId?: string, limit: number = 10)
   }
 }
 
+// Nova função para obter produtos de backup (cópias de segurança)
+export async function getBackupProducts(limit: number = 100): Promise<Product[]> {
+  try {
+    console.log('Buscando produtos de backup para sugestões');
+    
+    const { data, error } = await supabase
+      .from('product_backups')
+      .select('*')
+      .eq('is_active', true)
+      .order('category')
+      .order('name')
+      .limit(limit);
+    
+    if (error) {
+      console.error('Erro ao buscar produtos de backup:', error);
+      throw error;
+    }
+    
+    console.log(`Encontrados ${data?.length || 0} produtos de backup`);
+    return data as Product[];
+  } catch (error) {
+    console.error('Erro ao obter produtos de backup:', error);
+    return [];
+  }
+}
+
 // Re-export the Product type from the products module for backward compatibility
 export type { Product } from './products/types';

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ProductCard } from "@/components/products/ProductCard";
+import { getBackupProducts } from "@/lib/products-data";
 import {
   Carousel,
   CarouselContent,
@@ -22,22 +24,13 @@ const Suggestions = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
+  // Usar a nova função getBackupProducts para buscar produtos de backup
   const { data: allProducts = [], isLoading, error } = useQuery({
-    queryKey: ['allProducts'],
+    queryKey: ['backupProducts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.error("Error fetching all products:", error);
-        throw error;
-      }
-      
-      return data as Product[];
-    },
-    enabled: !!user
+      const products = await getBackupProducts(100);
+      return products;
+    }
   });
 
   const filteredProducts = allProducts.filter(product =>
@@ -54,6 +47,7 @@ const Suggestions = () => {
     setIsSubmitting(true);
 
     try {
+      // Verificar se o produto já existe no estoque do usuário
       const { data: existingProducts, error: checkError } = await supabase
         .from('products')
         .select('id')

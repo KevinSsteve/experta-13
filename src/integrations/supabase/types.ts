@@ -216,6 +216,63 @@ export type Database = {
         }
         Relationships: []
       }
+      product_backups: {
+        Row: {
+          category: string
+          code: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image: string | null
+          is_active: boolean | null
+          is_public: boolean | null
+          name: string
+          original_id: string | null
+          price: number
+          profit_margin: number | null
+          purchase_price: number | null
+          stock: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image?: string | null
+          is_active?: boolean | null
+          is_public?: boolean | null
+          name: string
+          original_id?: string | null
+          price: number
+          profit_margin?: number | null
+          purchase_price?: number | null
+          stock?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image?: string | null
+          is_active?: boolean | null
+          is_public?: boolean | null
+          name?: string
+          original_id?: string | null
+          price?: number
+          profit_margin?: number | null
+          purchase_price?: number | null
+          stock?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string

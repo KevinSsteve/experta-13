@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const Suggestions = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
@@ -33,10 +36,28 @@ const Suggestions = () => {
     }
   });
 
-  const filteredProducts = allProducts.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Extrair categorias únicas dos produtos
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set(allProducts.map(product => product.category));
+    return ["all", ...Array.from(uniqueCategories)];
+  }, [allProducts]);
+
+  // Filtrar produtos com base na busca e categoria selecionada
+  const filteredProducts = useMemo(() => {
+    return allProducts.filter(product => {
+      // Filtro de pesquisa
+      const matchesSearch = 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (product.code && product.code.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // Filtro de categoria
+      const matchesCategory = activeCategory === "all" || product.category === activeCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [allProducts, searchQuery, activeCategory]);
 
   const addToStock = async (product: Product) => {
     if (!user) {
@@ -139,29 +160,54 @@ const Suggestions = () => {
             </Card>
 
             <div className="space-y-4">
-              <Carousel
-                opts={{
-                  align: "start",
-                  slidesToScroll: 3,
-                }}
-                className="w-full"
-              >
-                <CarouselContent>
-                  {filteredProducts.map((product) => (
-                    <CarouselItem key={product.id} className="basis-1/3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
-                      <div className="h-full p-0.5">
-                        <ProductCard
-                          product={product}
-                          onAddToCart={addToStock}
-                          priority={true}
-                        />
-                      </div>
-                    </CarouselItem>
+              <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                <TabsList className="mb-4 flex flex-wrap">
+                  {categories.map(category => (
+                    <TabsTrigger 
+                      key={category} 
+                      value={category}
+                      className="mb-1 mr-1"
+                    >
+                      {category === "all" ? "Todas Categorias" : category}
+                      {category !== "all" && (
+                        <Badge variant="outline" className="ml-2">
+                          {allProducts.filter(p => p.category === category).length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
                   ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
+                </TabsList>
+
+                {categories.map(category => (
+                  <TabsContent key={category} value={category} className="mt-0">
+                    <Carousel
+                      opts={{
+                        align: "start",
+                        slidesToScroll: 3,
+                      }}
+                      className="w-full"
+                    >
+                      <CarouselContent>
+                        {(category === "all" ? filteredProducts : 
+                          filteredProducts.filter(p => p.category === category))
+                          .map((product) => (
+                          <CarouselItem key={product.id} className="basis-1/3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+                            <div className="h-full p-0.5">
+                              <ProductCard
+                                product={product}
+                                onAddToCart={addToStock}
+                                priority={true}
+                              />
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious />
+                      <CarouselNext />
+                    </Carousel>
+                  </TabsContent>
+                ))}
+              </Tabs>
             </div>
 
             <div className="text-center text-muted-foreground mt-8">

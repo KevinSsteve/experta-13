@@ -1,218 +1,193 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import {
+  Home,
   LayoutDashboard,
-  ShoppingBasket,
-  Package,
+  Menu,
+  ShoppingCart,
+  Users,
   Settings,
-  CreditCard,
-  User,
-  History,
-  FileText,
-  ReceiptText,
-  Mic,
-  ScanLine,
-  List
+  ChevronsLeft,
+  ChevronsRight,
+  LogOut,
+  Database,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Separator } from "@/components/ui/separator";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface SideNavigationProps {
-  className?: string;
-  isCollapsed?: boolean;
+  isOpen: boolean;
 }
 
-export function SideNavigation({ className, isCollapsed }: SideNavigationProps) {
-  const navigate = useNavigate();
+export function SideNavigation({ isOpen }: SideNavigationProps) {
   const location = useLocation();
-  const { user, profile } = useAuth();
-  
-  // A função para navegar para a rota especificada
-  const handleNavigate = (route: string) => {
-    navigate(route);
-  };
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const isMobile = useIsMobile();
+  const [isMenuOpen, setIsMenuOpen] = useState(isOpen);
 
-  // Verificar se um item de navegação está ativo
-  const isActive = (route: string) => {
-    return location.pathname === route || 
-           (route !== '/' && location.pathname.startsWith(route));
-  };
+  useEffect(() => {
+    setIsMenuOpen(isOpen);
+  }, [isOpen]);
 
-  const isManager = profile?.role === 'gerente' || profile?.role === 'admin';
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   return (
-    <div className={cn("flex flex-col h-full py-2 px-1", className)}>
-      <ScrollArea className="flex-1">
-        <div className={cn("flex flex-col gap-1", isCollapsed ? "items-center" : "px-1")}>
-          <Button
-            variant={isActive("/dashboard") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/dashboard")}
-          >
-            <LayoutDashboard className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Dashboard</span>}
-          </Button>
+    <aside
+      className={`bg-secondary border-r h-screen fixed top-0 left-0 z-50 transition-transform ${
+        isMenuOpen ? "translate-x-0" : "-translate-x-full"
+      } ${isMobile ? "w-screen" : "w-64"}
+       dark:bg-gray-900 dark:border-gray-800`}
+    >
+      <div className="flex flex-col justify-between h-full">
+        <div>
+          <div className="p-4">
+            <Link to="/" className="flex items-center space-x-2">
+              <ShoppingCart className="h-6 w-6 text-primary" />
+              <span className="font-bold text-2xl">MiniComércio</span>
+            </Link>
+          </div>
 
-          {/* Separator */}
-          {!isCollapsed && <Separator className="my-1" />}
+          <div className="px-3 py-2">
+            <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+              Navegação
+            </h2>
+            <div className="space-y-1">
+              <Link
+                to="/"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50 ${
+                  location.pathname === "/" ? "bg-gray-100 dark:bg-gray-800" : ""
+                }`}
+              >
+                <Home className="h-4 w-4" />
+                <span>Dashboard</span>
+              </Link>
+              <Link
+                to="/inventory"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50 ${
+                  location.pathname === "/inventory"
+                    ? "bg-gray-100 dark:bg-gray-800"
+                    : ""
+                }`}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span>Inventário</span>
+              </Link>
+              <Link
+                to="/products"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50 ${
+                  location.pathname === "/products"
+                    ? "bg-gray-100 dark:bg-gray-800"
+                    : ""
+                }`}
+              >
+                <ShoppingCart className="h-4 w-4" />
+                <span>Produtos</span>
+              </Link>
+              <Link
+                to="/customers"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50 ${
+                  location.pathname === "/customers"
+                    ? "bg-gray-100 dark:bg-gray-800"
+                    : ""
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                <span>Clientes</span>
+              </Link>
+              <Link
+                to="/suggestions"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50 ${
+                  location.pathname === "/suggestions"
+                    ? "bg-gray-100 dark:bg-gray-800"
+                    : ""
+                }`}
+              >
+                <Menu className="h-4 w-4" />
+                <span>Sugestões</span>
+              </Link>
+            </div>
+          </div>
 
-          {/* Vendas */}
-          <Button
-            variant={isActive("/checkout") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/checkout")}
-          >
-            <ShoppingBasket className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Nova Venda</span>}
-          </Button>
-
-          <Button
-            variant={isActive("/sales-history") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/sales-history")}
-          >
-            <History className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Histórico</span>}
-          </Button>
-
-          <Button
-            variant={isActive("/credit-notes") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/credit-notes")}
-          >
-            <ReceiptText className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Notas de Crédito</span>}
-          </Button>
-
-          {/* Separator */}
-          {!isCollapsed && <Separator className="my-1" />}
-
-          {/* Produtos */}
-          <Button
-            variant={isActive("/products") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/products")}
-          >
-            <Package className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Produtos</span>}
-          </Button>
-
-          <Button
-            variant={isActive("/inventory") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/inventory")}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Inventário</span>}
-          </Button>
-
-          {/* Separator */}
-          {!isCollapsed && <Separator className="my-1" />}
-
-          {/* Ferramentas */}
-          <Button
-            variant={isActive("/scan") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/scan")}
-          >
-            <ScanLine className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Scanner</span>}
-          </Button>
-
-          <Button
-            variant={isActive("/listas-voz") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/listas-voz")}
-          >
-            <List className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Lista por Voz</span>}
-          </Button>
-
-          <Button
-            variant={isActive("/pedido-voz") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/pedido-voz")}
-          >
-            <Mic className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Pedido por Voz</span>}
-          </Button>
-
-          {/* Separator for admin-only sections */}
-          {isManager && !isCollapsed && <Separator className="my-1" />}
-
-          {/* Admin-only sections */}
-          {isManager && (
-            <Button
-              variant={isActive("/expenses") ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                isCollapsed && "justify-center px-0"
-              )}
-              onClick={() => handleNavigate("/expenses")}
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              {!isCollapsed && <span>Despesas</span>}
-            </Button>
+          {/* Administração/Configuração - verificar se o usuário é admin */}
+          {user?.email === "admin@example.com" && (
+            <div className="px-3 py-2">
+              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+                Administração
+              </h2>
+              <div className="space-y-1">
+                <Link
+                  to="/meat-import"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+                >
+                  <Database className="h-4 w-4" />
+                  <span>Importar Carnes</span>
+                </Link>
+              </div>
+            </div>
           )}
-
-          {/* Separator */}
-          {!isCollapsed && <Separator className="my-1" />}
-
-          {/* User */}
-          <Button
-            variant={isActive("/profile") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/profile")}
-          >
-            <User className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Perfil</span>}
-          </Button>
-
-          <Button
-            variant={isActive("/settings") ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-0"
-            )}
-            onClick={() => handleNavigate("/settings")}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            {!isCollapsed && <span>Configurações</span>}
-          </Button>
         </div>
-      </ScrollArea>
-    </div>
+
+        <div className="sticky inset-x-0 bottom-0 border-t border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="w-full justify-start gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.image} />
+                  <AvatarFallback>
+                    {user?.name?.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col truncate">
+                  <span className="text-sm font-medium leading-none">
+                    {user?.name}
+                  </span>
+                  <span className="line-clamp-1 text-xs text-muted-foreground">
+                    {user?.email}
+                  </span>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80" align="end">
+              <DropdownMenuItem>
+                <Link to="/settings" className="w-full">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  signOut();
+                  navigate("/login");
+                }}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </aside>
   );
 }

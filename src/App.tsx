@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -82,11 +83,7 @@ const App = () => {
                     <Route path="/listas-voz" element={<ListaVozContinua />} />
                     <Route path="/pedido-voz" element={<VoiceToCart />} />
                     <Route path="/expenses" element={<Expenses />} />
-                    <Route path="/meat-import" element={
-                      <ProtectedRoute>
-                        <MeatImport />
-                      </ProtectedRoute>
-                    } />
+                    <Route path="/meat-import" element={<MeatImport />} />
                   </Route>
                   
                   {/* Rota para página não encontrada */}

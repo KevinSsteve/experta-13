@@ -1,3 +1,4 @@
+
 import {
   Home,
   LayoutDashboard,
@@ -39,7 +40,7 @@ interface SideNavigationProps {
 export function SideNavigation({ isOpen }: SideNavigationProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(isOpen);
 
@@ -152,17 +153,17 @@ export function SideNavigation({ isOpen }: SideNavigationProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.image} />
+                  <AvatarImage src={profile?.avatar_url || undefined} />
                   <AvatarFallback>
-                    {user?.name?.substring(0, 2).toUpperCase()}
+                    {profile?.name ? profile.name.substring(0, 2).toUpperCase() : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col truncate">
                   <span className="text-sm font-medium leading-none">
-                    {user?.name}
+                    {profile?.name || user?.email?.split('@')[0] || "Usuário"}
                   </span>
                   <span className="line-clamp-1 text-xs text-muted-foreground">
-                    {user?.email}
+                    {user?.email || ""}
                   </span>
                 </div>
               </Button>

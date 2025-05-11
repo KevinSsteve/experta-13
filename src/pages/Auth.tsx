@@ -191,7 +191,7 @@ export default function Auth() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Contascom</CardTitle>
+          <CardTitle className="text-2xl">Experta</CardTitle>
           <CardDescription>Sistema de Gerenciamento de Loja</CardDescription>
         </CardHeader>
         <CardContent>
@@ -358,7 +358,7 @@ export default function Auth() {
           </Tabs>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Contascom - Todos os direitos reservados
+          &copy; {new Date().getFullYear()} Experta - Todos os direitos reservados
         </CardFooter>
       </Card>
     </div>

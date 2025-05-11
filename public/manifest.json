@@ -1,14 +1,14 @@
 
 {
-  "id": "moloja-pwa",
-  "name": "Moloja - Loja Virtual",
-  "short_name": "Moloja",
+  "id": "experta-pwa",
+  "name": "Experta - Supermercado Digital",
+  "short_name": "Experta",
   "description": "Gerenciamento de estoque e vendas online",
   "start_url": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay"],
   "background_color": "#ffffff",
-  "theme_color": "#4CAF50",
+  "theme_color": "#094d91",
   "lang": "pt-BR",
   "dir": "ltr",
   "orientation": "any",
@@ -93,14 +93,14 @@
       "sizes": "1280x800",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Dashboard da Moloja"
+      "label": "Dashboard da Experta"
     },
     {
       "src": "screenshots/mobile.png",
       "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Moloja em dispositivos móveis"
+      "label": "Experta em dispositivos móveis"
     }
   ],
   "shortcuts": [
@@ -134,7 +134,7 @@
   "prefer_related_applications": false,
   "protocol_handlers": [
     {
-      "protocol": "web+moloja",
+      "protocol": "web+experta",
       "url": "/?product=%s"
     }
   ],
@@ -143,8 +143,8 @@
   },
   "widgets": [
     {
-      "name": "Moloja Stats",
-      "tag": "moloja-stats",
+      "name": "Experta Stats",
+      "tag": "experta-stats",
       "description": "Exibe estatísticas de vendas diárias",
       "screenshots": [
         {

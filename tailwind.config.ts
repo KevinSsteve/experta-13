@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -66,8 +67,8 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        // Cores temáticas da Contascom
-        contascom: {
+        // Cores temáticas da Experta (anteriormente Contascom)
+        experta: {
           primary: '#094d91',    // Azul escuro
           secondary: '#28c7c0',  // Turquesa
           background: '#e0e8f1', // Azul claro suave
@@ -123,6 +124,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        poppins: ['Poppins', 'sans-serif'],
       },
     }
   },

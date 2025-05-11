@@ -45,14 +45,10 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center">
-            <img 
-              src="/logo.png" 
-              alt="Contascom" 
-              className="h-8 transition-all"
-              style={{ filter: theme === 'dark' ? 'brightness(0) invert(1)' : 'none' }}
-            />
-            <div className="hidden sm:flex flex-col ml-2">
-              <span className="text-sm font-medium text-contascom-primary">Contascom</span>
+            <div className="flex flex-col items-start ml-2">
+              <span className="text-xl font-bold font-poppins tracking-wide bg-gradient-to-r from-experta-primary to-experta-secondary bg-clip-text text-transparent">
+                Experta
+              </span>
               <span className="text-xs text-muted-foreground">v1.0</span>
             </div>
           </div>
@@ -64,7 +60,7 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
                 {alertCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-contascom-secondary text-white">
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-experta-secondary text-white">
                     {alertCount}
                   </Badge>
                 )}
@@ -112,8 +108,8 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className="ml-2 cursor-pointer">
-                <div className="h-8 w-8 rounded-full bg-contascom-primary/10 flex items-center justify-center">
-                  <span className="text-contascom-primary font-medium text-sm">
+                <div className="h-8 w-8 rounded-full bg-experta-primary/10 flex items-center justify-center">
+                  <span className="text-experta-primary font-medium text-sm">
                     {profile?.name ? profile.name.charAt(0).toUpperCase() : "U"}
                   </span>
                 </div>

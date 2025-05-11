@@ -91,6 +91,12 @@ const SidebarNav = () => {
 
   return (
     <div className="flex flex-col h-full px-3 py-4 border-r bg-background">
+      <div className="mb-6 px-3">
+        <span className="text-2xl font-bold font-poppins tracking-wide bg-gradient-to-r from-experta-primary to-experta-secondary bg-clip-text text-transparent">
+          Experta
+        </span>
+      </div>
+      
       <nav className="flex flex-col flex-1 space-y-1">
         {menuItems.map((item) => (
           <Link

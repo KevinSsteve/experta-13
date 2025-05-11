@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -67,13 +66,12 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        // Cores temáticas da Moloja
-        moloja: {
-          primary: '#4CAF50',
-          secondary: '#FEC6A1',
-          background: '#F2FCE2',
-          highlight: '#FEF7CD',
-          muted: '#8E9196',
+        // Cores temáticas da Contascom
+        contascom: {
+          primary: '#094d91',    // Azul escuro
+          secondary: '#28c7c0',  // Turquesa
+          background: '#e0e8f1', // Azul claro suave
+          muted: '#8E9196',      // Mantendo a cor neutra atual para textos secundários
         }
       },
       borderRadius: {

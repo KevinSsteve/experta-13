@@ -92,9 +92,9 @@ const MeatImport = () => {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
-        <Card>
+        <Card className="border-contascom-primary/20">
           <CardHeader>
-            <CardTitle className="text-2xl">Importação de Produtos de Carne</CardTitle>
+            <CardTitle className="text-2xl text-contascom-primary">Importação de Produtos de Carne</CardTitle>
             <CardDescription>
               Gerencie a importação de produtos de carne para o banco de dados de backup
             </CardDescription>
@@ -103,19 +103,19 @@ const MeatImport = () => {
             <div className="space-y-4">
               {isLoading ? (
                 <div className="h-24 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-contascom-primary"></div>
                 </div>
               ) : importedCount && importedCount > 0 ? (
-                <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <AlertTitle>Produtos já importados</AlertTitle>
+                <Alert className="bg-contascom-background border-contascom-secondary">
+                  <CheckCircle2 className="h-5 w-5 text-contascom-secondary" />
+                  <AlertTitle className="text-contascom-primary">Produtos já importados</AlertTitle>
                   <AlertDescription>
                     <p className="mb-2">
                       Existem atualmente <strong>{importedCount}</strong> produtos de carne no banco de dados de backup.
                     </p>
                     <div className="flex flex-wrap gap-2 mt-3">
                       {categories.map((category) => (
-                        <Badge key={category} variant="outline">{category}</Badge>
+                        <Badge key={category} variant="outline" className="border-contascom-secondary text-contascom-primary">{category}</Badge>
                       ))}
                     </div>
                     <p className="mt-3 text-sm">
@@ -144,7 +144,7 @@ const MeatImport = () => {
             <Button 
               onClick={handleImport} 
               disabled={isImporting || isLoading}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-contascom-primary hover:bg-contascom-primary/90"
             >
               {isImporting 
                 ? "Importando..." 

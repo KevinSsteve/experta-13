@@ -48,10 +48,11 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
             <img 
               src="/logo.png" 
               alt="Contascom" 
-              className={`h-8 ${theme === 'dark' ? 'invert' : ''} transition-all`}
+              className="h-8 transition-all"
+              style={{ filter: theme === 'dark' ? 'brightness(0) invert(1)' : 'none' }}
             />
             <div className="hidden sm:flex flex-col ml-2">
-              <span className="text-sm font-medium">Contascom</span>
+              <span className="text-sm font-medium text-contascom-primary">Contascom</span>
               <span className="text-xs text-muted-foreground">v1.0</span>
             </div>
           </div>
@@ -63,7 +64,7 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
                 {alertCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-contascom-secondary text-white">
                     {alertCount}
                   </Badge>
                 )}
@@ -111,8 +112,8 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className="ml-2 cursor-pointer">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-primary font-medium text-sm">
+                <div className="h-8 w-8 rounded-full bg-contascom-primary/10 flex items-center justify-center">
+                  <span className="text-contascom-primary font-medium text-sm">
                     {profile?.name ? profile.name.charAt(0).toUpperCase() : "U"}
                   </span>
                 </div>

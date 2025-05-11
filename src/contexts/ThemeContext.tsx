@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const storedTheme = localStorage.getItem('moloja-theme');
+    const storedTheme = localStorage.getItem('contascom-theme');
     
     if (storedTheme) {
       return storedTheme as Theme;
@@ -28,7 +28,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     setTheme(prevTheme => {
       const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('moloja-theme', newTheme);
+      localStorage.setItem('contascom-theme', newTheme);
       return newTheme;
     });
   };

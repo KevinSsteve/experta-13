@@ -92,7 +92,7 @@ const SidebarNav = () => {
   return (
     <div className="flex flex-col h-full px-3 py-4 border-r bg-background">
       <div className="mb-6 px-3">
-        <span className="text-2xl font-bold font-poppins tracking-wide bg-gradient-to-r from-experta-primary to-experta-secondary bg-clip-text text-transparent">
+        <span className="text-2xl font-bold font-poppins tracking-wide bg-gradient-to-r from-[#094d91] to-experta-secondary bg-clip-text text-transparent">
           Experta
         </span>
       </div>
@@ -102,9 +102,9 @@ const SidebarNav = () => {
           <Link
             key={item.href}
             to={item.href}
-            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md hover:bg-secondary hover:text-foreground ${
+            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md hover:bg-[#094d91]/10 hover:text-[#094d91] ${
               location.pathname === item.href
-                ? "bg-secondary text-foreground"
+                ? "bg-[#094d91]/10 text-[#094d91]"
                 : "text-muted-foreground"
             }`}
           >
@@ -118,7 +118,7 @@ const SidebarNav = () => {
             href="https://supabase.com/"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground rounded-md hover:bg-secondary hover:text-foreground"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground rounded-md hover:bg-[#094d91]/10 hover:text-[#094d91]"
           >
             <LayoutDashboard className="w-4 h-4" />
             Supabase

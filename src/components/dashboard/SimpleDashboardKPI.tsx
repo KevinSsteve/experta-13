@@ -21,7 +21,7 @@ export const SimpleDashboardKPI = ({ title, value, icon, isLoading = false }: Si
               <p className="text-2xl font-bold">{value}</p>
             )}
           </div>
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-full bg-[#094d91]/10 flex items-center justify-center text-[#094d91]">
             {icon}
           </div>
         </div>

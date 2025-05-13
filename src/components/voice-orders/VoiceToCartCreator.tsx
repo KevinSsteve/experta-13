@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, ShoppingCart, Repeat, Check, History, X, HelpCircle, MessageSquareText } from "lucide-react";
+import { Mic, MicOff, ShoppingCart, Repeat, Check, History, X, HelpCircle, MessageSquareText, TimerIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import {
   Alert,
   AlertDescription,
@@ -31,11 +32,18 @@ import { VoiceTrainingFeedbackDialog } from "./VoiceTrainingFeedbackDialog";
 export function VoiceToCartCreator() {
   const [isListening, setIsListening] = useState(false);
   const [recognizedText, setRecognizedText] = useState<string>("");
+  const [interimText, setInterimText] = useState<string>("");
   const [parsedOrder, setParsedOrder] = useState<EnhancedVoiceItem | null>(null);
   const [matchedProduct, setMatchedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [recentOrders, setRecentOrders] = useState<{text: string, timestamp: number}[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [maxRecordingTime, setMaxRecordingTime] = useState(30); // 30 segundos por padrão
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const processingRef = useRef<boolean>(false);
+  
   const [contextualData, setContextualData] = useState<{
     timeOfDay: string;
     deviceType: string;
@@ -70,6 +78,34 @@ export function VoiceToCartCreator() {
     });
   }, [isMobile]);
 
+  // Atualizar o temporizador
+  useEffect(() => {
+    if (isListening) {
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          // Se atingiu o tempo máximo, para a gravação
+          if (prev >= maxRecordingTime) {
+            handleStopListening();
+            return 0;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setRecordingTime(0);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isListening, maxRecordingTime]);
+
   // Buscar produtos do usuário
   const { data: products, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products', user?.id],
@@ -92,7 +128,7 @@ export function VoiceToCartCreator() {
     enabled: !!user?.id
   });
 
-  // Iniciar reconhecimento de voz
+  // Iniciar reconhecimento de voz contínuo
   const handleListen = () => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
       toast({
@@ -103,39 +139,85 @@ export function VoiceToCartCreator() {
       return;
     }
     
+    // Limpar reconhecimento anterior se existir
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    
     setIsListening(true);
+    setRecordingTime(0);
+    setInterimText("");
+    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    
+    // Configurar para modo contínuo
     recognition.lang = "pt-BR";
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setRecognizedText(transcript);
+      let interimTranscript = '';
+      let finalTranscript = '';
       
-      // Adicionar aos pedidos recentes
-      setRecentOrders(prev => {
-        const newOrders = [{text: transcript, timestamp: Date.now()}, ...prev];
-        return newOrders.slice(0, 5); // Manter apenas os 5 mais recentes
-      });
+      // Processar todos os resultados desde o último processamento
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+          
+          // Se não estiver processando outro pedido
+          if (!processingRef.current) {
+            processingRef.current = true;
+            
+            console.log('Texto final reconhecido:', transcript);
+            
+            // Adicionar aos pedidos recentes
+            setRecentOrders(prev => {
+              const newOrders = [{text: transcript, timestamp: Date.now()}, ...prev];
+              return newOrders.slice(0, 5); // Manter apenas os 5 mais recentes
+            });
+            
+            // Processar o pedido
+            setRecognizedText(transcript);
+            processVoiceOrder(transcript);
+            
+            // Permitir processar o próximo pedido após um tempo
+            setTimeout(() => {
+              processingRef.current = false;
+            }, 1500);
+          }
+        } else {
+          interimTranscript += transcript;
+        }
+      }
       
-      processVoiceOrder(transcript);
+      // Atualizar texto intermediário
+      if (interimTranscript !== '') {
+        setInterimText(interimTranscript);
+      }
     };
 
     recognition.onerror = (e) => {
       console.error('Erro de reconhecimento de voz:', e);
-      toast({
-        title: "Erro",
-        description: "Houve um erro no reconhecimento de voz.",
-        variant: "destructive"
-      });
-      setIsListening(false);
+      
+      // Reiniciar reconhecimento em caso de erro
+      if (isListening && recognitionRef.current === recognition) {
+        recognition.stop();
+        setTimeout(() => {
+          if (isListening) {
+            recognition.start();
+            console.log('Reconhecimento de voz reiniciado após erro');
+          }
+        }, 500);
+      }
       
       // Salvar dados sobre o erro localmente
       if (user?.id) {
         try {
-          // Armazenar no localStorage em vez de tentar enviar para uma tabela inexistente
           const voiceErrors = JSON.parse(localStorage.getItem('voiceRecognitionErrors') || '[]');
           voiceErrors.push({
             user_id: user.id,
@@ -150,8 +232,50 @@ export function VoiceToCartCreator() {
       }
     };
     
-    recognition.onend = () => setIsListening(false);
+    recognition.onend = () => {
+      console.log('Sessão de reconhecimento de voz encerrada');
+      
+      // Reiniciar reconhecimento se ainda estiver no modo de escuta
+      if (isListening && recognitionRef.current === recognition) {
+        setTimeout(() => {
+          if (isListening) {
+            recognition.start();
+            console.log('Reconhecimento de voz reiniciado');
+          }
+        }, 500);
+      }
+    };
+    
+    // Iniciar reconhecimento
     recognition.start();
+    console.log('Reconhecimento de voz contínuo iniciado');
+    
+    toast({
+      title: "Modo contínuo ativado",
+      description: "Diga os produtos que deseja adicionar ao carrinho. A gravação continuará por " + maxRecordingTime + " segundos.",
+    });
+  };
+  
+  // Parar reconhecimento de voz
+  const handleStopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    setIsListening(false);
+    setInterimText("");
+    setRecordingTime(0);
+    
+    toast({
+      title: "Gravação encerrada",
+      description: "Modo de reconhecimento de voz contínuo desativado.",
+    });
   };
 
   // Processar o pedido por voz
@@ -217,7 +341,6 @@ export function VoiceToCartCreator() {
     // Salvar feedback positivo localmente
     if (user?.id && parsedOrder) {
       try {
-        // Armazenar no localStorage em vez de tentar enviar para uma tabela inexistente
         const feedbackData = JSON.parse(localStorage.getItem('voiceRecognitionFeedback') || '[]');
         feedbackData.push({
           user_id: user.id,
@@ -249,7 +372,6 @@ export function VoiceToCartCreator() {
     // Salvar feedback negativo localmente
     if (user?.id && parsedOrder) {
       try {
-        // Armazenar no localStorage em vez de tentar enviar para uma tabela inexistente
         const feedbackData = JSON.parse(localStorage.getItem('voiceRecognitionFeedback') || '[]');
         feedbackData.push({
           user_id: user.id,
@@ -307,6 +429,11 @@ export function VoiceToCartCreator() {
     return "Baixa";
   };
 
+  // Atualizar tempo máximo de gravação
+  const handleChangeMaxTime = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setMaxRecordingTime(parseInt(e.target.value));
+  };
+
   return (
     <div className="space-y-4">
       {/* Card de gravação de voz */}
@@ -314,37 +441,77 @@ export function VoiceToCartCreator() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mic className="h-5 w-5" />
-            <span>Adicionar ao carrinho por voz</span>
+            <span>Adicionar ao carrinho por voz (Modo Contínuo)</span>
           </CardTitle>
           <CardDescription>
-            Diga o que deseja adicionar ao carrinho. Por exemplo: "2 caixas de leite" ou "5 pacotes de biscoito"
+            Diga o que deseja adicionar ao carrinho. A gravação continuará ativa até que você a encerre ou atinja o limite de tempo.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2 items-center justify-center">
+          <div className="flex flex-wrap gap-4 items-center justify-center">
             <Button
-              onClick={handleListen}
+              onClick={isListening ? handleStopListening : handleListen}
               variant={isListening ? "destructive" : "default"}
               size="lg"
               className="h-16 w-16 rounded-full"
-              disabled={isListening || isLoadingProducts}
+              disabled={isLoadingProducts}
             >
               {isListening ? 
                 <MicOff className="h-6 w-6 animate-pulse" /> : 
                 <Mic className="h-6 w-6" />
               }
             </Button>
-            <div className="text-sm text-center text-muted-foreground">
-              {isListening ? 
-                <span className="animate-pulse">Ouvindo...</span> : 
-                <span>Toque para começar a gravação</span>
-              }
+            <div className="flex flex-col items-center">
+              <div className="text-sm text-center text-muted-foreground mb-2">
+                {isListening ? 
+                  <span className="animate-pulse">Ouvindo continuamente...</span> : 
+                  <span>Toque para começar a gravação contínua</span>
+                }
+              </div>
+              
+              {isListening && (
+                <div className="w-full space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span>Tempo: {recordingTime}s</span>
+                    <span>Máximo: {maxRecordingTime}s</span>
+                  </div>
+                  <Progress value={(recordingTime / maxRecordingTime) * 100} />
+                </div>
+              )}
+              
+              {!isListening && (
+                <div className="flex items-center gap-2">
+                  <label htmlFor="maxTime" className="text-xs text-muted-foreground">
+                    Tempo máximo:
+                  </label>
+                  <select 
+                    id="maxTime"
+                    className="text-xs p-1 border rounded"
+                    value={maxRecordingTime}
+                    onChange={handleChangeMaxTime}
+                  >
+                    <option value="15">15s</option>
+                    <option value="30">30s</option>
+                    <option value="60">60s</option>
+                    <option value="120">2min</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
           
+          {interimText && isListening && (
+            <div className="mt-4">
+              <p className="text-sm font-medium">Ouvindo em tempo real:</p>
+              <div className="mt-1 p-3 border rounded-md bg-muted/30">
+                <p className="text-sm italic text-muted-foreground">"{interimText}"</p>
+              </div>
+            </div>
+          )}
+          
           {recognizedText && (
             <div className="mt-4">
-              <p className="text-sm font-medium">Texto reconhecido:</p>
+              <p className="text-sm font-medium">Último texto processado:</p>
               <div className="mt-1 p-3 border rounded-md bg-muted/30">
                 <p className="text-sm">"{recognizedText}"</p>
               </div>
@@ -389,7 +556,9 @@ export function VoiceToCartCreator() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Diga a quantidade e o produto que deseja adicionar.<br/>Exemplo: "3 caixas de leite"</p>
+                <p>No modo contínuo, o microfone fica ativo por mais tempo.<br/>
+                   Fale naturalmente, seus pedidos serão processados automaticamente.<br/>
+                   Pressione novamente para parar.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -461,13 +630,13 @@ export function VoiceToCartCreator() {
       {/* Alerta de instruções */}
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Dicas para melhores resultados</AlertTitle>
+        <AlertTitle>Dicas para o modo contínuo</AlertTitle>
         <AlertDescription>
           <ul className="list-disc list-inside space-y-1 text-sm">
-            <li>Mencione a quantidade e o nome do produto claramente</li>
-            <li>Fale devagar e em um ambiente sem ruído</li>
-            <li>Você pode mencionar características como marca e preço</li>
-            <li>Forneça feedback para ajudar a melhorar o sistema</li>
+            <li>Fale naturalmente, mencionando um produto por vez</li>
+            <li>Faça uma pequena pausa entre os produtos</li>
+            <li>O sistema reconhecerá automaticamente cada produto mencionado</li>
+            <li>Você pode parar a gravação a qualquer momento</li>
           </ul>
         </AlertDescription>
       </Alert>

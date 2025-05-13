@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { applyVoiceCorrections } from '@/utils/speechCorrectionUtils';
 
 interface VoiceSearchButtonProps {
   onResult: (text: string) => void;
@@ -12,6 +14,7 @@ interface VoiceSearchButtonProps {
 export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButtonProps) => {
   const [isListening, setIsListening] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -33,23 +36,27 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
     recognition.continuous = false;
     recognition.interimResults = false;
     
-    recognition.onresult = (event) => {
+    recognition.onresult = async (event) => {
       const transcript = event.results[0][0].transcript;
       console.log(`Transcrição de voz recebida: "${transcript}"`);
       
-      // Verifica se a transcrição contém palavras-chave para lista
+      // Aplica correções de voz registradas pelo usuário
+      const correctedTranscript = await applyVoiceCorrections(transcript, user?.id);
+      console.log(`Transcrição corrigida: "${correctedTranscript}"`);
+      
+      // Verifica se é uma busca de múltiplos produtos
       const productListKeywords = ['buscar', 'busque', 'procurar', 'procure', 'encontrar', 'encontre', 'lista', 'liste'];
       const separators = ['e', ',', 'mais', 'também', 'com'];
       
       // Verifica se é uma busca de múltiplos produtos
-      const lowerTranscript = transcript.toLowerCase();
+      const lowerTranscript = correctedTranscript.toLowerCase();
       const containsListKeyword = productListKeywords.some(keyword => lowerTranscript.includes(keyword));
       
       // Inicialmente, considere o texto completo como um produto
-      let products: string[] = [transcript];
+      let products: string[] = [correctedTranscript];
       
       // Se contiver palavras-chave de lista ou espaços (que indicam potencialmente múltiplos produtos)
-      if (containsListKeyword || transcript.includes(' ')) {
+      if (containsListKeyword || correctedTranscript.includes(' ')) {
         // Extrai produtos da frase
         let productsText = lowerTranscript;
         
@@ -110,11 +117,11 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
         });
       } else {
         // Busca simples de um único produto
-        onResult(transcript);
+        onResult(correctedTranscript);
         
         toast({
           title: "Busca por voz",
-          description: `"${transcript}"`,
+          description: `"${correctedTranscript}"`,
         });
       }
     };

@@ -30,6 +30,7 @@ import Expenses from "./pages/Expenses";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import Suggestions from "./pages/Suggestions";
 import MeatImport from "./pages/MeatImport";
+import Treinamento from "./pages/Treinamento";
 
 const App = () => {
   const PasswordChangeRoute = () => {
@@ -86,6 +87,7 @@ const App = () => {
                     <Route path="/experta-ai" element={<ExpertaAI />} />
                     <Route path="/expenses" element={<Expenses />} />
                     <Route path="/meat-import" element={<MeatImport />} />
+                    <Route path="/treinamento" element={<Treinamento />} />
                   </Route>
                   
                   {/* Rota para página não encontrada */}

@@ -1,6 +1,6 @@
 
 import { MainLayout } from "@/components/layouts/MainLayout";
-import { VoiceToCartCreator } from "@/components/voice-orders/VoiceToCartCreator";
+import { ExpertaAIAssistant } from "@/components/voice-orders/ExpertaAIAssistant";
 import { ShoppingCart } from "@/components/shop/ShoppingCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -67,14 +67,14 @@ export default function ExpertaAI() {
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="p-4">
             <p className="text-sm">
-              <strong>Experta AI</strong> - Seu assistente de compras por voz inteligente.
-              Use comandos de voz para adicionar produtos ao carrinho de forma rápida e eficiente.
+              <strong>Experta AI</strong> - Seu assistente de voz inteligente para pequenos comerciantes.
+              Use comandos de voz para adicionar produtos, registrar vendas, despesas e verificar estoque.
             </p>
           </CardContent>
         </Card>
         
         <ResponsiveWrapper>
-          <VoiceToCartCreator />
+          <ExpertaAIAssistant />
         </ResponsiveWrapper>
       </div>
     </MainLayout>

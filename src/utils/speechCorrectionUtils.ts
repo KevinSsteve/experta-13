@@ -1,6 +1,16 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// Interface para as correções de voz
+interface SpeechCorrection {
+  id: string;
+  original_text: string;
+  corrected_text: string;
+  user_id: string;
+  active: boolean;
+  created_at: string;
+}
+
 /**
  * Aplica correções registradas pelo usuário ao texto reconhecido pelo Google Speech
  * @param text Texto reconhecido pelo Google Speech

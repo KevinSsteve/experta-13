@@ -55,7 +55,7 @@ export default function Treinamento() {
           });
           setCorrections([]);
         } else if (data) {
-          setCorrections(data);
+          setCorrections(data as CorrectionPair[]);
         }
         setLoading(false);
       });
@@ -139,8 +139,7 @@ export default function Treinamento() {
           user_id: user.id,
           active: true
         }])
-        .select()
-        .single();
+        .select();
         
       if (error) {
         console.error("Erro ao salvar correção:", error);
@@ -150,7 +149,7 @@ export default function Treinamento() {
           variant: "destructive"
         });
       } else if (data) {
-        setCorrections((prev) => [data, ...prev]);
+        setCorrections((prev) => [data[0] as CorrectionPair, ...prev]);
         
         // Armazenar dados de treinamento para melhorar o algoritmo
         const trainingData: VoiceOrderTrainingData = {

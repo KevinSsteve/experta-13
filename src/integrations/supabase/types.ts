@@ -450,6 +450,33 @@ export type Database = {
         }
         Relationships: []
       }
+      speech_corrections: {
+        Row: {
+          active: boolean
+          corrected_text: string
+          created_at: string
+          id: string
+          original_text: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          corrected_text: string
+          created_at?: string
+          id?: string
+          original_text: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          corrected_text?: string
+          created_at?: string
+          id?: string
+          original_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       voice_order_lists: {
         Row: {
           created_at: string

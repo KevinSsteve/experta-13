@@ -25,6 +25,7 @@ import ScanProducts from "./pages/ScanProducts";
 import NotFound from "./pages/NotFound";
 import ListaVozContinua from "./pages/ListaVozContinua";
 import VoiceToCart from "./pages/VoiceToCart";
+import ExpertaAI from "./pages/ExpertaAI";
 import Expenses from "./pages/Expenses";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import Suggestions from "./pages/Suggestions";
@@ -82,6 +83,7 @@ const App = () => {
                     <Route path="/scan" element={<ScanProducts />} />
                     <Route path="/listas-voz" element={<ListaVozContinua />} />
                     <Route path="/pedido-voz" element={<VoiceToCart />} />
+                    <Route path="/experta-ai" element={<ExpertaAI />} />
                     <Route path="/expenses" element={<Expenses />} />
                     <Route path="/meat-import" element={<MeatImport />} />
                   </Route>

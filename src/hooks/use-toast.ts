@@ -142,6 +142,9 @@ function toast({ ...props }: Toast) {
   // Use a more modern toast implementation with Sonner
   const { title, description, variant } = props;
   
+  // Extract duration from props or use default
+  const duration = 3000; // Default duration
+  
   switch (variant) {
     case "destructive":
       sonnerToast.error(title as string, {

@@ -244,8 +244,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       const priceDisplay = displayPrice ? ` (${displayPrice})` : '';
       toast({
         title: "Item adicionado",
-        description: `Item "${displayName}${priceDisplay}" adicionado à lista.`,
-        duration: 1500
+        description: `Item "${displayName}${priceDisplay}" adicionado à lista.`
       });
     } catch (error) {
       console.error("Erro ao processar item:", error);
@@ -253,8 +252,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       setProducts(prev => [...prev, text.trim()]);
       toast({
         title: "Item adicionado (texto bruto)",
-        description: `"${text.trim()}" adicionado à lista.`,
-        duration: 1500
+        description: `"${text.trim()}" adicionado à lista.`
       });
     }
   };

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { applyVoiceCorrections } from '@/utils/speechCorrectionUtils';
+import { applyVoiceCorrections, findPossibleCorrections } from '@/utils/speechCorrectionUtils';
 
 interface VoiceSearchButtonProps {
   onResult: (text: string) => void;
@@ -43,6 +43,10 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
       // Aplica correções de voz registradas pelo usuário
       const correctedTranscript = await applyVoiceCorrections(transcript, user?.id);
       console.log(`Transcrição corrigida: "${correctedTranscript}"`);
+      
+      // Busca possíveis correções alternativas
+      const alternativeCorrections = await findPossibleCorrections(transcript, user?.id);
+      console.log("Correções alternativas encontradas:", alternativeCorrections);
       
       // Verifica se é uma busca de múltiplos produtos
       const productListKeywords = ['buscar', 'busque', 'procurar', 'procure', 'encontrar', 'encontre', 'lista', 'liste'];
@@ -105,9 +109,23 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
         );
       }
       
-      console.log(`Produtos identificados na busca por voz:`, products);
-      
-      if (products.length > 1 && onMultiSearch) {
+      // Adiciona as correções alternativas à lista de produtos para busca múltipla
+      if (alternativeCorrections.length > 0 && onMultiSearch) {
+        // Adiciona o texto corrigido e as alternativas
+        const searchTerms = [correctedTranscript, ...alternativeCorrections]
+          .filter((term, index, self) => self.indexOf(term) === index) // Remove duplicados
+          .filter(term => term.trim() !== '');
+        
+        console.log(`Buscando com termos alternativos: ${searchTerms.join(', ')}`);
+        
+        // Chama o callback para busca múltipla com os termos de busca ampliados
+        onMultiSearch(searchTerms);
+        
+        toast({
+          title: "Busca por voz com alternativas",
+          description: `Principais termos: "${correctedTranscript}" e ${alternativeCorrections.length} alternativas`,
+        });
+      } else if (products.length > 1 && onMultiSearch) {
         // Chama o callback para busca múltipla
         onMultiSearch(products);
         

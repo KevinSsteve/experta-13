@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, ShoppingCart, Repeat, Check, History, X, HelpCircle, MessageSquareText } from "lucide-react";
@@ -8,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { Product } from "@/contexts/CartContext";
-import { parseVoiceOrder, findBestProductMatch, EnhancedVoiceItem, saveTrainingData } from "@/utils/voiceCartUtils";
+import { parseVoiceOrder, findBestProductMatch, EnhancedVoiceItem, saveTrainingData, findPossibleCorrections } from "@/utils/voiceCartUtils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +44,7 @@ export function VoiceToCartCreator() {
     deviceType: '',
     userAgent: ''
   });
+  const [alternativeTerms, setAlternativeTerms] = useState<string[]>([]);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -155,12 +155,16 @@ export function VoiceToCartCreator() {
   };
 
   // Processar o pedido por voz
-  const processVoiceOrder = (text: string) => {
+  const processVoiceOrder = async (text: string) => {
     if (!text || !products || products.length === 0) return;
     
     // Analisar o pedido
     const parsed = parseVoiceOrder(text);
     setParsedOrder(parsed);
+    
+    // Buscar possíveis correções alternativas
+    const alternativeCorrections = await findPossibleCorrections(text, user?.id);
+    setAlternativeTerms(alternativeCorrections);
     
     // Encontrar o melhor produto correspondente
     const match = findBestProductMatch(parsed, products);
@@ -179,7 +183,54 @@ export function VoiceToCartCreator() {
         contextData: {
           ...contextualData,
           confidence: match.confidence
+        },
+        alternativeTerms: alternativeCorrections
+      });
+    } else if (alternativeCorrections.length > 0) {
+      // Se não encontramos match direto mas temos alternativas de correção
+      // Tenta encontrar um produto usando as alternativas
+      console.log("Tentando encontrar produtos com termos alternativos:", alternativeCorrections);
+      
+      for (const altTerm of alternativeCorrections) {
+        const altParsed = parseVoiceOrder(altTerm);
+        const altMatch = findBestProductMatch(altParsed, products);
+        
+        if (altMatch && altMatch.product) {
+          // Encontramos um match usando um termo alternativo!
+          setMatchedProduct(altMatch.product);
+          setQuantity(parsed.quantity || altParsed.quantity || 1);
+          
+          toast({
+            title: "Produto encontrado via correção",
+            description: `Encontramos "${altMatch.product.name}" usando a correção "${altTerm}"`,
+            variant: "success"
+          });
+          
+          // Salvar dados de treinamento
+          saveTrainingData({
+            voiceInput: text,
+            parsedOrder: parsed,
+            selectedProduct: altMatch.product,
+            userCorrected: false,
+            timestamp: Date.now(),
+            contextData: {
+              ...contextualData,
+              confidence: altMatch.confidence,
+              correctionUsed: altTerm
+            },
+            alternativeTerms: alternativeCorrections
+          });
+          
+          return;
         }
+      }
+      
+      // Se chegamos aqui, nem as alternativas funcionaram
+      setMatchedProduct(null);
+      toast({
+        title: "Produto não encontrado",
+        description: "Não encontramos um produto mesmo usando correções alternativas.",
+        variant: "destructive"
       });
     } else {
       setMatchedProduct(null);

@@ -40,6 +40,7 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
     for (const correction of corrections) {
       // Correção exata (case-insensitive)
       if (correctedText.toLowerCase() === correction.original_text.toLowerCase()) {
+        console.log(`Correção exata aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         return correction.corrected_text;
       }
     }
@@ -48,7 +49,10 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
     for (const correction of corrections) {
       // Verifica se o texto contém a string original (case-insensitive)
       const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-      correctedText = correctedText.replace(regex, correction.corrected_text);
+      if (regex.test(correctedText)) {
+        console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+        correctedText = correctedText.replace(regex, correction.corrected_text);
+      }
     }
 
     return correctedText;
@@ -110,5 +114,56 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
   } catch (error) {
     console.error("Erro ao verificar necessidade de correções:", error);
     return false;
+  }
+}
+
+/**
+ * Função para buscar possíveis correções para um texto
+ * @param text Texto a ser verificado
+ * @param userId ID do usuário
+ * @returns Array com possíveis correções
+ */
+export async function findPossibleCorrections(text: string, userId?: string): Promise<string[]> {
+  if (!userId || !text) return [];
+  
+  try {
+    // Buscar todas as correções ativas do usuário
+    const { data: corrections, error } = await supabase
+      .from("speech_corrections")
+      .select("original_text, corrected_text")
+      .eq("user_id", userId)
+      .eq("active", true);
+      
+    if (error || !corrections || corrections.length === 0) {
+      return [];
+    }
+    
+    // Lista de possíveis correções
+    const possibleCorrections: string[] = [];
+    
+    // Verificar se o texto está próximo de alguma correção conhecida
+    // Primeiro verificamos correções exatas
+    for (const correction of corrections) {
+      // Verifica a similaridade do texto com as correções originais
+      // Usando uma abordagem simples de comparação case-insensitive primeiro
+      if (text.toLowerCase() === correction.original_text.toLowerCase() ||
+          text.toLowerCase().includes(correction.original_text.toLowerCase()) ||
+          correction.original_text.toLowerCase().includes(text.toLowerCase())) {
+        
+        // Adiciona o texto corrigido como possível alternativa
+        if (!possibleCorrections.includes(correction.corrected_text)) {
+          possibleCorrections.push(correction.corrected_text);
+        }
+      }
+    }
+    
+    // Se não encontrou nenhuma correção com essa abordagem simples
+    // Podemos usar técnicas mais avançadas como algoritmos de distância de edição
+    // ou outras heurísticas de similaridade fonética
+    
+    return possibleCorrections;
+  } catch (error) {
+    console.error("Erro ao buscar possíveis correções:", error);
+    return [];
   }
 }

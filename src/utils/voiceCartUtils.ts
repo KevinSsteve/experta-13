@@ -1,6 +1,6 @@
-
 import { ParsedVoiceItem } from './voiceUtils';
 import { Product } from '@/contexts/CartContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface EnhancedVoiceItem extends ParsedVoiceItem {
   quantity: number;
@@ -235,4 +235,102 @@ export function getTrainingData(): VoiceOrderTrainingData[] {
   }
   
   return [];
+}
+
+/**
+ * Buscar possíveis correções para um texto reconhecido por voz
+ * Esta função consulta as correções de voz cadastradas pelo usuário
+ * e retorna termos alternativos que poderiam ser usados para busca
+ */
+export async function findPossibleCorrections(text: string, userId?: string): Promise<string[]> {
+  if (!userId || !text) {
+    return [];
+  }
+  
+  try {
+    // Normalizar o texto de entrada para comparação
+    const normalizedInput = normalizeText(text);
+    
+    // Buscar correções de fala do usuário
+    const { data: corrections, error } = await supabase
+      .from("speech_corrections")
+      .select("original_text, corrected_text")
+      .eq("user_id", userId)
+      .eq("active", true);
+      
+    if (error || !corrections) {
+      console.error("Erro ao buscar correções de voz:", error);
+      return [];
+    }
+    
+    // Array para armazenar possíveis correções
+    const possibleCorrections: string[] = [];
+    
+    // Verificar se alguma das correções cadastradas se aplica ao texto
+    for (const correction of corrections) {
+      const originalNormalized = normalizeText(correction.original_text);
+      
+      // Verificar correção exata
+      if (normalizedInput === originalNormalized) {
+        possibleCorrections.push(correction.corrected_text);
+      }
+      // Verificar se contém a palavra ou frase original
+      else if (normalizedInput.includes(originalNormalized)) {
+        const correctedText = text.replace(
+          new RegExp(correction.original_text, 'gi'),
+          correction.corrected_text
+        );
+        possibleCorrections.push(correctedText);
+      }
+      // Verificar se há similaridade significativa (palavras compartilhadas)
+      else {
+        const inputWords = normalizedInput.split(' ');
+        const originalWords = originalNormalized.split(' ');
+        
+        // Verificar se há pelo menos 40% de palavras compartilhadas
+        const commonWords = originalWords.filter(word => inputWords.includes(word));
+        if (commonWords.length > 0 && commonWords.length / originalWords.length >= 0.4) {
+          possibleCorrections.push(correction.corrected_text);
+        }
+      }
+    }
+    
+    // Adicionar correções de erros comuns de reconhecimento do Google Speech
+    const commonCorrections = applyCommonCorrections(text);
+    if (commonCorrections !== text) {
+      possibleCorrections.push(commonCorrections);
+    }
+    
+    // Retornar array com as correções possíveis, removendo duplicatas
+    return [...new Set(possibleCorrections)];
+  } catch (error) {
+    console.error("Erro ao buscar correções possíveis:", error);
+    return [];
+  }
+}
+
+/**
+ * Aplica correções automáticas para erros comuns de reconhecimento de voz
+ */
+function applyCommonCorrections(text: string): string {
+  // Lista de correções comuns para o idioma português
+  const commonMistakes: {[key: string]: string} = {
+    'tibana': 'tibone',
+    'tea bone': 'tibone',
+    'te bone': 'tibone',
+    'ti bone': 'tibone',
+    'tivone': 'tibone',
+    'tibo': 'tibone',
+    'tim bom': 'tibone',
+    'tin bon': 'tibone'
+  };
+  
+  let correctedText = text.toLowerCase();
+  
+  // Aplicar as correções comuns
+  Object.entries(commonMistakes).forEach(([mistake, correction]) => {
+    correctedText = correctedText.replace(new RegExp(`\\b${mistake}\\b`, 'gi'), correction);
+  });
+  
+  return correctedText;
 }

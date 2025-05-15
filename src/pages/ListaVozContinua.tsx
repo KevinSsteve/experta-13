@@ -4,11 +4,13 @@ import { VozContinuaCreator } from "@/components/voice-orders/VozContinuaCreator
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Mic } from "lucide-react";
+import { AlertCircle, Mic, LogIn } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { VoiceOrdersList } from "@/components/voice-orders/VoiceOrdersList";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 // Define the OrderList interface directly in this file
 export interface OrderList {
@@ -24,12 +26,17 @@ export default function ListaVozContinua() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user || authLoading) {
+    if (authLoading) return;
+    
+    if (!user) {
+      setLoading(false);
       setLists([]);
       return;
     }
+    
     setLoading(true);
     supabase
       .from("voice_order_lists")
@@ -57,8 +64,7 @@ export default function ListaVozContinua() {
         }
         setLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
+  }, [user, authLoading, toast]);
 
   const addList = async (products: string[]) => {
     if (!user) {
@@ -79,10 +85,6 @@ export default function ListaVozContinua() {
       });
       return;
     }
-    
-    // Adicionar logs para depuração
-    console.log("Tentando salvar lista:", products);
-    console.log("User ID:", user.id);
     
     try {
       const processedProducts = products.map(product => {
@@ -304,29 +306,54 @@ export default function ListaVozContinua() {
           </div>
         </div>
         
-        <Alert className="bg-muted/50 border-muted">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Função de Lista por Voz</AlertTitle>
-          <AlertDescription>
-            Agora você pode ditar múltiplos itens para sua lista com gravação contínua. 
-            Fale cada item e faça uma pausa de 3 segundos entre eles. 
-            A gravação só será interrompida quando você pressionar o botão novamente.
-          </AlertDescription>
-        </Alert>
+        {!user && !authLoading && (
+          <Alert className="bg-yellow-50 border-yellow-200">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertTitle className="text-yellow-700">Necessário fazer login</AlertTitle>
+            <AlertDescription className="text-yellow-600">
+              Você precisa estar logado para criar e gerenciar suas listas de voz.
+              <div className="mt-2">
+                <Button
+                  onClick={() => navigate("/auth")}
+                  variant="outline"
+                  size="sm"
+                  className="bg-white border-yellow-300"
+                >
+                  <LogIn className="h-4 w-4 mr-1" />
+                  Fazer login
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
         
-        <VozContinuaCreator onListCreated={addList} />
-        
-        {loading ? (
-          <div className="text-center text-muted-foreground">Carregando listas...</div>
-        ) : (
-          <VoiceOrdersList
-            lists={lists}
-            onRemove={removeList}
-            onClear={clearLists}
-            onToCheckout={setToCheckout}
-            onEditItem={editProductInList}
-            onRemoveItem={removeItemFromList}
-          />
+        {user && (
+          <>
+            <Alert className="bg-muted/50 border-muted">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Função de Lista por Voz</AlertTitle>
+              <AlertDescription>
+                Agora você pode ditar múltiplos itens para sua lista com gravação contínua. 
+                Fale cada item e faça uma pausa de 3 segundos entre eles. 
+                A gravação só será interrompida quando você pressionar o botão novamente.
+              </AlertDescription>
+            </Alert>
+            
+            <VozContinuaCreator onListCreated={addList} />
+            
+            {loading ? (
+              <div className="text-center text-muted-foreground">Carregando listas...</div>
+            ) : (
+              <VoiceOrdersList
+                lists={lists}
+                onRemove={removeList}
+                onClear={clearLists}
+                onToCheckout={setToCheckout}
+                onEditItem={editProductInList}
+                onRemoveItem={removeItemFromList}
+              />
+            )}
+          </>
         )}
       </div>
     </MainLayout>

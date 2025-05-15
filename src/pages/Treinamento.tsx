@@ -131,6 +131,7 @@ export default function Treinamento() {
     }
     
     try {
+      // 1. Salvar na tabela speech_corrections
       const { data, error } = await supabase
         .from("speech_corrections")
         .insert([{
@@ -148,10 +149,35 @@ export default function Treinamento() {
           description: "Não foi possível salvar a correção: " + error.message,
           variant: "destructive"
         });
-      } else if (data) {
+        return;
+      }
+      
+      // 2. Se foi bem sucedido, adicione à lista local
+      if (data) {
         setCorrections((prev) => [data[0] as CorrectionPair, ...prev]);
         
-        // Armazenar dados de treinamento para melhorar o algoritmo
+        // 3. Também salvar na tabela de backup voice_training_backups
+        try {
+          // Criar uma versão compatível com o formato de backup
+          await supabase.from('voice_training_backups').insert({
+            user_id: user.id,
+            voice_input: voiceText,
+            correct_product_name: correctedText, // Usamos o campo pois é o mais próximo
+            was_helpful: true,
+            feedback: JSON.stringify({
+              correction_type: "speech",
+              original: voiceText,
+              corrected: correctedText
+            }),
+            alternative_terms: [correctedText],
+            created_at: new Date().toISOString()
+          });
+        } catch (backupError) {
+          console.error("Erro ao criar backup da correção:", backupError);
+          // Não interromper o fluxo se o backup falhar
+        }
+        
+        // 4. Armazenar dados de treinamento para melhorar o algoritmo (localStorage)
         const trainingData: VoiceOrderTrainingData = {
           voiceInput: voiceText,
           parsedOrder: {
@@ -194,7 +220,7 @@ export default function Treinamento() {
         
         toast({
           title: "Correção salva",
-          description: "Sua correção foi salva com sucesso.",
+          description: "Sua correção foi salva com sucesso com backup no servidor.",
         });
       }
     } catch (err) {
@@ -229,7 +255,7 @@ export default function Treinamento() {
       
       toast({
         title: "Correção removida",
-        description: "A correção foi removida com sucesso.",
+        description: "A correção foi removida da sua lista, mas o backup continua.",
       });
     } catch (err) {
       console.error("Exceção ao remover correção:", err);
@@ -257,6 +283,11 @@ export default function Treinamento() {
           <AlertDescription>
             Nesta área, você pode ajudar a melhorar o reconhecimento de voz para produtos angolanos e termos específicos.
             Fale algo, verifique como foi reconhecido e corrija se necessário. Suas correções serão usadas para melhorar o sistema.
+            {!user && (
+              <p className="mt-2 text-sm font-medium text-primary">
+                Faça login para que suas correções sejam salvas permanentemente no servidor.
+              </p>
+            )}
           </AlertDescription>
         </Alert>
         

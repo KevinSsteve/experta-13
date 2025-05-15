@@ -196,9 +196,10 @@ export interface VoiceOrderTrainingData {
   feedbackRating?: number;
 }
 
-// Função para salvar dados de treinamento
-export function saveTrainingData(data: VoiceOrderTrainingData): void {
+// Função para salvar dados de treinamento tanto localmente quanto no Supabase
+export async function saveTrainingData(data: VoiceOrderTrainingData): Promise<void> {
   try {
+    // 1. Salvar no localStorage como antes
     const storedData = localStorage.getItem('voiceOrderTraining');
     let trainingData: VoiceOrderTrainingData[] = [];
     
@@ -218,6 +219,30 @@ export function saveTrainingData(data: VoiceOrderTrainingData): void {
     
     trainingData.push(data);
     localStorage.setItem('voiceOrderTraining', JSON.stringify(trainingData));
+    
+    // 2. Salvar também no Supabase se o usuário estiver autenticado
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData && userData.user) {
+      const userId = userData.user.id;
+      
+      // Preparar os dados para o formato da tabela
+      const voiceInput = data.voiceInput || data.parsedOrder.originalText;
+      const selectedProduct = data.selectedProduct;
+      const correctProduct = data.correctProduct;
+      
+      await supabase.from('voice_training_backups').insert({
+        user_id: userId,
+        voice_input: voiceInput,
+        suggested_product_id: selectedProduct?.id,
+        suggested_product_name: selectedProduct?.name,
+        correct_product_id: correctProduct?.id,
+        correct_product_name: correctProduct?.name,
+        was_helpful: data.feedbackRating ? data.feedbackRating > 0 : null,
+        feedback: JSON.stringify(data),
+        alternative_terms: data.alternativeTerms || [],
+        created_at: new Date().toISOString()
+      });
+    }
   } catch (error) {
     console.error('Erro ao salvar dados de treinamento:', error);
   }

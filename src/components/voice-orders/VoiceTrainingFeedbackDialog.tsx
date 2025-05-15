@@ -23,6 +23,8 @@ import { Product } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { VoiceOrderTrainingData } from "@/utils/voiceCartUtils";
 
 interface VoiceTrainingFeedbackDialogProps {
   open: boolean;
@@ -52,15 +54,6 @@ export function VoiceTrainingFeedbackDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user?.id) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para enviar feedback.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setIsSubmitting(true);
     
     try {
@@ -75,9 +68,9 @@ export function VoiceTrainingFeedbackDialog({
         .map(term => term.trim())
         .filter(term => term.length > 0);
 
-      // Dados para salvar
-      const trainingData = {
-        user_id: user.id,
+      // Dados para salvar no Supabase
+      const trainingDataForSupabase = {
+        user_id: user?.id,
         voice_input: voiceInput,
         suggested_product_id: suggestedProduct?.id,
         suggested_product_name: suggestedProduct?.name,
@@ -89,13 +82,45 @@ export function VoiceTrainingFeedbackDialog({
         created_at: new Date().toISOString()
       };
       
-      // Salvar no localStorage em vez de tentar salvar em uma tabela inexistente no Supabase
-      saveToLocalStorage(trainingData);
+      // Dados completos para o localStorage e formato compatível com a função existente
+      const trainingDataComplete: VoiceOrderTrainingData = {
+        voiceInput: voiceInput,
+        parsedOrder: {
+          name: correctProduct?.name || suggestedProduct?.name || voiceInput,
+          quantity: 1,
+          confidence: wasHelpful ? 0.9 : 0.4,
+          originalText: voiceInput
+        },
+        selectedProduct: suggestedProduct,
+        userCorrected: !!correctProductId && correctProductId !== suggestedProduct?.id,
+        correctProduct: correctProduct || undefined,
+        timestamp: Date.now(),
+        alternativeTerms: terms,
+        deviceInfo: navigator.userAgent,
+        feedbackRating: wasHelpful ? 1 : -1
+      };
       
-      toast({
-        title: "Feedback enviado",
-        description: "Obrigado pelo seu feedback! Isso nos ajuda a melhorar.",
-      });
+      // Salvar no localStorage e também tentar salvar no Supabase
+      if (user?.id) {
+        // Salvar diretamente no Supabase
+        await supabase.from('voice_training_backups').insert({
+          ...trainingDataForSupabase,
+          feedback: JSON.stringify({ feedback, timestamp: Date.now() })
+        });
+        
+        toast({
+          title: "Feedback enviado",
+          description: "Obrigado pelo seu feedback! Isso nos ajuda a melhorar.",
+        });
+      } else {
+        // Salvar apenas no localStorage
+        saveToLocalStorage(trainingDataComplete);
+        
+        toast({
+          title: "Feedback enviado",
+          description: "Obrigado pelo seu feedback! Para backup permanente, faça login.",
+        });
+      }
       
       onOpenChange(false);
     } catch (error) {

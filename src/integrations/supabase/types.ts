@@ -501,6 +501,54 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_training_backups: {
+        Row: {
+          alternative_terms: string[] | null
+          backed_up_at: string
+          correct_product_id: string | null
+          correct_product_name: string | null
+          created_at: string
+          feedback: string | null
+          id: string
+          original_id: string | null
+          suggested_product_id: string | null
+          suggested_product_name: string | null
+          user_id: string
+          voice_input: string
+          was_helpful: boolean | null
+        }
+        Insert: {
+          alternative_terms?: string[] | null
+          backed_up_at?: string
+          correct_product_id?: string | null
+          correct_product_name?: string | null
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          original_id?: string | null
+          suggested_product_id?: string | null
+          suggested_product_name?: string | null
+          user_id: string
+          voice_input: string
+          was_helpful?: boolean | null
+        }
+        Update: {
+          alternative_terms?: string[] | null
+          backed_up_at?: string
+          correct_product_id?: string | null
+          correct_product_name?: string | null
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          original_id?: string | null
+          suggested_product_id?: string | null
+          suggested_product_name?: string | null
+          user_id?: string
+          voice_input?: string
+          was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

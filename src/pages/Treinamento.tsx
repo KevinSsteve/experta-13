@@ -1,4 +1,3 @@
-
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -172,6 +171,8 @@ export default function Treinamento() {
             alternative_terms: [correctedText],
             created_at: new Date().toISOString()
           });
+          
+          console.log('Correção salva com sucesso no banco de dados de backup');
         } catch (backupError) {
           console.error("Erro ao criar backup da correção:", backupError);
           // Não interromper o fluxo se o backup falhar

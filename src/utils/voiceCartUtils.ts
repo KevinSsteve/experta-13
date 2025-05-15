@@ -242,6 +242,10 @@ export async function saveTrainingData(data: VoiceOrderTrainingData): Promise<vo
         alternative_terms: data.alternativeTerms || [],
         created_at: new Date().toISOString()
       });
+
+      console.log('Dados de treinamento salvos no Supabase e no localStorage');
+    } else {
+      console.log('Usuário não autenticado. Dados salvos apenas no localStorage.');
     }
   } catch (error) {
     console.error('Erro ao salvar dados de treinamento:', error);

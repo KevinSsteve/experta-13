@@ -101,16 +101,45 @@ export function VoiceTrainingFeedbackDialog({
       
       // Salvar no localStorage e também tentar salvar no Supabase
       if (user?.id) {
-        // Salvar diretamente no Supabase
-        await supabase.from('voice_training_backups').insert({
-          ...trainingDataForSupabase,
-          feedback: JSON.stringify({ feedback, timestamp: Date.now() })
-        });
-        
-        toast({
-          title: "Feedback enviado",
-          description: "Obrigado pelo seu feedback! Isso nos ajuda a melhorar.",
-        });
+        try {
+          // Salvar diretamente no Supabase
+          await supabase.from('voice_training_backups').insert({
+            ...trainingDataForSupabase,
+            feedback: JSON.stringify({ feedback, timestamp: Date.now() })
+          });
+          
+          console.log("Feedback de voz salvo com sucesso no Supabase");
+          
+          // Se o usuário indicou que a sugestão não foi útil, adicionar como correção
+          if (wasHelpful === false && correctProduct && correctProduct.name !== suggestedProduct?.name) {
+            try {
+              await supabase.from('speech_corrections').insert({
+                original_text: voiceInput,
+                corrected_text: correctProduct.name,
+                user_id: user.id,
+                active: true
+              });
+              
+              console.log("Correção de voz adicionada automaticamente:", voiceInput, "->", correctProduct.name);
+            } catch (correctionError) {
+              console.error("Erro ao adicionar correção automática:", correctionError);
+            }
+          }
+          
+          toast({
+            title: "Feedback enviado",
+            description: "Obrigado pelo seu feedback! Isso nos ajuda a melhorar.",
+          });
+        } catch (supabaseError) {
+          console.error("Erro ao salvar no Supabase:", supabaseError);
+          // Fallback para localStorage
+          saveToLocalStorage(trainingDataComplete);
+          
+          toast({
+            title: "Feedback enviado (local)",
+            description: "Feedback salvo localmente. Houve um erro no backup online.",
+          });
+        }
       } else {
         // Salvar apenas no localStorage
         saveToLocalStorage(trainingDataComplete);

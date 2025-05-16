@@ -24,18 +24,22 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
   if (!text || text.trim() === '') return text;
 
   try {
-    // Busca as correções ativas do usuário
+    // Busca as correções ativas do usuário com ordenação por data (mais recentes primeiro)
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
       .select("original_text, corrected_text")
       .eq("user_id", userId)
-      .eq("active", true);
+      .eq("active", true)
+      .order("created_at", { ascending: false });
 
     if (error || !corrections || corrections.length === 0) {
+      console.log("Nenhuma correção encontrada ou erro:", error);
       return text;
     }
 
-    // Aplicar correções exatas primeiro
+    console.log(`Encontradas ${corrections.length} possíveis correções para aplicar`);
+    
+    // Aplicar correções exatas primeiro (case-insensitive)
     let correctedText = text;
     for (const correction of corrections) {
       // Correção exata (case-insensitive)
@@ -55,6 +59,7 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       }
     }
 
+    console.log(`Texto original: "${text}". Texto corrigido: "${correctedText}"`);
     return correctedText;
   } catch (error) {
     console.error("Erro ao aplicar correções de voz:", error);

@@ -24,6 +24,8 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
   if (!text || text.trim() === '') return text;
 
   try {
+    console.log(`Aplicando correções para texto: "${text}"`);
+
     // Busca as correções ativas do usuário com ordenação por data (mais recentes primeiro)
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
@@ -37,25 +39,34 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       return text;
     }
 
-    console.log(`Encontradas ${corrections.length} possíveis correções para aplicar`);
+    console.log(`Encontradas ${corrections.length} correções para aplicar:`, corrections);
+    
+    // Normalizar o texto para comparação case-insensitive
+    const normalizedText = text.toLowerCase().trim();
     
     // Aplicar correções exatas primeiro (case-insensitive)
-    let correctedText = text;
     for (const correction of corrections) {
+      const normalizedOriginal = correction.original_text.toLowerCase().trim();
+      
       // Correção exata (case-insensitive)
-      if (correctedText.toLowerCase() === correction.original_text.toLowerCase()) {
+      if (normalizedText === normalizedOriginal) {
         console.log(`Correção exata aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         return correction.corrected_text;
       }
     }
 
     // Se não encontrou correção exata, tenta correções parciais
+    let correctedText = text;
     for (const correction of corrections) {
-      // Verifica se o texto contém a string original (case-insensitive)
-      const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-      if (regex.test(correctedText)) {
+      // Criamos uma regex que seja case-insensitive
+      const normalizedOriginal = correction.original_text.toLowerCase().trim();
+      const escapedOriginal = normalizedOriginal.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp(`\\b${escapedOriginal}\\b`, 'gi');
+      
+      // Verifica se o texto contém a palavra/frase original como palavra completa
+      if (regex.test(correctedText.toLowerCase())) {
         console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
-        correctedText = correctedText.replace(regex, correction.corrected_text);
+        correctedText = correctedText.replace(new RegExp(correction.original_text, 'gi'), correction.corrected_text);
       }
     }
 
@@ -143,29 +154,32 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
       return [];
     }
     
+    console.log(`Buscando correções possíveis para: "${text}" entre ${corrections.length} correções disponíveis`);
+    
     // Lista de possíveis correções
     const possibleCorrections: string[] = [];
     
+    // Normalizar o texto para comparação
+    const normalizedText = text.toLowerCase().trim();
+    
     // Verificar se o texto está próximo de alguma correção conhecida
-    // Primeiro verificamos correções exatas
     for (const correction of corrections) {
-      // Verifica a similaridade do texto com as correções originais
-      // Usando uma abordagem simples de comparação case-insensitive primeiro
-      if (text.toLowerCase() === correction.original_text.toLowerCase() ||
-          text.toLowerCase().includes(correction.original_text.toLowerCase()) ||
-          correction.original_text.toLowerCase().includes(text.toLowerCase())) {
-        
-        // Adiciona o texto corrigido como possível alternativa
+      const normalizedOriginal = correction.original_text.toLowerCase().trim();
+      
+      // Correspondência exata ou contém a palavra/frase
+      if (
+        normalizedText === normalizedOriginal ||
+        normalizedText.includes(normalizedOriginal) ||
+        normalizedOriginal.includes(normalizedText)
+      ) {
+        console.log(`Correção possível encontrada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         if (!possibleCorrections.includes(correction.corrected_text)) {
           possibleCorrections.push(correction.corrected_text);
         }
       }
     }
     
-    // Se não encontrou nenhuma correção com essa abordagem simples
-    // Podemos usar técnicas mais avançadas como algoritmos de distância de edição
-    // ou outras heurísticas de similaridade fonética
-    
+    console.log(`Encontradas ${possibleCorrections.length} correções possíveis para "${text}":`, possibleCorrections);
     return possibleCorrections;
   } catch (error) {
     console.error("Erro ao buscar possíveis correções:", error);

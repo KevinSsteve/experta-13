@@ -158,13 +158,17 @@ export function VoiceToCartCreator() {
   const processVoiceOrder = async (text: string) => {
     if (!text || !products || products.length === 0) return;
     
+    console.log(`Processando pedido por voz: "${text}"`);
+    
     // Analisar o pedido
     const parsed = parseVoiceOrder(text);
     setParsedOrder(parsed);
     
     // Buscar possíveis correções alternativas
+    console.log("Buscando correções alternativas para:", text);
     const alternativeCorrections = await findPossibleCorrections(text, user?.id);
     setAlternativeTerms(alternativeCorrections);
+    console.log("Correções alternativas encontradas:", alternativeCorrections);
     
     // Encontrar o melhor produto correspondente
     const match = findBestProductMatch(parsed, products);
@@ -203,7 +207,6 @@ export function VoiceToCartCreator() {
           toast({
             title: "Produto encontrado via correção",
             description: `Encontramos "${altMatch.product.name}" usando a correção "${altTerm}"`,
-            variant: "success"
           });
           
           // Salvar dados de treinamento

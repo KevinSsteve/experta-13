@@ -26,6 +26,9 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
   try {
     console.log(`Aplicando correções para texto: "${text}"`);
 
+    // Limpa qualquer cache local para garantir que estamos buscando as correções mais recentes
+    localStorage.removeItem('speech_corrections_cache');
+
     // Busca as correções ativas do usuário com ordenação por data (mais recentes primeiro)
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
@@ -34,8 +37,13 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       .eq("active", true)
       .order("created_at", { ascending: false });
 
-    if (error || !corrections || corrections.length === 0) {
-      console.log("Nenhuma correção encontrada ou erro:", error);
+    if (error) {
+      console.error("Erro ao buscar correções:", error);
+      return text;
+    }
+
+    if (!corrections || corrections.length === 0) {
+      console.log("Nenhuma correção encontrada");
       return text;
     }
 
@@ -57,8 +65,10 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
 
     // Se não encontrou correção exata, tenta correções parciais
     let correctedText = text;
+    let appliedCorrection = false;
+    
     for (const correction of corrections) {
-      // Criamos uma regex que seja case-insensitive
+      // Criamos uma regex que seja case-insensitive para palavra completa
       const normalizedOriginal = correction.original_text.toLowerCase().trim();
       const escapedOriginal = normalizedOriginal.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
       const regex = new RegExp(`\\b${escapedOriginal}\\b`, 'gi');
@@ -66,12 +76,13 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       // Verifica se o texto contém a palavra/frase original como palavra completa
       if (regex.test(correctedText.toLowerCase())) {
         console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
-        correctedText = correctedText.replace(new RegExp(correction.original_text, 'gi'), correction.corrected_text);
+        correctedText = correctedText.replace(new RegExp(`\\b${escapedOriginal}\\b`, 'gi'), correction.corrected_text);
+        appliedCorrection = true;
       }
     }
 
-    console.log(`Texto original: "${text}". Texto corrigido: "${correctedText}"`);
-    return correctedText;
+    console.log(`Texto original: "${text}". Texto corrigido: "${appliedCorrection ? correctedText : text}"`);
+    return appliedCorrection ? correctedText : text;
   } catch (error) {
     console.error("Erro ao aplicar correções de voz:", error);
     return text;
@@ -108,6 +119,9 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
   if (!userId || !text) return false;
   
   try {
+    // Limpa qualquer cache local para garantir que estamos buscando as correções mais recentes
+    localStorage.removeItem('speech_corrections_cache');
+    
     // Busca palavras problemáticas conhecidas no texto
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
@@ -119,9 +133,16 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
       return false;
     }
 
+    // Normaliza o texto para comparação
+    const normalizedText = text.toLowerCase().trim();
+    
     // Verifica se alguma das palavras problemáticas está no texto
     for (const correction of corrections) {
-      if (text.toLowerCase().includes(correction.original_text.toLowerCase())) {
+      const normalizedOriginal = correction.original_text.toLowerCase().trim();
+      const escapedOriginal = normalizedOriginal.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp(`\\b${escapedOriginal}\\b`, 'gi');
+      
+      if (regex.test(normalizedText)) {
         return true;
       }
     }
@@ -143,6 +164,9 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
   if (!userId || !text) return [];
   
   try {
+    // Limpa qualquer cache local para garantir que estamos buscando as correções mais recentes
+    localStorage.removeItem('speech_corrections_cache');
+    
     // Buscar todas as correções ativas do usuário
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
@@ -185,4 +209,12 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
     console.error("Erro ao buscar possíveis correções:", error);
     return [];
   }
+}
+
+/**
+ * Limpa o cache de correções para forçar uma nova busca no banco de dados
+ */
+export function clearCorrectionsCache(): void {
+  localStorage.removeItem('speech_corrections_cache');
+  console.log("Cache de correções limpo");
 }

@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { Product } from "@/contexts/CartContext";
-import { parseVoiceOrder, findBestProductMatch, EnhancedVoiceItem, saveTrainingData, findPossibleCorrections } from "@/utils/voiceCartUtils";
+import { parseVoiceOrder, findBestProductMatch, EnhancedVoiceItem, saveTrainingData, findPossibleCorrections, clearCorrectionsCache } from "@/utils/voiceCartUtils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -159,6 +159,9 @@ export function VoiceToCartCreator() {
     if (!text || !products || products.length === 0) return;
     
     console.log(`Processando pedido por voz: "${text}"`);
+    
+    // Limpa o cache de correções antes de processar
+    clearCorrectionsCache();
     
     // Analisar o pedido
     const parsed = parseVoiceOrder(text);

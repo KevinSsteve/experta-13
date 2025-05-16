@@ -13,8 +13,7 @@ import {
   Headphones,
   Coins,
   Sparkles,
-  Mic,
-  Dumbbell
+  Mic
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -72,11 +71,6 @@ const SidebarNav = () => {
       title: "Pedido por Voz",
       href: "/pedido-voz",
       icon: Mic,
-    },
-    {
-      title: "Treinamento de Voz",
-      href: "/treinamento",
-      icon: Dumbbell,
     },
     {
       title: "Despesas",

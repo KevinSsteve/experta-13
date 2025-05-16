@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { applyVoiceCorrections, findPossibleCorrections, clearCorrectionsCache } from '@/utils/speechCorrectionUtils';
+import { applyVoiceCorrections, findPossibleCorrections } from '@/utils/speechCorrectionUtils';
 
 interface VoiceSearchButtonProps {
   onResult: (text: string) => void;
@@ -38,9 +39,6 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
     recognition.onresult = async (event) => {
       const transcript = event.results[0][0].transcript;
       console.log(`Transcrição de voz recebida: "${transcript}"`);
-      
-      // Limpa o cache de correções antes de processar
-      clearCorrectionsCache();
       
       // Aplica correções de voz registradas pelo usuário
       const correctedTranscript = await applyVoiceCorrections(transcript, user?.id);

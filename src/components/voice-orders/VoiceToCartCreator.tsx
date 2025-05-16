@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, ShoppingCart, Repeat, Check, History, X, HelpCircle, MessageSquareText } from "lucide-react";
@@ -9,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { Product } from "@/contexts/CartContext";
 import { parseVoiceOrder, findBestProductMatch, EnhancedVoiceItem, saveTrainingData, findPossibleCorrections } from "@/utils/voiceCartUtils";
-import { clearCorrectionsCache } from "@/utils/speechCorrectionUtils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -160,20 +158,13 @@ export function VoiceToCartCreator() {
   const processVoiceOrder = async (text: string) => {
     if (!text || !products || products.length === 0) return;
     
-    console.log(`Processando pedido por voz: "${text}"`);
-    
-    // Limpa o cache de correções antes de processar
-    clearCorrectionsCache();
-    
     // Analisar o pedido
     const parsed = parseVoiceOrder(text);
     setParsedOrder(parsed);
     
     // Buscar possíveis correções alternativas
-    console.log("Buscando correções alternativas para:", text);
     const alternativeCorrections = await findPossibleCorrections(text, user?.id);
     setAlternativeTerms(alternativeCorrections);
-    console.log("Correções alternativas encontradas:", alternativeCorrections);
     
     // Encontrar o melhor produto correspondente
     const match = findBestProductMatch(parsed, products);
@@ -212,6 +203,7 @@ export function VoiceToCartCreator() {
           toast({
             title: "Produto encontrado via correção",
             description: `Encontramos "${altMatch.product.name}" usando a correção "${altTerm}"`,
+            variant: "success"
           });
           
           // Salvar dados de treinamento

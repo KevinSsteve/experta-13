@@ -1,21 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Product } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-// Import the clearCorrectionsCache function
-import { clearCorrectionsCache } from '@/utils/speechCorrectionUtils';
+import { VoiceOrderTrainingData } from "@/utils/voiceCartUtils";
 
 interface VoiceTrainingFeedbackDialogProps {
   open: boolean;
@@ -25,106 +33,239 @@ interface VoiceTrainingFeedbackDialogProps {
   products: Product[];
 }
 
-export const VoiceTrainingFeedbackDialog: React.FC<VoiceTrainingFeedbackDialogProps> = ({
+export function VoiceTrainingFeedbackDialog({
   open,
   onOpenChange,
   voiceInput,
   suggestedProduct,
   products,
-}) => {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(suggestedProduct || null);
-  const [isSaving, setIsSaving] = useState(false);
+}: VoiceTrainingFeedbackDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [alternativeTerms, setAlternativeTerms] = useState("");
+  const [correctProductId, setCorrectProductId] = useState<string | undefined>(
+    suggestedProduct?.id
+  );
+  const [wasHelpful, setWasHelpful] = useState<boolean | null>(null);
+  const { toast } = useToast();
   const { user } = useAuth();
-  
-  useEffect(() => {
-    setSelectedProduct(suggestedProduct || null);
-  }, [suggestedProduct]);
 
-  const handleSaveCorrection = async () => {
-    if (!selectedProduct || !voiceInput || !user?.id) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    setIsSaving(true);
+    setIsSubmitting(true);
     
     try {
-      // Salvar a correção na tabela speech_corrections
-      const { error } = await supabase
-        .from('speech_corrections')
-        .insert({
-          original_text: voiceInput.toLowerCase().trim(),
-          corrected_text: selectedProduct.name.toLowerCase().trim(),
-          user_id: user.id,
-          active: true
+      // Encontrar o produto correto baseado no ID selecionado
+      const correctProduct = correctProductId 
+        ? products.find(p => p.id === correctProductId)
+        : null;
+
+      // Preparar os termos alternativos como um array
+      const terms = alternativeTerms
+        .split(",")
+        .map(term => term.trim())
+        .filter(term => term.length > 0);
+
+      // Dados para salvar no Supabase
+      const trainingDataForSupabase = {
+        user_id: user?.id,
+        voice_input: voiceInput,
+        suggested_product_id: suggestedProduct?.id,
+        suggested_product_name: suggestedProduct?.name,
+        correct_product_id: correctProductId || null,
+        correct_product_name: correctProduct?.name || null,
+        was_helpful: wasHelpful,
+        feedback,
+        alternative_terms: terms,
+        created_at: new Date().toISOString()
+      };
+      
+      // Dados completos para o localStorage e formato compatível com a função existente
+      const trainingDataComplete: VoiceOrderTrainingData = {
+        voiceInput: voiceInput,
+        parsedOrder: {
+          name: correctProduct?.name || suggestedProduct?.name || voiceInput,
+          quantity: 1,
+          confidence: wasHelpful ? 0.9 : 0.4,
+          originalText: voiceInput
+        },
+        selectedProduct: suggestedProduct,
+        userCorrected: !!correctProductId && correctProductId !== suggestedProduct?.id,
+        correctProduct: correctProduct || undefined,
+        timestamp: Date.now(),
+        alternativeTerms: terms,
+        deviceInfo: navigator.userAgent,
+        feedbackRating: wasHelpful ? 1 : -1
+      };
+      
+      // Salvar no localStorage e também tentar salvar no Supabase
+      if (user?.id) {
+        // Salvar diretamente no Supabase
+        await supabase.from('voice_training_backups').insert({
+          ...trainingDataForSupabase,
+          feedback: JSON.stringify({ feedback, timestamp: Date.now() })
         });
+        
+        toast({
+          title: "Feedback enviado",
+          description: "Obrigado pelo seu feedback! Isso nos ajuda a melhorar.",
+        });
+      } else {
+        // Salvar apenas no localStorage
+        saveToLocalStorage(trainingDataComplete);
+        
+        toast({
+          title: "Feedback enviado",
+          description: "Obrigado pelo seu feedback! Para backup permanente, faça login.",
+        });
+      }
       
-      if (error) throw error;
-      
-      // Limpa o cache de correções após salvar uma nova
-      clearCorrectionsCache();
-      
-      console.log("Correção salva com sucesso");
-      
-      // Exibir mensagem de sucesso
-      alert("Obrigado! A correção foi salva e será aplicada em seus próximos pedidos.");
-      
-      // Fechar o diálogo
       onOpenChange(false);
     } catch (error) {
-      console.error("Erro ao salvar correção:", error);
-      alert("Ocorreu um erro ao salvar a correção. Tente novamente.");
+      console.error("Erro ao processar feedback:", error);
+      toast({
+        title: "Erro",
+        description: "Houve um erro ao enviar seu feedback.",
+        variant: "destructive",
+      });
     } finally {
-      setIsSaving(false);
+      setIsSubmitting(false);
+    }
+  };
+  
+  const saveToLocalStorage = (data: any) => {
+    try {
+      // Obter dados existentes
+      const existingData = localStorage.getItem('voiceTrainingData');
+      let trainingData = [];
+      
+      if (existingData) {
+        trainingData = JSON.parse(existingData);
+      }
+      
+      // Adicionar novo dado
+      trainingData.push(data);
+      
+      // Limitar a 100 entradas para não sobrecarregar
+      if (trainingData.length > 100) {
+        trainingData = trainingData.slice(-100);
+      }
+      
+      // Salvar de volta
+      localStorage.setItem('voiceTrainingData', JSON.stringify(trainingData));
+    } catch (error) {
+      console.error("Erro ao salvar no localStorage:", error);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Feedback de Voz</DialogTitle>
-          <DialogDescription>
-            Nos ajude a melhorar o reconhecimento de voz.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="voiceInput" className="text-right">
-              Entrada de Voz
-            </Label>
-            <Input
-              type="text"
-              id="voiceInput"
-              value={voiceInput}
-              className="col-span-3"
-              readOnly
-            />
+      <DialogContent className="sm:max-w-[500px]">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Feedback de Reconhecimento de Voz</DialogTitle>
+            <DialogDescription>
+              Sua opinião nos ajuda a melhorar a precisão do nosso sistema de reconhecimento de voz.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="voiceInput">Texto reconhecido</Label>
+              <Input
+                id="voiceInput"
+                value={voiceInput}
+                readOnly
+                className="bg-muted"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="suggestedProduct">Produto sugerido</Label>
+              <Input
+                id="suggestedProduct"
+                value={suggestedProduct?.name || "Nenhum produto sugerido"}
+                readOnly
+                className="bg-muted"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label>O resultado foi útil?</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={wasHelpful === true ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => setWasHelpful(true)}
+                >
+                  <ThumbsUp className="mr-2 h-4 w-4" />
+                  Sim
+                </Button>
+                <Button
+                  type="button"
+                  variant={wasHelpful === false ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => setWasHelpful(false)}
+                >
+                  <ThumbsDown className="mr-2 h-4 w-4" />
+                  Não
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="correctProduct">Produto correto</Label>
+              <Select
+                value={correctProductId}
+                onValueChange={setCorrectProductId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o produto correto" />
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  <SelectItem value="">Nenhum produto</SelectItem>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="alternativeTerms">
+                Termos alternativos para este produto (separados por vírgula)
+              </Label>
+              <Input
+                id="alternativeTerms"
+                value={alternativeTerms}
+                onChange={(e) => setAlternativeTerms(e.target.value)}
+                placeholder="Ex: sacola plástica, saco de compras, sacola"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="feedback">Comentários adicionais</Label>
+              <Textarea
+                id="feedback"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Adicione qualquer informação adicional que possa nos ajudar"
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="product" className="text-right">
-              Produto Correto
-            </Label>
-            <Select onValueChange={(value) => {
-              const prod = products.find(p => p.id === value) || null;
-              setSelectedProduct(prod);
-            }}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Selecione o produto correto" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type="button" onClick={handleSaveCorrection} disabled={isSaving}>
-            {isSaving ? 'Salvando...' : 'Salvar Correção'}
-          </Button>
-        </DialogFooter>
+
+          <DialogFooter>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Enviar Feedback
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
-};
+}

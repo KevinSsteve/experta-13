@@ -24,65 +24,38 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
   if (!text || text.trim() === '') return text;
 
   try {
-    console.log(`Aplicando correções para texto: "${text}"`);
-
-    // Limpa qualquer cache local para garantir que estamos buscando as correções mais recentes
-    localStorage.removeItem('speech_corrections_cache');
-
-    // Busca as correções ativas do usuário com ordenação por data (mais recentes primeiro)
+    // Busca as correções ativas do usuário
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
       .select("original_text, corrected_text")
       .eq("user_id", userId)
-      .eq("active", true)
-      .order("created_at", { ascending: false });
+      .eq("active", true);
 
-    if (error) {
-      console.error("Erro ao buscar correções:", error);
+    if (error || !corrections || corrections.length === 0) {
       return text;
     }
 
-    if (!corrections || corrections.length === 0) {
-      console.log("Nenhuma correção encontrada");
-      return text;
-    }
-
-    console.log(`Encontradas ${corrections.length} correções para aplicar:`, corrections);
-    
-    // Normalizar o texto para comparação case-insensitive
-    const normalizedText = text.toLowerCase().trim();
-    
-    // Aplicar correções exatas primeiro (case-insensitive)
+    // Aplicar correções exatas primeiro
+    let correctedText = text;
     for (const correction of corrections) {
-      const normalizedOriginal = correction.original_text.toLowerCase().trim();
-      
       // Correção exata (case-insensitive)
-      if (normalizedText === normalizedOriginal) {
+      if (correctedText.toLowerCase() === correction.original_text.toLowerCase()) {
         console.log(`Correção exata aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         return correction.corrected_text;
       }
     }
 
     // Se não encontrou correção exata, tenta correções parciais
-    let correctedText = text;
-    let appliedCorrection = false;
-    
     for (const correction of corrections) {
-      // Criamos uma regex que seja case-insensitive para palavra completa
-      const normalizedOriginal = correction.original_text.toLowerCase().trim();
-      const escapedOriginal = normalizedOriginal.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const regex = new RegExp(`\\b${escapedOriginal}\\b`, 'gi');
-      
-      // Verifica se o texto contém a palavra/frase original como palavra completa
-      if (regex.test(correctedText.toLowerCase())) {
+      // Verifica se o texto contém a string original (case-insensitive)
+      const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+      if (regex.test(correctedText)) {
         console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
-        correctedText = correctedText.replace(new RegExp(`\\b${escapedOriginal}\\b`, 'gi'), correction.corrected_text);
-        appliedCorrection = true;
+        correctedText = correctedText.replace(regex, correction.corrected_text);
       }
     }
 
-    console.log(`Texto original: "${text}". Texto corrigido: "${appliedCorrection ? correctedText : text}"`);
-    return appliedCorrection ? correctedText : text;
+    return correctedText;
   } catch (error) {
     console.error("Erro ao aplicar correções de voz:", error);
     return text;
@@ -119,9 +92,6 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
   if (!userId || !text) return false;
   
   try {
-    // Limpa qualquer cache local para garantir que estamos buscando as correções mais recentes
-    localStorage.removeItem('speech_corrections_cache');
-    
     // Busca palavras problemáticas conhecidas no texto
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
@@ -133,16 +103,9 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
       return false;
     }
 
-    // Normaliza o texto para comparação
-    const normalizedText = text.toLowerCase().trim();
-    
     // Verifica se alguma das palavras problemáticas está no texto
     for (const correction of corrections) {
-      const normalizedOriginal = correction.original_text.toLowerCase().trim();
-      const escapedOriginal = normalizedOriginal.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const regex = new RegExp(`\\b${escapedOriginal}\\b`, 'gi');
-      
-      if (regex.test(normalizedText)) {
+      if (text.toLowerCase().includes(correction.original_text.toLowerCase())) {
         return true;
       }
     }
@@ -164,9 +127,6 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
   if (!userId || !text) return [];
   
   try {
-    // Limpa qualquer cache local para garantir que estamos buscando as correções mais recentes
-    localStorage.removeItem('speech_corrections_cache');
-    
     // Buscar todas as correções ativas do usuário
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
@@ -178,43 +138,32 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
       return [];
     }
     
-    console.log(`Buscando correções possíveis para: "${text}" entre ${corrections.length} correções disponíveis`);
-    
     // Lista de possíveis correções
     const possibleCorrections: string[] = [];
     
-    // Normalizar o texto para comparação
-    const normalizedText = text.toLowerCase().trim();
-    
     // Verificar se o texto está próximo de alguma correção conhecida
+    // Primeiro verificamos correções exatas
     for (const correction of corrections) {
-      const normalizedOriginal = correction.original_text.toLowerCase().trim();
-      
-      // Correspondência exata ou contém a palavra/frase
-      if (
-        normalizedText === normalizedOriginal ||
-        normalizedText.includes(normalizedOriginal) ||
-        normalizedOriginal.includes(normalizedText)
-      ) {
-        console.log(`Correção possível encontrada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+      // Verifica a similaridade do texto com as correções originais
+      // Usando uma abordagem simples de comparação case-insensitive primeiro
+      if (text.toLowerCase() === correction.original_text.toLowerCase() ||
+          text.toLowerCase().includes(correction.original_text.toLowerCase()) ||
+          correction.original_text.toLowerCase().includes(text.toLowerCase())) {
+        
+        // Adiciona o texto corrigido como possível alternativa
         if (!possibleCorrections.includes(correction.corrected_text)) {
           possibleCorrections.push(correction.corrected_text);
         }
       }
     }
     
-    console.log(`Encontradas ${possibleCorrections.length} correções possíveis para "${text}":`, possibleCorrections);
+    // Se não encontrou nenhuma correção com essa abordagem simples
+    // Podemos usar técnicas mais avançadas como algoritmos de distância de edição
+    // ou outras heurísticas de similaridade fonética
+    
     return possibleCorrections;
   } catch (error) {
     console.error("Erro ao buscar possíveis correções:", error);
     return [];
   }
-}
-
-/**
- * Limpa o cache de correções para forçar uma nova busca no banco de dados
- */
-export function clearCorrectionsCache(): void {
-  localStorage.removeItem('speech_corrections_cache');
-  console.log("Cache de correções limpo");
 }

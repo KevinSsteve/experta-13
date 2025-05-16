@@ -1,6 +1,7 @@
 import { ParsedVoiceItem } from './voiceUtils';
 import { Product } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
+import { clearCorrectionsCache } from './speechCorrectionUtils';
 
 export interface EnhancedVoiceItem extends ParsedVoiceItem {
   quantity: number;
@@ -279,6 +280,9 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
   try {
     // Normalizar o texto de entrada para comparação
     const normalizedInput = normalizeText(text);
+    
+    // Limpa o cache de correções antes de buscar as mais recentes
+    clearCorrectionsCache();
     
     // Buscar correções de fala do usuário
     const { data: corrections, error } = await supabase

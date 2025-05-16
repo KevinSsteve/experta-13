@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, ShoppingCart, Repeat, Check, History, X, HelpCircle, MessageSquareText } from "lucide-react";
@@ -7,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { Product } from "@/contexts/CartContext";
-import { parseVoiceOrder, findBestProductMatch, EnhancedVoiceItem, saveTrainingData, findPossibleCorrections, clearCorrectionsCache } from "@/utils/voiceCartUtils";
+import { parseVoiceOrder, findBestProductMatch, EnhancedVoiceItem, saveTrainingData, findPossibleCorrections } from "@/utils/voiceCartUtils";
+import { clearCorrectionsCache } from "@/utils/speechCorrectionUtils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";

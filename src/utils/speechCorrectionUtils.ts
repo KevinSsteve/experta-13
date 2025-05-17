@@ -608,24 +608,14 @@ export async function saveVoiceCorrection(userId: string, originalText: string, 
 
     console.log("Nova correção inserida com sucesso");
     
-    // Como não conseguimos acessar a tabela voice_training_backups,
-    // vamos tentar salvar em uma tabela secundária para manter um registro
+    // Removendo o código que tenta acessar uma tabela inexistente
     try {
-      await supabase.from("voice_correction_logs").insert({
-        user_id: userId,
-        original_text: originalText,
-        corrected_text: correctedText,
-        source: "user_feedback",
-        created_at: new Date().toISOString()
-      }).then(() => {
-        console.log("Correção salva com sucesso no banco de dados de backup");
-      }).catch(err => {
-        // Se a tabela não existir, apenas ignoramos silenciosamente
-        console.log("Aviso: Tabela de backup não disponível");
-      });
+      // Nota: tentamos salvar em uma tabela secundária, mas isso não é mais necessário
+      // O código foi removido para evitar erros de TypeScript
+      console.log("Correção salva com sucesso na tabela principal");
     } catch (backupError) {
-      // Ignorar erros da tabela de backup, pois é opcional
-      console.log("Não foi possível salvar no backup, mas a correção principal foi salva");
+      // Ignorar erros pois a funcionalidade de backup foi removida
+      console.log("Correção principal foi salva com sucesso");
     }
     
     // Limpar o cache para forçar nova consulta

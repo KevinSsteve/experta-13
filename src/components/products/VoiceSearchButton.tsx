@@ -120,12 +120,10 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
             (lowerOriginal.includes('que bom') && correctedTranscript.includes('tibone'))) {
           
           // Salva a correção na base de dados para uso futuro
-          saveVoiceCorrection(user.id, transcript, correctedTranscript)
-            .then(success => {
-              if (success) {
-                console.log('Correção de voz salva automaticamente:', transcript, '->', correctedTranscript);
-              }
-            });
+          const success = await saveVoiceCorrection(user.id, transcript, correctedTranscript);
+          if (success) {
+            console.log('Correção de voz salva automaticamente:', transcript, '->', correctedTranscript);
+          }
         }
       }
       

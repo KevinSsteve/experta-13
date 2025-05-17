@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { applyVoiceCorrections, findPossibleCorrections } from '@/utils/speechCorrectionUtils';
+import { applyVoiceCorrections, findPossibleCorrections, saveVoiceCorrection } from '@/utils/speechCorrectionUtils';
 
 interface VoiceSearchButtonProps {
   onResult: (text: string) => void;
@@ -107,6 +107,26 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
            .replace(/^as\s+/i, '')
            .trim()
         );
+      }
+      
+      // Se o texto original continha uma variação conhecida como "filme" ou "tibana",
+      // vamos registrar automaticamente a correção para facilitar buscas futuras
+      if (correctedTranscript !== transcript && user?.id) {
+        const lowerOriginal = transcript.toLowerCase();
+        
+        // Verifica se a correção foi significativa e automática
+        if ((lowerOriginal.includes('filme') && correctedTranscript.includes('yummy')) || 
+            (lowerOriginal.includes('tibana') && correctedTranscript.includes('tibone')) ||
+            (lowerOriginal.includes('que bom') && correctedTranscript.includes('tibone'))) {
+          
+          // Salva a correção na base de dados para uso futuro
+          saveVoiceCorrection(user.id, transcript, correctedTranscript)
+            .then(success => {
+              if (success) {
+                console.log('Correção de voz salva automaticamente:', transcript, '->', correctedTranscript);
+              }
+            });
+        }
       }
       
       // Adiciona as correções alternativas à lista de produtos para busca múltipla

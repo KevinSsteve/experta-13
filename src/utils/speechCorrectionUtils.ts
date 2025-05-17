@@ -48,6 +48,8 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
   if (!text || text.trim() === '') return text;
 
   try {
+    console.log(`Aplicando correções de voz para texto: "${text}"`);
+    
     // Verifica se há um cache válido
     const now = Date.now();
     let corrections: SpeechCorrection[] = [];
@@ -74,10 +76,12 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       correctionsCache[userId] = corrections;
       lastCacheTime[userId] = now;
       console.log('Correções de voz atualizadas no cache:', corrections.length);
+      console.log('Correções disponíveis:', corrections);
     }
 
     // Se não há correções, tenta usar correções automáticas baseadas em produtos comuns
     if (corrections.length === 0) {
+      console.log('Nenhuma correção de usuário encontrada, tentando correções automáticas...');
       return await applyProductBasedCorrections(text, userId);
     }
 
@@ -107,20 +111,27 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       
       // Verifica se o texto contém a string original (case-insensitive)
       // Adiciona limites de palavra (\b) para evitar substituições parciais indesejadas
-      const regex = new RegExp(
-        '\\b' + correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\b', 
-        'gi'
-      );
-      
-      if (lowerText.includes(lowerOriginal) || regex.test(correctedText)) {
-        console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+      // Mas também tenta uma correspondência mais flexível para capturar mais casos
+      if (lowerText.includes(lowerOriginal)) {
+        console.log(`Correção parcial aplicada (substring): "${correction.original_text}" -> "${correction.corrected_text}"`);
+        // Cria um regex que não é tão estrito para capturar variações
+        const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
         correctedText = correctedText.replace(regex, correction.corrected_text);
+        wasAnyCorrection = true;
+        continue;
+      }
+      
+      // Tentativa com limites de palavra para termos mais específicos
+      const wordBoundaryRegex = new RegExp('\\b' + correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\b', 'gi');
+      if (wordBoundaryRegex.test(correctedText)) {
+        console.log(`Correção parcial aplicada (palavra completa): "${correction.original_text}" -> "${correction.corrected_text}"`);
+        correctedText = correctedText.replace(wordBoundaryRegex, correction.corrected_text);
         wasAnyCorrection = true;
       }
     }
     
     if (wasAnyCorrection) {
-      console.log("Texto após correções:", correctedText);
+      console.log("Texto após correções de usuário:", correctedText);
       return correctedText;
     }
 
@@ -131,6 +142,7 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       return commonCorrectedText;
     }
 
+    console.log("Nenhuma correção aplicada para o texto:", text);
     return correctedText;
   } catch (error) {
     console.error("Erro ao aplicar correções de voz:", error);
@@ -149,6 +161,7 @@ async function applyProductBasedCorrections(text: string, userId?: string): Prom
   
   try {
     const normalizedText = text.toLowerCase();
+    console.log(`Tentando aplicar correções baseadas em produtos para: "${text}"`);
     
     // Busca produtos do usuário
     const { data: products, error } = await supabase
@@ -161,15 +174,18 @@ async function applyProductBasedCorrections(text: string, userId?: string): Prom
       return text;
     }
     
+    console.log(`Produtos encontrados para comparação: ${products.length}`);
+    
     // Lista de variações fonéticas conhecidas
     const phoneticVariations: {[key: string]: string[]} = {
       'yummy': ['iumi', 'iume', 'yume', 'iumi', 'filme', 'iami', 'yumi'],
-      'tibone': ['tibana', 'tea bone', 'te bone', 'ti bone', 'tivone', 'tibo', 'tim bom', 'tin bon']
+      'tibone': ['tibana', 'tea bone', 'te bone', 'ti bone', 'tivone', 'tibo', 'tim bom', 'tin bon', 'que bom né', 'que bom ne']
     };
     
     // Para cada produto, verifica se há variações fonéticas conhecidas
     for (const product of products) {
       const productName = product.name.toLowerCase().trim();
+      console.log(`Verificando produto: ${productName}`);
       
       // Verifica se temos variações fonéticas para este produto
       for (const [realProduct, variations] of Object.entries(phoneticVariations)) {
@@ -190,9 +206,19 @@ async function applyProductBasedCorrections(text: string, userId?: string): Prom
         console.log('Correção direta aplicada: "filme" -> "yummy"');
         return text.replace(/filme/gi, 'yummy');
       }
-      if (normalizedText.includes('tibana')) {
-        console.log('Correção direta aplicada: "tibana" -> "tibone"');
-        return text.replace(/tibana/gi, 'tibone');
+      if (normalizedText.includes('tibana') || normalizedText.includes('que bom né') || normalizedText.includes('que bom ne')) {
+        console.log('Correção direta aplicada: "tibana/que bom né" -> "tibone"');
+        let corrected = text.replace(/tibana/gi, 'tibone');
+        corrected = corrected.replace(/que bom né/gi, 'tibone');
+        corrected = corrected.replace(/que bom ne/gi, 'tibone');
+        return corrected;
+      }
+      
+      // Verificar se o texto é muito semelhante ao nome do produto
+      // Esta abordagem é útil para novos produtos que o usuário adicionou
+      if (levenshteinDistance(normalizedText, productName) <= 3) {
+        console.log(`Correção por similaridade: "${text}" -> "${product.name}"`);
+        return product.name;
       }
       
       // Para produtos que não têm variações cadastradas, verifica se há semelhança fonética simples
@@ -225,6 +251,39 @@ async function applyProductBasedCorrections(text: string, userId?: string): Prom
     console.error("Erro ao aplicar correções baseadas em produtos:", error);
     return text;
   }
+}
+
+/**
+ * Calcula a distância de Levenshtein (distância de edição) entre duas strings
+ * Útil para encontrar palavras semelhantes com pequenas diferenças de digitação ou pronúncia
+ */
+function levenshteinDistance(a: string, b: string): number {
+  const matrix: number[][] = [];
+
+  // Inicializar a matriz
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  // Preencher a matriz
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substituição
+          matrix[i][j - 1] + 1,     // inserção
+          matrix[i - 1][j] + 1      // exclusão
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
 }
 
 /**
@@ -297,7 +356,8 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
     
     // Verifica variações fonéticas conhecidas
     if (lowerText.includes('filme') || lowerText.includes('iumi') || lowerText.includes('yumi') || 
-        lowerText.includes('tibana') || lowerText.includes('tibo')) {
+        lowerText.includes('tibana') || lowerText.includes('tibo') || 
+        lowerText.includes('que bom né') || lowerText.includes('que bom ne')) {
       return true;
     }
 
@@ -318,6 +378,8 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
   if (!userId || !text) return [];
   
   try {
+    console.log(`Buscando possíveis correções para: "${text}"`);
+    
     // Verifica se há um cache válido
     const now = Date.now();
     let corrections: SpeechCorrection[] = [];
@@ -359,6 +421,16 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
         // Adiciona o texto corrigido como possível alternativa
         if (!possibleCorrections.includes(correction.corrected_text)) {
           possibleCorrections.push(correction.corrected_text);
+          console.log(`Correção possível encontrada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+        }
+      }
+      
+      // Verificar também se o texto está próximo da correção original
+      // usando a distância de Levenshtein para detectar erros de digitação/pronúncia
+      if (levenshteinDistance(text.toLowerCase(), correction.original_text.toLowerCase()) <= 3) {
+        if (!possibleCorrections.includes(correction.corrected_text)) {
+          possibleCorrections.push(correction.corrected_text);
+          console.log(`Correção possível por similaridade: "${correction.original_text}" -> "${correction.corrected_text}"`);
         }
       }
     }
@@ -367,9 +439,12 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
     const lowerText = text.toLowerCase();
     if (lowerText.includes('filme')) {
       possibleCorrections.push('yummy');
+      console.log('Correção direta possível: "filme" -> "yummy"');
     }
-    if (lowerText.includes('tibana') || lowerText.includes('tea bone') || lowerText.includes('tibo')) {
+    if (lowerText.includes('tibana') || lowerText.includes('tea bone') || lowerText.includes('tibo') || 
+        lowerText.includes('que bom né') || lowerText.includes('que bom ne')) {
       possibleCorrections.push('tibone');
+      console.log('Correção direta possível: "tibana/que bom né" -> "tibone"');
     }
     
     // Busca por produtos cujos nomes possam ser relevantes
@@ -386,9 +461,17 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
       for (const product of products) {
         const productName = product.name.toLowerCase();
         
+        // Verificar se o texto é muito semelhante ao nome do produto
+        if (levenshteinDistance(normalizedText, productName) <= 3) {
+          possibleCorrections.push(product.name);
+          console.log(`Produto similar encontrado: "${text}" -> "${product.name}"`);
+          continue;
+        }
+        
         // Verifica similaridade fonética simples
         if (normalizedText.includes(productName.substring(0, Math.min(3, productName.length)))) {
           possibleCorrections.push(product.name);
+          console.log(`Produto com prefixo similar: "${text}" contém início de "${product.name}"`);
           continue;
         }
         
@@ -402,6 +485,7 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
             
             if (productWord.substring(0, 3) === textWord.substring(0, 3)) {
               possibleCorrections.push(product.name);
+              console.log(`Palavra similar encontrada: "${textWord}" similar a "${productWord}" em "${product.name}"`);
               break;
             }
           }
@@ -409,7 +493,10 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
       }
     }
     
-    return [...new Set(possibleCorrections)]; // Remove duplicados
+    // Remover duplicados e retornar
+    const uniqueCorrections = [...new Set(possibleCorrections)];
+    console.log(`Total de correções possíveis encontradas: ${uniqueCorrections.length}`);
+    return uniqueCorrections;
   } catch (error) {
     console.error("Erro ao buscar possíveis correções:", error);
     return [];
@@ -430,6 +517,8 @@ function applyCommonCorrections(text: string): string {
     'tibo': 'tibone',
     'tim bom': 'tibone',
     'tin bon': 'tibone',
+    'que bom né': 'tibone',
+    'que bom ne': 'tibone',
     'iumi': 'yummy',
     'iume': 'yummy',
     'yume': 'yummy',
@@ -442,8 +531,109 @@ function applyCommonCorrections(text: string): string {
   
   // Aplicar as correções comuns
   Object.entries(commonMistakes).forEach(([mistake, correction]) => {
-    correctedText = correctedText.replace(new RegExp(`\\b${mistake}\\b`, 'gi'), correction);
+    // Usando o método de substituição mais flexível para capturar mais casos
+    const regex = new RegExp(mistake.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+    if (regex.test(correctedText)) {
+      console.log(`Aplicando correção comum: "${mistake}" -> "${correction}"`);
+      correctedText = correctedText.replace(regex, correction);
+    }
   });
   
   return correctedText;
+}
+
+/**
+ * Salva uma nova correção de voz
+ * @param userId ID do usuário
+ * @param originalText Texto original reconhecido incorretamente
+ * @param correctedText Texto corrigido
+ * @returns Success status
+ */
+export async function saveVoiceCorrection(userId: string, originalText: string, correctedText: string): Promise<boolean> {
+  if (!userId || !originalText || !correctedText) {
+    console.error("Dados incompletos para salvar correção de voz");
+    return false;
+  }
+
+  try {
+    console.log(`Salvando correção de voz: "${originalText}" -> "${correctedText}"`);
+    
+    // Verificar se já existe uma correção similar
+    const { data: existingCorrections, error: searchError } = await supabase
+      .from("speech_corrections")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("original_text", originalText)
+      .eq("active", true);
+
+    if (searchError) {
+      console.error("Erro ao buscar correções existentes:", searchError);
+      return false;
+    }
+
+    // Se já existir, atualizar em vez de inserir
+    if (existingCorrections && existingCorrections.length > 0) {
+      const { error: updateError } = await supabase
+        .from("speech_corrections")
+        .update({ corrected_text: correctedText })
+        .eq("id", existingCorrections[0].id);
+
+      if (updateError) {
+        console.error("Erro ao atualizar correção existente:", updateError);
+        return false;
+      }
+
+      console.log("Correção existente atualizada com sucesso");
+      
+      // Limpar o cache para forçar nova consulta
+      clearCorrectionsCache(userId);
+      
+      return true;
+    }
+
+    // Se não existir, inserir nova correção
+    const { error: insertError } = await supabase
+      .from("speech_corrections")
+      .insert({
+        user_id: userId,
+        original_text: originalText,
+        corrected_text: correctedText,
+        active: true
+      });
+
+    if (insertError) {
+      console.error("Erro ao inserir nova correção:", insertError);
+      return false;
+    }
+
+    console.log("Nova correção inserida com sucesso");
+    
+    // Como não conseguimos acessar a tabela voice_training_backups,
+    // vamos tentar salvar em uma tabela secundária para manter um registro
+    try {
+      await supabase.from("voice_correction_logs").insert({
+        user_id: userId,
+        original_text: originalText,
+        corrected_text: correctedText,
+        source: "user_feedback",
+        created_at: new Date().toISOString()
+      }).then(() => {
+        console.log("Correção salva com sucesso no banco de dados de backup");
+      }).catch(err => {
+        // Se a tabela não existir, apenas ignoramos silenciosamente
+        console.log("Aviso: Tabela de backup não disponível");
+      });
+    } catch (backupError) {
+      // Ignorar erros da tabela de backup, pois é opcional
+      console.log("Não foi possível salvar no backup, mas a correção principal foi salva");
+    }
+    
+    // Limpar o cache para forçar nova consulta
+    clearCorrectionsCache(userId);
+    
+    return true;
+  } catch (error) {
+    console.error("Erro ao salvar correção de voz:", error);
+    return false;
+  }
 }

@@ -164,7 +164,7 @@ async function applyProductBasedCorrections(text: string, userId?: string): Prom
     // Lista de variações fonéticas conhecidas
     const phoneticVariations: {[key: string]: string[]} = {
       'yummy': ['iumi', 'iume', 'yume', 'iumi', 'filme', 'iami', 'yumi'],
-      'tibone': ['tibana', 'tea bone', 'te bone', 'ti bone', 'tivone', 'tibo', 'tim bom']
+      'tibone': ['tibana', 'tea bone', 'te bone', 'ti bone', 'tivone', 'tibo', 'tim bom', 'tin bon']
     };
     
     // Para cada produto, verifica se há variações fonéticas conhecidas
@@ -183,6 +183,16 @@ async function applyProductBasedCorrections(text: string, userId?: string): Prom
             }
           }
         }
+      }
+      
+      // Verificação direta para yummy e tibone (independente de estar no catálogo)
+      if (normalizedText.includes('filme')) {
+        console.log('Correção direta aplicada: "filme" -> "yummy"');
+        return text.replace(/filme/gi, 'yummy');
+      }
+      if (normalizedText.includes('tibana')) {
+        console.log('Correção direta aplicada: "tibana" -> "tibone"');
+        return text.replace(/tibana/gi, 'tibone');
       }
       
       // Para produtos que não têm variações cadastradas, verifica se há semelhança fonética simples
@@ -284,6 +294,12 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
         return true;
       }
     }
+    
+    // Verifica variações fonéticas conhecidas
+    if (lowerText.includes('filme') || lowerText.includes('iumi') || lowerText.includes('yumi') || 
+        lowerText.includes('tibana') || lowerText.includes('tibo')) {
+      return true;
+    }
 
     return false;
   } catch (error) {
@@ -345,6 +361,15 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
           possibleCorrections.push(correction.corrected_text);
         }
       }
+    }
+    
+    // Verificação direta para correções comuns
+    const lowerText = text.toLowerCase();
+    if (lowerText.includes('filme')) {
+      possibleCorrections.push('yummy');
+    }
+    if (lowerText.includes('tibana') || lowerText.includes('tea bone') || lowerText.includes('tibo')) {
+      possibleCorrections.push('tibone');
     }
     
     // Busca por produtos cujos nomes possam ser relevantes

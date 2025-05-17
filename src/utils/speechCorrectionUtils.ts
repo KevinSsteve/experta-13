@@ -11,6 +11,12 @@ interface SpeechCorrection {
   created_at: string;
 }
 
+// Tipos parciais para usar em diferentes contextos
+interface PartialSpeechCorrection {
+  original_text: string;
+  corrected_text?: string;
+}
+
 // Cache para evitar consultas repetidas
 let correctionsCache: { [userId: string]: SpeechCorrection[] } = {};
 let lastCacheTime: { [userId: string]: number } = {};
@@ -226,7 +232,7 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
       // Busca palavras problemáticas conhecidas no texto
       const { data: fetchedCorrections, error } = await supabase
         .from("speech_corrections")
-        .select("original_text")
+        .select("id, original_text, corrected_text, user_id, active, created_at")
         .eq("user_id", userId)
         .eq("active", true);
 
@@ -280,7 +286,7 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
       // Buscar todas as correções ativas do usuário
       const { data: fetchedCorrections, error } = await supabase
         .from("speech_corrections")
-        .select("original_text, corrected_text")
+        .select("id, original_text, corrected_text, user_id, active, created_at")
         .eq("user_id", userId)
         .eq("active", true);
         
@@ -390,3 +396,4 @@ function applyCommonCorrections(text: string): string {
   
   return correctedText;
 }
+

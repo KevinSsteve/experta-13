@@ -1,221 +1,169 @@
 
-/**
- * Aplica correções de voz para melhorar o reconhecimento de voz
- */
-
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Interface para representar uma correção de voz
- */
-interface VoiceCorrection {
+// Interface para as correções de voz
+interface SpeechCorrection {
   id: string;
-  user_id: string;
   original_text: string;
   corrected_text: string;
+  user_id: string;
+  active: boolean;
   created_at: string;
-  active?: boolean;
 }
 
 /**
- * Lista de correções conhecidas para termos específicos
- * Estas correções são aplicadas automaticamente sem necessidade de salvar no banco
- */
-const knownCorrections: Record<string, string[]> = {
-  // Correções para "tibone"
-  'tibone': ['tibana', 'que bom', 'te bom', 'que bom né', 'que bone', 'ti bone', 'tee bone', 'te bone', 'ti bom', 'riboni'],
-  
-  // Correções para "yummy"
-  'yummy': ['iami', 'iume', 'iuni', 'filme', 'iome', 'iumê', 'iami', 'iumi'],
-  
-  // Correções para "mocoto"
-  'mocoto': ['mucoto', 'macoto', 'mo coto', 'mu coto'],
-
-  // Correções para "yummy bolacha"
-  'yummy bolacha': ['filme bolacha', 'iume bolacha', 'iuni bolacha', 'iami bolacha']
-};
-
-/**
- * Aplica correções conhecidas ao texto
- * @param text Texto para aplicar correções
- * @returns Texto corrigido
- */
-export function applyKnownCorrections(text: string): string {
-  // Converte o texto para minúsculo para comparação
-  const lowerText = text.toLowerCase();
-  
-  // Verifica cada termo conhecido
-  for (const [correctTerm, variations] of Object.entries(knownCorrections)) {
-    // Verifica se o texto contém alguma das variações conhecidas
-    for (const variation of variations) {
-      if (lowerText.includes(variation.toLowerCase())) {
-        // Substitui a variação pelo termo correto, preservando maiúsculas/minúsculas
-        const regex = new RegExp(variation, 'i');
-        return text.replace(regex, correctTerm);
-      }
-    }
-  }
-  
-  return text;
-}
-
-/**
- * Aplica correções de voz ao texto
- * @param text Texto a ser corrigido
- * @param userId ID do usuário para buscar correções específicas
- * @returns Texto corrigido
+ * Aplica correções registradas pelo usuário ao texto reconhecido pelo Google Speech
+ * @param text Texto reconhecido pelo Google Speech
+ * @param userId ID do usuário para buscar suas correções
+ * @returns Texto corrigido com base nas correções do usuário
  */
 export async function applyVoiceCorrections(text: string, userId?: string): Promise<string> {
-  if (!text) return text;
+  if (!userId) return text;
   
-  // Primeiro aplica correções conhecidas
-  let correctedText = applyKnownCorrections(text);
-  
-  // Se o texto já foi corrigido, retorna imediatamente
-  if (correctedText !== text) {
-    console.log(`Aplicando correção conhecida: "${text}" -> "${correctedText}"`);
-    return correctedText;
-  }
-  
-  // Se não houver userId, retorna o texto original
-  if (!userId) {
-    return text;
-  }
-  
+  // Se o texto estiver vazio, retorna vazio
+  if (!text || text.trim() === '') return text;
+
   try {
-    // Busca correções de voz específicas do usuário no banco de dados
-    const { data: userCorrections, error } = await supabase
-      .from('speech_corrections')
-      .select('*')
-      .eq('user_id', userId);
-    
-    if (error) {
-      console.error('Erro ao buscar correções de voz:', error);
-      return correctedText;
+    // Busca as correções ativas do usuário
+    const { data: corrections, error } = await supabase
+      .from("speech_corrections")
+      .select("original_text, corrected_text")
+      .eq("user_id", userId)
+      .eq("active", true);
+
+    if (error || !corrections || corrections.length === 0) {
+      return text;
     }
-    
-    // Aplica as correções de voz do usuário
-    if (userCorrections && userCorrections.length > 0) {
-      for (const correction of userCorrections) {
-        const regex = new RegExp(correction.original_text, 'gi');
+
+    // Aplicar correções exatas primeiro
+    let correctedText = text;
+    for (const correction of corrections) {
+      // Correção exata (case-insensitive)
+      if (correctedText.toLowerCase() === correction.original_text.toLowerCase()) {
+        console.log(`Correção exata aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+        return correction.corrected_text;
+      }
+    }
+
+    // Se não encontrou correção exata, tenta correções parciais
+    for (const correction of corrections) {
+      // Verifica se o texto contém a string original (case-insensitive)
+      const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+      if (regex.test(correctedText)) {
+        console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         correctedText = correctedText.replace(regex, correction.corrected_text);
       }
     }
+
+    return correctedText;
   } catch (error) {
-    console.error('Erro ao aplicar correções de voz:', error);
+    console.error("Erro ao aplicar correções de voz:", error);
+    return text;
   }
-  
-  return correctedText;
 }
 
 /**
- * Busca possíveis correções alternativas para o texto
- * @param text Texto original
- * @param userId ID do usuário (opcional)
- * @returns Lista de termos corrigidos
+ * Função para aplicar correções de voz em uma lista de strings
+ * @param texts Lista de strings para corrigir
+ * @param userId ID do usuário para buscar suas correções
+ * @returns Lista de strings corrigidas
  */
-export async function findPossibleCorrections(text: string, userId?: string): Promise<string[]> {
-  if (!text) return [];
-  
-  const alternativeCorrections: string[] = [];
-  
-  // Primeiro, busca correções conhecidas
-  for (const [correctTerm, variations] of Object.entries(knownCorrections)) {
-    if (variations.some(variation => text.toLowerCase().includes(variation.toLowerCase()))) {
-      alternativeCorrections.push(correctTerm);
-    }
-  }
-  
-  // Se houver userId, busca correções personalizadas do usuário
-  if (userId) {
-    try {
-      const { data: userCorrections, error } = await supabase
-        .from('speech_corrections')
-        .select('*')
-        .eq('user_id', userId);
-      
-      if (error) {
-        console.error('Erro ao buscar correções de voz:', error);
-      } else if (userCorrections && userCorrections.length > 0) {
-        userCorrections.forEach(correction => {
-          if (text.toLowerCase().includes(correction.original_text.toLowerCase())) {
-            alternativeCorrections.push(correction.corrected_text);
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao buscar correções de voz:', error);
-    }
-  }
-  
-  // Remove duplicatas
-  return [...new Set(alternativeCorrections)];
-}
-
-/**
- * Salva uma correção de voz no banco de dados
- */
-export async function saveVoiceCorrection(
-  userId: string,
-  originalText: string,
-  correctedText: string
-): Promise<boolean> {
-  if (!userId || !originalText || !correctedText) {
-    console.warn('Dados incompletos para salvar correção de voz.');
-    return false;
-  }
+export async function applyVoiceCorrectionsToList(texts: string[], userId?: string): Promise<string[]> {
+  if (!userId || !texts || texts.length === 0) return texts;
   
   try {
-    // Verifica se a correção já existe
-    const { data: existingCorrections, error: selectError } = await supabase
-      .from('speech_corrections')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('original_text', originalText);
-    
-    if (selectError) {
-      console.error('Erro ao verificar correção existente:', selectError);
-      return false;
-    }
-    
-    if (existingCorrections && existingCorrections.length > 0) {
-      console.log('Correção já existe:', existingCorrections[0]);
-      return true;
-    }
-    
-    // Insere a nova correção
-    const { error: insertError } = await supabase
-      .from('speech_corrections')
-      .insert([
-        {
-          user_id: userId,
-          original_text: originalText,
-          corrected_text: correctedText,
-          active: true
-        },
-      ]);
-    
-    if (insertError) {
-      console.error('Erro ao salvar correção de voz:', insertError);
-      return false;
-    }
-    
-    console.log("Correção salva com sucesso na tabela principal");
-    
-    // Adiciona a nova correção à lista de correções conhecidas em memória
-    // para que seja aplicada imediatamente sem precisar recarregar da base de dados
-    const key = correctedText.toLowerCase();
-    const value = originalText.toLowerCase();
-    
-    if (!knownCorrections[key]) {
-      knownCorrections[key] = [value];
-    } else if (!knownCorrections[key].includes(value)) {
-      knownCorrections[key].push(value);
-    }
-    
-    return true;
+    const correctedTexts = await Promise.all(
+      texts.map(text => applyVoiceCorrections(text, userId))
+    );
+    return correctedTexts;
   } catch (error) {
-    console.error("Erro ao salvar correção de voz:", error);
+    console.error("Erro ao aplicar correções de voz à lista:", error);
+    return texts;
+  }
+}
+
+/**
+ * Função para verificar se o texto pode se beneficiar de correções
+ * @param text Texto para verificar
+ * @param userId ID do usuário para buscar suas correções
+ * @returns Verdadeiro se houver potenciais correções
+ */
+export async function hasNeedForCorrections(text: string, userId?: string): Promise<boolean> {
+  if (!userId || !text) return false;
+  
+  try {
+    // Busca palavras problemáticas conhecidas no texto
+    const { data: corrections, error } = await supabase
+      .from("speech_corrections")
+      .select("original_text")
+      .eq("user_id", userId)
+      .eq("active", true);
+
+    if (error || !corrections || corrections.length === 0) {
+      return false;
+    }
+
+    // Verifica se alguma das palavras problemáticas está no texto
+    for (const correction of corrections) {
+      if (text.toLowerCase().includes(correction.original_text.toLowerCase())) {
+        return true;
+      }
+    }
+
     return false;
+  } catch (error) {
+    console.error("Erro ao verificar necessidade de correções:", error);
+    return false;
+  }
+}
+
+/**
+ * Função para buscar possíveis correções para um texto
+ * @param text Texto a ser verificado
+ * @param userId ID do usuário
+ * @returns Array com possíveis correções
+ */
+export async function findPossibleCorrections(text: string, userId?: string): Promise<string[]> {
+  if (!userId || !text) return [];
+  
+  try {
+    // Buscar todas as correções ativas do usuário
+    const { data: corrections, error } = await supabase
+      .from("speech_corrections")
+      .select("original_text, corrected_text")
+      .eq("user_id", userId)
+      .eq("active", true);
+      
+    if (error || !corrections || corrections.length === 0) {
+      return [];
+    }
+    
+    // Lista de possíveis correções
+    const possibleCorrections: string[] = [];
+    
+    // Verificar se o texto está próximo de alguma correção conhecida
+    // Primeiro verificamos correções exatas
+    for (const correction of corrections) {
+      // Verifica a similaridade do texto com as correções originais
+      // Usando uma abordagem simples de comparação case-insensitive primeiro
+      if (text.toLowerCase() === correction.original_text.toLowerCase() ||
+          text.toLowerCase().includes(correction.original_text.toLowerCase()) ||
+          correction.original_text.toLowerCase().includes(text.toLowerCase())) {
+        
+        // Adiciona o texto corrigido como possível alternativa
+        if (!possibleCorrections.includes(correction.corrected_text)) {
+          possibleCorrections.push(correction.corrected_text);
+        }
+      }
+    }
+    
+    // Se não encontrou nenhuma correção com essa abordagem simples
+    // Podemos usar técnicas mais avançadas como algoritmos de distância de edição
+    // ou outras heurísticas de similaridade fonética
+    
+    return possibleCorrections;
+  } catch (error) {
+    console.error("Erro ao buscar possíveis correções:", error);
+    return [];
   }
 }

@@ -81,18 +81,30 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       return await applyProductBasedCorrections(text, userId);
     }
 
-    // Aplicar correções exatas primeiro
+    // Log para debug - mostrar todas as correções disponíveis
+    console.log("Correções disponíveis:", corrections.map(c => `"${c.original_text}" -> "${c.corrected_text}"`));
+    console.log("Texto original para correção:", text);
+
+    // Aplicar correções exatas primeiro (case-insensitive)
     let correctedText = text;
+    const lowerText = text.toLowerCase();
+    
     for (const correction of corrections) {
+      const lowerOriginal = correction.original_text.toLowerCase();
+      
       // Correção exata (case-insensitive)
-      if (correctedText.toLowerCase() === correction.original_text.toLowerCase()) {
+      if (lowerText === lowerOriginal) {
         console.log(`Correção exata aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         return correction.corrected_text;
       }
     }
 
     // Se não encontrou correção exata, tenta correções parciais
+    let wasAnyCorrection = false;
+    
     for (const correction of corrections) {
+      const lowerOriginal = correction.original_text.toLowerCase();
+      
       // Verifica se o texto contém a string original (case-insensitive)
       // Adiciona limites de palavra (\b) para evitar substituições parciais indesejadas
       const regex = new RegExp(
@@ -100,10 +112,23 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
         'gi'
       );
       
-      if (regex.test(correctedText)) {
+      if (lowerText.includes(lowerOriginal) || regex.test(correctedText)) {
         console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         correctedText = correctedText.replace(regex, correction.corrected_text);
+        wasAnyCorrection = true;
       }
+    }
+    
+    if (wasAnyCorrection) {
+      console.log("Texto após correções:", correctedText);
+      return correctedText;
+    }
+
+    // Se não conseguiu aplicar correções específicas do usuário, tenta correções comuns
+    const commonCorrectedText = applyCommonCorrections(text);
+    if (commonCorrectedText !== text) {
+      console.log(`Correção comum aplicada: "${text}" -> "${commonCorrectedText}"`);
+      return commonCorrectedText;
     }
 
     return correctedText;
@@ -253,8 +278,9 @@ export async function hasNeedForCorrections(text: string, userId?: string): Prom
     }
 
     // Verifica se alguma das palavras problemáticas está no texto
+    const lowerText = text.toLowerCase();
     for (const correction of corrections) {
-      if (text.toLowerCase().includes(correction.original_text.toLowerCase())) {
+      if (lowerText.includes(correction.original_text.toLowerCase())) {
         return true;
       }
     }
@@ -396,4 +422,3 @@ function applyCommonCorrections(text: string): string {
   
   return correctedText;
 }
-

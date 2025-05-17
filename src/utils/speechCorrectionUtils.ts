@@ -1,3 +1,4 @@
+
 /**
  * Aplica correções de voz para melhorar o reconhecimento de voz
  */
@@ -13,6 +14,7 @@ interface VoiceCorrection {
   original_text: string;
   corrected_text: string;
   created_at: string;
+  active?: boolean;
 }
 
 /**
@@ -28,6 +30,9 @@ const knownCorrections: Record<string, string[]> = {
   
   // Correções para "mocoto"
   'mocoto': ['mucoto', 'macoto', 'mo coto', 'mu coto'],
+
+  // Correções para "yummy bolacha"
+  'yummy bolacha': ['filme bolacha', 'iume bolacha', 'iuni bolacha', 'iami bolacha']
 };
 
 /**
@@ -80,7 +85,7 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
   try {
     // Busca correções de voz específicas do usuário no banco de dados
     const { data: userCorrections, error } = await supabase
-      .from('voice_corrections')
+      .from('speech_corrections')
       .select('*')
       .eq('user_id', userId);
     
@@ -125,7 +130,7 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
   if (userId) {
     try {
       const { data: userCorrections, error } = await supabase
-        .from('voice_corrections')
+        .from('speech_corrections')
         .select('*')
         .eq('user_id', userId);
       
@@ -163,7 +168,7 @@ export async function saveVoiceCorrection(
   try {
     // Verifica se a correção já existe
     const { data: existingCorrections, error: selectError } = await supabase
-      .from('voice_corrections')
+      .from('speech_corrections')
       .select('*')
       .eq('user_id', userId)
       .eq('original_text', originalText);
@@ -180,12 +185,13 @@ export async function saveVoiceCorrection(
     
     // Insere a nova correção
     const { error: insertError } = await supabase
-      .from('voice_corrections')
+      .from('speech_corrections')
       .insert([
         {
           user_id: userId,
           original_text: originalText,
           corrected_text: correctedText,
+          active: true
         },
       ]);
     
@@ -208,9 +214,8 @@ export async function saveVoiceCorrection(
     }
     
     return true;
-  } catch (backupError) {
-    // Ignorar erros pois a funcionalidade de backup foi removida
-    console.log("Correção principal foi salva com sucesso");
-    return true;
+  } catch (error) {
+    console.error("Erro ao salvar correção de voz:", error);
+    return false;
   }
 }

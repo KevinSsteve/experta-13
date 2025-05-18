@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { useNavigate } from "react-router-dom";
-import { createDefaultProduct, createYummyProduct } from "@/utils/product-helpers";
+import { createDefaultProduct, createYummyProduct, createSambapitoProduct } from "@/utils/product-helpers";
 
 export default function Index() {
   const { user } = useAuth();
@@ -36,6 +36,17 @@ export default function Index() {
           })
           .catch(error => {
             console.error("Erro ao criar produto Yummy Bolacha:", error);
+          });
+          
+        // Criar produto Sambapito Yummy Yummi  
+        createSambapitoProduct(user.id)
+          .then(product => {
+            if (product) {
+              console.log("Produto Sambapito Yummy Yummi criado ou verificado:", product);
+            }
+          })
+          .catch(error => {
+            console.error("Erro ao criar produto Sambapito Yummy Yummi:", error);
           });
       }
     }

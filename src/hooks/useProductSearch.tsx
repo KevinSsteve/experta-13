@@ -96,10 +96,9 @@ export function useProductSearch(products: Product[] | undefined) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const searchMultipleProducts = useCallback((productQueries: string[]) => {
-    if (productQueries.length === 0) return;
-    const combinedQuery = productQueries.join(' ');
-    setSearchQuery(combinedQuery);
+  const searchMultipleProducts = useCallback((productQueries: string) => {
+    if (!productQueries) return;
+    setSearchQuery(productQueries);
     setDisplayCount(20);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);

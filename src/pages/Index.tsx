@@ -9,15 +9,12 @@ import { BackToTopButton } from '@/components/ui/back-to-top';
 import { useProductSearch } from '@/hooks/useProductSearch';
 import { useInfiniteProducts } from '@/hooks/useInfiniteProducts';
 import { Skeleton } from '@/components/ui/skeleton';
-import { searchSimilarProducts } from '@/lib/products/search';
-import { toast } from 'sonner';
 
 const Index = () => {
   const { addItem } = useCart();
   const { user } = useAuth();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isFindingSimilar, setIsFindingSimilar] = useState(false);
 
   const {
     data,
@@ -64,31 +61,6 @@ const Index = () => {
     handleSearch(e);
   };
 
-  // Função para buscar produtos similares
-  const handleFindSimilarProducts = async () => {
-    if (!searchQuery.trim()) {
-      toast.warning("Digite um termo para buscar produtos similares");
-      return;
-    }
-
-    setIsFindingSimilar(true);
-    try {
-      const similarProducts = await searchSimilarProducts(searchQuery.trim(), 10, user?.id);
-      
-      if (similarProducts.length > 0) {
-        toast.success(`Encontrados ${similarProducts.length} produtos similares`);
-        searchMultipleProducts(similarProducts.map(p => p.name).join(', '));
-      } else {
-        toast.info("Não foram encontrados produtos similares");
-      }
-    } catch (error) {
-      console.error('Erro ao buscar produtos similares:', error);
-      toast.error("Erro ao buscar produtos similares");
-    } finally {
-      setIsFindingSimilar(false);
-    }
-  };
-
   return (
     <MainLayout>
       <div className="container mx-auto px-4 pb-20">
@@ -98,8 +70,6 @@ const Index = () => {
               value={searchQuery} 
               onChange={handleSearchChange}
               onMultiSearch={searchMultipleProducts}
-              onFindSimilar={handleFindSimilarProducts}
-              isFindingSimilar={isFindingSimilar}
             />
           </section>
           

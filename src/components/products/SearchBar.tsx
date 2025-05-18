@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, X, Loader2, Sparkles } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { VoiceSearchButton } from './VoiceSearchButton';
@@ -9,16 +9,12 @@ interface SearchBarProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onMultiSearch?: (searchQuery: string) => void;
-  onFindSimilar?: () => void;
-  isFindingSimilar?: boolean;
 }
 
 export function SearchBar({ 
   value, 
   onChange, 
-  onMultiSearch,
-  onFindSimilar,
-  isFindingSimilar = false
+  onMultiSearch
 }: SearchBarProps) {
   const [multiValue, setMultiValue] = React.useState('');
   
@@ -60,23 +56,6 @@ export function SearchBar({
             </button>
           )}
         </div>
-
-        {onFindSimilar && (
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={onFindSimilar}
-            disabled={isFindingSimilar}
-            className="shrink-0"
-            title="Buscar produtos similares"
-          >
-            {isFindingSimilar ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-          </Button>
-        )}
         
         {onMultiSearch && (
           <VoiceSearchButton 

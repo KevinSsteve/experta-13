@@ -5,4 +5,3 @@ export * from './adapters';
 export * from './queries';
 export * from './analytics';
 export { default as hardcodedProducts } from './fallback';
-export * from './search'; // Nova exportação

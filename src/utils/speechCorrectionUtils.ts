@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface para as correções de voz
@@ -23,13 +24,6 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
   if (!text || text.trim() === '') return text;
 
   try {
-    // Aplicar correções conhecidas antes de buscar no banco de dados
-    const preProcessedText = applyKnownCorrections(text);
-    if (preProcessedText !== text) {
-      console.log(`Correção pré-processada aplicada: "${text}" -> "${preProcessedText}"`);
-      text = preProcessedText;
-    }
-
     // Busca as correções ativas do usuário
     const { data: corrections, error } = await supabase
       .from("speech_corrections")
@@ -86,51 +80,6 @@ export async function applyVoiceCorrectionsToList(texts: string[], userId?: stri
     console.error("Erro ao aplicar correções de voz à lista:", error);
     return texts;
   }
-}
-
-/**
- * Aplica correções conhecidas ao texto sem precisar consultar o banco de dados
- * @param text Texto para aplicar correções conhecidas
- * @returns Texto com correções conhecidas aplicadas
- */
-function applyKnownCorrections(text: string): string {
-  // Lista de correções conhecidas (original -> corrigido)
-  const knownCorrections: Record<string, string> = {
-    'iogurte': 'Iogurte',
-    'yogurt': 'Iogurte',
-    'yogurte': 'Iogurte',
-    'iogurt': 'Iogurte',
-    'yummy': 'Yummy',
-    'yumi': 'Yummy',
-    'iumi': 'Yummy',
-    'iuni': 'Yummy',
-    'filme': 'Yummy',
-    'cabrito': 'Carne de Cabrito',
-    'carne de cabrito': 'Carne de Cabrito',
-    'carne cabrito': 'Carne de Cabrito',
-    'kabrito': 'Carne de Cabrito'
-  };
-
-  // Converter para minúsculas para comparação case-insensitive
-  const lowerText = text.toLowerCase();
-  
-  // Verificar se o texto completo é uma correção conhecida
-  for (const [original, corrected] of Object.entries(knownCorrections)) {
-    if (lowerText === original.toLowerCase()) {
-      return corrected;
-    }
-  }
-  
-  // Verificar se partes do texto correspondem a correções conhecidas
-  let correctedText = text;
-  for (const [original, corrected] of Object.entries(knownCorrections)) {
-    const regex = new RegExp(`\\b${original.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'gi');
-    if (regex.test(correctedText)) {
-      correctedText = correctedText.replace(regex, corrected);
-    }
-  }
-  
-  return correctedText;
 }
 
 /**

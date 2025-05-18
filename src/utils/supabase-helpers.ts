@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Log current user
@@ -149,5 +148,40 @@ export const generateSalesReport = async (userId: string, days: number = 30) => 
   } catch (error) {
     console.error('Exception in generateSalesReport:', error);
     throw error;
+  }
+};
+
+// Buscar produtos similares por nome
+export const findSimilarProducts = async (searchTerm: string, userId?: string) => {
+  try {
+    console.log(`Buscando produtos similares para: ${searchTerm}`);
+    
+    if (!searchTerm || searchTerm.length < 2) {
+      return [];
+    }
+
+    let query = supabase
+      .from('products')
+      .select('*')
+      .ilike('name', `%${searchTerm}%`)
+      .order('name');
+    
+    // Se um ID de usuário for fornecido, filtrar por esse usuário
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Erro ao buscar produtos similares:', error);
+      return [];
+    }
+    
+    console.log(`Encontrados ${data.length} produtos similares para "${searchTerm}"`);
+    return data;
+  } catch (error) {
+    console.error('Erro na busca de produtos similares:', error);
+    return [];
   }
 };

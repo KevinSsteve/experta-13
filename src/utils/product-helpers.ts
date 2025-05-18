@@ -63,3 +63,65 @@ export const createDefaultProduct = async (userId: string) => {
     return null;
   }
 };
+
+/**
+ * Cria o produto Yummy Bolacha no banco de dados
+ * @param userId ID do usuário proprietário do produto
+ * @returns O produto criado ou null em caso de erro
+ */
+export const createYummyProduct = async (userId: string) => {
+  if (!userId) {
+    console.error("ID do usuário não fornecido para criar produto");
+    return null;
+  }
+
+  try {
+    // Verificar se o produto já existe
+    const { data: existingProducts, error: checkError } = await supabase
+      .from('products')
+      .select('id, name')
+      .eq('name', 'Yummy Bolacha')
+      .eq('user_id', userId);
+
+    if (checkError) {
+      console.error("Erro ao verificar produto existente:", checkError);
+      return null;
+    }
+
+    // Se o produto já existe, retorná-lo
+    if (existingProducts && existingProducts.length > 0) {
+      console.log("Produto 'Yummy Bolacha' já existe:", existingProducts[0]);
+      return existingProducts[0];
+    }
+
+    // Criar o novo produto
+    const newProduct = {
+      name: 'Yummy Bolacha',
+      price: 100,
+      category: 'Alimentos',
+      stock: 30,
+      description: 'Yummy Bolacha de pacote',
+      code: 'YUM-001',
+      image: "/placeholder.svg",
+      user_id: userId,
+      purchase_price: 70, // Preço de compra estimado (70% do preço de venda)
+    };
+    
+    const { data, error } = await supabase
+      .from('products')
+      .insert([newProduct])
+      .select();
+    
+    if (error) {
+      console.error("Erro ao criar produto 'Yummy Bolacha':", error);
+      return null;
+    }
+    
+    console.log("Produto 'Yummy Bolacha' criado com sucesso:", data[0]);
+    toast.success("Produto 'Yummy Bolacha' criado com sucesso!");
+    return data[0];
+  } catch (error) {
+    console.error("Exceção ao criar produto:", error);
+    return null;
+  }
+};

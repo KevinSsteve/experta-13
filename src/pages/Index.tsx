@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { useNavigate } from "react-router-dom";
-import { createDefaultProduct } from "@/utils/product-helpers";
+import { createDefaultProduct, createYummyProduct } from "@/utils/product-helpers";
 
 export default function Index() {
   const { user } = useAuth();
@@ -14,8 +14,9 @@ export default function Index() {
     if (user) {
       navigate("/dashboard");
       
-      // Criar o produto padrão quando o usuário estiver logado
+      // Criar os produtos padrão quando o usuário estiver logado
       if (user.id) {
+        // Criar produto Carne de Cabrito
         createDefaultProduct(user.id)
           .then(product => {
             if (product) {
@@ -24,6 +25,17 @@ export default function Index() {
           })
           .catch(error => {
             console.error("Erro ao criar produto padrão:", error);
+          });
+        
+        // Criar produto Yummy Bolacha
+        createYummyProduct(user.id)
+          .then(product => {
+            if (product) {
+              console.log("Produto Yummy Bolacha criado ou verificado:", product);
+            }
+          })
+          .catch(error => {
+            console.error("Erro ao criar produto Yummy Bolacha:", error);
           });
       }
     }

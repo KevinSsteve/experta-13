@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      Certo: {
+        Row: {
+          category: string | null
+          code: number | null
+          description: string | null
+          Id: number
+          name: string | null
+          price: number | null
+          purchase_price: number | null
+          stock: number | null
+          user_id: number | null
+        }
+        Insert: {
+          category?: string | null
+          code?: number | null
+          description?: string | null
+          Id: number
+          name?: string | null
+          price?: number | null
+          purchase_price?: number | null
+          stock?: number | null
+          user_id?: number | null
+        }
+        Update: {
+          category?: string | null
+          code?: number | null
+          description?: string | null
+          Id?: number
+          name?: string | null
+          price?: number | null
+          purchase_price?: number | null
+          stock?: number | null
+          user_id?: number | null
+        }
+        Relationships: []
+      }
       credit_notes: {
         Row: {
           customer: Json | null
@@ -174,6 +210,42 @@ export type Database = {
         }
         Relationships: []
       }
+      Listaskevin: {
+        Row: {
+          category: string | null
+          code: string | null
+          description: string | null
+          Id: string
+          name: string | null
+          price: number | null
+          purchase_price: number | null
+          stock: number | null
+          user_id: number | null
+        }
+        Insert: {
+          category?: string | null
+          code?: string | null
+          description?: string | null
+          Id?: string
+          name?: string | null
+          price?: number | null
+          purchase_price?: number | null
+          stock?: number | null
+          user_id?: number | null
+        }
+        Update: {
+          category?: string | null
+          code?: string | null
+          description?: string | null
+          Id?: string
+          name?: string | null
+          price?: number | null
+          purchase_price?: number | null
+          stock?: number | null
+          user_id?: number | null
+        }
+        Relationships: []
+      }
       meat_cuts: {
         Row: {
           animal_type: string
@@ -213,6 +285,78 @@ export type Database = {
           stock_weight?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      New: {
+        Row: {
+          category: string | null
+          code: string | null
+          description: string | null
+          Id: number
+          name: string | null
+          price: number | null
+          purchase_price: number | null
+          stock: number | null
+          user_id: number | null
+        }
+        Insert: {
+          category?: string | null
+          code?: string | null
+          description?: string | null
+          Id: number
+          name?: string | null
+          price?: number | null
+          purchase_price?: number | null
+          stock?: number | null
+          user_id?: number | null
+        }
+        Update: {
+          category?: string | null
+          code?: string | null
+          description?: string | null
+          Id?: number
+          name?: string | null
+          price?: number | null
+          purchase_price?: number | null
+          stock?: number | null
+          user_id?: number | null
+        }
+        Relationships: []
+      }
+      Novalista: {
+        Row: {
+          category: string | null
+          code: string | null
+          description: string | null
+          Id: string
+          name: string | null
+          price: number | null
+          purchase_price: number | null
+          stock: number | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          code?: string | null
+          description?: string | null
+          Id?: string
+          name?: string | null
+          price?: number | null
+          purchase_price?: number | null
+          stock?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          code?: string | null
+          description?: string | null
+          Id?: string
+          name?: string | null
+          price?: number | null
+          purchase_price?: number | null
+          stock?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -474,6 +618,27 @@ export type Database = {
           id?: string
           original_text?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      Teste: {
+        Row: {
+          description: string | null
+          id: string | null
+          price_aoa: number | null
+          product_name: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string | null
+          price_aoa?: number | null
+          product_name?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string | null
+          price_aoa?: number | null
+          product_name?: string | null
         }
         Relationships: []
       }

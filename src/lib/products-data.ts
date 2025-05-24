@@ -1,96 +1,89 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { Product } from './products/types';
+import { supabase } from '@/integrations/supabase/client';
+import { Product } from '@/contexts/CartContext';
 
-export async function getCategories(userId?: string): Promise<string[]> {
+// Função para buscar produtos públicos do backup
+export const getBackupProducts = async (limit?: number): Promise<Product[]> => {
   try {
-    let query = supabase.from('products').select('category');
+    console.log('Fetching public backup products from Supabase...');
     
-    // Se um user ID foi fornecido, filtrar por esse usuário
-    if (userId) {
-      query = query.eq('user_id', userId);
+    let query = supabase
+      .from('products')
+      .select('*')
+      .eq('is_public', true)
+      .order('name');
+    
+    if (limit) {
+      query = query.limit(limit);
     }
     
     const { data, error } = await query;
     
     if (error) {
-      console.error('Erro ao buscar categorias:', error);
+      console.error('Error fetching backup products:', error);
       throw error;
     }
     
-    // Se não houver dados, retornar categorias padrão
-    if (!data || data.length === 0) {
-      return ["Alimentos Básicos", "Laticínios", "Hortifruti", "Carnes", "Padaria", 
-              "Bebidas", "Limpeza", "Higiene", "Pet Shop", "Outros"];
-    }
-    
-    // Extrair categorias únicas do resultado
-    const categories = Array.from(new Set(data.map((row) => row.category)));
-    return categories;
+    console.log(`Successfully fetched ${data?.length || 0} public products`);
+    return data as Product[] || [];
   } catch (error) {
-    console.error('Erro ao buscar categorias:', error);
-    // Retornar categorias padrão em caso de erro
-    return ["Alimentos Básicos", "Laticínios", "Hortifruti", "Carnes", "Padaria", 
-            "Bebidas", "Limpeza", "Higiene", "Pet Shop", "Outros"];
+    console.error('Error in getBackupProducts:', error);
+    return [];
   }
-}
+};
 
-// Adicionando função para listar produtos com melhor venda
-export async function getTopSellingProducts(userId?: string, limit: number = 10): Promise<Product[]> {
+// Função para buscar todos os produtos (privados do usuário + públicos)
+export const getAllAvailableProducts = async (userId?: string): Promise<Product[]> => {
   try {
-    if (!userId) {
-      console.warn('getTopSellingProducts: Nenhum ID de usuário fornecido');
-      return [];
-    }
-
-    // Buscamos produtos com base em dois critérios:
-    // 1. Produtos com estoque baixo (prioridade alta)
-    // 2. Produtos com preço mais alto (maior valor)
-    const { data, error } = await supabase
+    console.log(`Fetching all available products for user: ${userId || 'none'}`);
+    
+    // Buscar produtos do usuário
+    let userQuery = supabase
       .from('products')
       .select('*')
-      .eq('user_id', userId)
-      .order('stock', { ascending: true }) // Primeiro por estoque baixo
-      .order('price', { ascending: false }) // Depois por preço mais alto
-      .limit(limit);
+      .order('name');
     
-    if (error) {
-      console.error('Erro ao buscar produtos mais vendidos:', error);
-      throw error;
+    if (userId) {
+      userQuery = userQuery.eq('user_id', userId);
     }
     
-    return data as Product[];
-  } catch (error) {
-    console.error('Erro ao obter produtos mais vendidos:', error);
-    return [];
-  }
-}
-
-// Nova função para obter produtos de backup (cópias de segurança)
-export async function getBackupProducts(limit: number = 100): Promise<Product[]> {
-  try {
-    console.log('Buscando produtos de backup para sugestões');
-    
-    const { data, error } = await supabase
-      .from('product_backups')
+    // Buscar produtos públicos
+    const publicQuery = supabase
+      .from('products')
       .select('*')
-      .eq('is_active', true)
-      .order('category')
-      .order('name')
-      .limit(limit);
+      .eq('is_public', true)
+      .order('name');
     
-    if (error) {
-      console.error('Erro ao buscar produtos de backup:', error);
-      throw error;
+    const [userResult, publicResult] = await Promise.all([
+      userQuery,
+      publicQuery
+    ]);
+    
+    if (userResult.error) {
+      console.error('Error fetching user products:', userResult.error);
     }
     
-    console.log(`Encontrados ${data?.length || 0} produtos de backup`);
-    return data as Product[];
+    if (publicResult.error) {
+      console.error('Error fetching public products:', publicResult.error);
+    }
+    
+    // Combinar resultados
+    const userProducts = userResult.data as Product[] || [];
+    const publicProducts = publicResult.data as Product[] || [];
+    
+    // Remover duplicatas baseado em nome e categoria
+    const allProducts = [...userProducts, ...publicProducts];
+    const uniqueProducts = allProducts.filter((product, index, self) => 
+      index === self.findIndex(p => 
+        p.name.toLowerCase() === product.name.toLowerCase() && 
+        p.category.toLowerCase() === product.category.toLowerCase()
+      )
+    );
+    
+    console.log(`Found ${uniqueProducts.length} unique products total`);
+    return uniqueProducts;
   } catch (error) {
-    console.error('Erro ao obter produtos de backup:', error);
+    console.error('Error in getAllAvailableProducts:', error);
     return [];
   }
-}
-
-// Re-export the Product type from the products module for backward compatibility
-export type { Product } from './products/types';
+};

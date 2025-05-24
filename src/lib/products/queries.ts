@@ -10,19 +10,44 @@ export async function getProducts(search = '', category = '', minPrice = 0, maxP
   try {
     console.log(`Fetching products with filters: search=${search}, category=${category}, userId=${userId || 'none'}`);
     
-    // Get products from Supabase for the current user
-    let products = await fetchProductsFromSupabase(userId);
+    // Get user's private products from Supabase
+    let userProducts = await fetchProductsFromSupabase(userId);
     
-    // If no products found in Supabase, use hardcoded data as fallback
+    // Get public products from Supabase
+    const { data: publicProducts, error: publicError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_public', true)
+      .order('name');
+    
+    if (publicError) {
+      console.error('Error fetching public products:', publicError);
+    }
+    
+    // Combine user products with public products
+    let products = [...userProducts];
+    if (publicProducts) {
+      products = [...products, ...publicProducts as Product[]];
+    }
+    
+    // If no products found, use hardcoded data as fallback
     if (products.length === 0) {
       console.log('No products found in Supabase, using fallback data');
       products = hardcodedProducts;
     } else {
-      console.log(`Found ${products.length} products in Supabase`);
+      console.log(`Found ${products.length} products in Supabase (including public products)`);
     }
     
+    // Remove duplicates based on name and category
+    const uniqueProducts = products.filter((product, index, self) => 
+      index === self.findIndex(p => 
+        p.name.toLowerCase() === product.name.toLowerCase() && 
+        p.category.toLowerCase() === product.category.toLowerCase()
+      )
+    );
+    
     // Filter products
-    let filteredProducts = [...products];
+    let filteredProducts = [...uniqueProducts];
     
     // Filter by search term
     if (search) {
@@ -92,9 +117,9 @@ export async function getProduct(id: string, userId?: string): Promise<Product |
       .select('*')
       .eq('id', id);
     
-    // If a user ID is provided, filter by that user
+    // If a user ID is provided, filter by that user OR public products
     if (userId) {
-      query = query.eq('user_id', userId);
+      query = query.or(`user_id.eq.${userId},is_public.eq.true`);
     }
     
     const { data, error } = await query.maybeSingle();
@@ -122,8 +147,26 @@ export async function getCategories(userId?: string): Promise<string[]> {
   try {
     console.log(`Fetching categories for userId: ${userId || 'none'}`);
     
-    const products = await fetchProductsFromSupabase(userId);
-    const categories = Array.from(new Set(products.map((product) => product.category)));
+    // Get user's private products
+    const userProducts = await fetchProductsFromSupabase(userId);
+    
+    // Get public products
+    const { data: publicProducts, error } = await supabase
+      .from('products')
+      .select('category')
+      .eq('is_public', true);
+    
+    if (error) {
+      console.error('Error fetching public product categories:', error);
+    }
+    
+    // Combine categories from both user and public products
+    const allProducts = [...userProducts];
+    if (publicProducts) {
+      allProducts.push(...publicProducts.map(p => ({ category: p.category })) as any);
+    }
+    
+    const categories = Array.from(new Set(allProducts.map((product) => product.category)));
     
     console.log(`Found ${categories.length} categories`);
     return categories;

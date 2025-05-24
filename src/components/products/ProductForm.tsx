@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getCategories } from "@/lib/products-data";
+import { getCategories } from "@/lib/products/queries";
 import { Product } from "@/contexts/CartContext";
 import { Image as LucideImage, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

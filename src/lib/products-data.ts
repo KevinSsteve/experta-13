@@ -87,3 +87,38 @@ export const getAllAvailableProducts = async (userId?: string): Promise<Product[
     return [];
   }
 };
+
+// Função para buscar produtos mais vendidos (simulação baseada no estoque)
+export const getTopSellingProducts = async (userId?: string, limit?: number): Promise<Product[]> => {
+  try {
+    console.log(`Fetching top selling products for user: ${userId || 'none'}`);
+    
+    let query = supabase
+      .from('products')
+      .select('*')
+      .order('stock', { ascending: false }); // Produtos com mais estoque (simulando vendas)
+    
+    if (userId) {
+      query = query.or(`user_id.eq.${userId},is_public.eq.true`);
+    } else {
+      query = query.eq('is_public', true);
+    }
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching top selling products:', error);
+      throw error;
+    }
+    
+    console.log(`Successfully fetched ${data?.length || 0} top selling products`);
+    return data as Product[] || [];
+  } catch (error) {
+    console.error('Error in getTopSellingProducts:', error);
+    return [];
+  }
+};

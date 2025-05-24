@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Product } from '@/contexts/CartContext';
+import { Product } from '@/lib/products/types';
 
 // Função para buscar produtos públicos do backup
 export const getBackupProducts = async (limit?: number): Promise<Product[]> => {

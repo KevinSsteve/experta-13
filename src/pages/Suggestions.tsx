@@ -27,13 +27,37 @@ const Suggestions = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
-  // Usar a nova função getBackupProducts para buscar produtos de backup
+  // Buscar produtos com uma query melhorada
   const { data: allProducts = [], isLoading, error } = useQuery({
-    queryKey: ['backupProducts'],
+    queryKey: ['suggestions-products'],
     queryFn: async () => {
-      const products = await getBackupProducts(100);
+      console.log('Fetching products for suggestions page...');
+      
+      // Primeiro tenta buscar produtos públicos
+      let products = await getBackupProducts(100);
+      
+      // Se não encontrar produtos públicos, busca todos os produtos
+      if (!products || products.length === 0) {
+        console.log('No public products found, fetching all products...');
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('name')
+          .limit(100);
+        
+        if (error) {
+          console.error('Error fetching all products:', error);
+          throw error;
+        }
+        
+        products = data as Product[] || [];
+      }
+      
+      console.log(`Found ${products.length} products for suggestions`);
       return products;
-    }
+    },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Extrair categorias únicas dos produtos
@@ -92,6 +116,7 @@ const Suggestions = () => {
         description: product.description || '',
         code: product.code || '',
         image: product.image || "/placeholder.svg",
+        purchase_price: product.purchase_price || product.price * 0.7,
         user_id: user.id,
         is_public: false
       };
@@ -127,6 +152,26 @@ const Suggestions = () => {
         <div className="container mx-auto p-4">
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             <p>Erro ao carregar sugestões de produtos: {(error as Error).message}</p>
+            <p className="text-sm mt-2">Total de produtos encontrados: {allProducts.length}</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Se não há produtos, mostrar mensagem informativa
+  if (allProducts.length === 0) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto p-4">
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold mb-4">Sugestões de Produtos</h1>
+            <p className="text-lg text-muted-foreground mb-4">
+              Nenhum produto encontrado no catálogo.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Os produtos podem estar sendo carregados ou não há produtos disponíveis no momento.
+            </p>
           </div>
         </div>
       </MainLayout>
@@ -143,7 +188,7 @@ const Suggestions = () => {
                 Descubra Novos Produtos
               </h1>
               <p className="text-lg text-muted-foreground mt-2">
-                Explore nossa seleção de produtos populares para seu estoque
+                Explore nossa seleção de {allProducts.length} produtos populares para seu estoque
               </p>
             </div>
 

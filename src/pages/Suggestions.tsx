@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Card } from "@/components/ui/card";
@@ -26,18 +25,16 @@ const Suggestions = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
-  // Buscar produtos com uma query melhorada
+  // Buscar todos os produtos disponíveis
   const { data: allProducts = [], isLoading, error } = useQuery({
     queryKey: ['suggestions-products'],
     queryFn: async () => {
       console.log('Fetching products for suggestions page...');
       
-      // Buscar todos os produtos disponíveis, priorizando produtos públicos
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('name')
-        .limit(100);
+        .order('name');
       
       if (error) {
         console.error('Error fetching products:', error);

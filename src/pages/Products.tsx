@@ -71,7 +71,7 @@ const Products = () => {
     queryFn: async () => {
       console.log("Fetching all products for store...");
       
-      // Buscar todos os produtos disponíveis (não apenas públicos)
+      // Buscar todos os produtos disponíveis
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -133,6 +133,7 @@ const Products = () => {
         description: product.description || '',
         code: product.code || '',
         image: product.image || "/placeholder.svg",
+        purchase_price: product.purchase_price || product.price * 0.7,
         user_id: user.id,
         is_public: false
       };
@@ -194,6 +195,7 @@ const Products = () => {
           description: data.description || null,
           code: data.code || null,
           image: data.image || "/placeholder.svg",
+          purchase_price: data.price * 0.7,
           user_id: user.id
         }])
         .select();
@@ -342,7 +344,6 @@ const Products = () => {
     <MainLayout>
       <div className="container mx-auto px-2 sm:px-4">
         <div className="flex flex-col space-y-4">
-          {/* Header and action buttons */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold">Produtos</h1>
@@ -372,7 +373,6 @@ const Products = () => {
             </div>
           </div>
 
-          {/* Main content card */}
           <Card className="overflow-hidden">
             <CardHeader className="p-3 sm:p-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -427,7 +427,6 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Add Product Dialog */}
       <ProductDialog 
         isOpen={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
@@ -437,7 +436,6 @@ const Products = () => {
         mode="add"
       />
 
-      {/* Edit Product Dialog */}
       <ProductDialog
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}

@@ -1,9 +1,8 @@
-
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Product } from "@/contexts/CartContext";
+import { Product } from "@/lib/products/types";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,7 +49,13 @@ const Suggestions = () => {
           throw error;
         }
         
-        products = data as Product[] || [];
+        // Garantir que todos os produtos tenham purchase_price obrigatório
+        const productsWithPurchasePrice = (data || []).map(product => ({
+          ...product,
+          purchase_price: product.purchase_price || product.price * 0.7,
+        })) as Product[];
+        
+        products = productsWithPurchasePrice;
       }
       
       console.log(`Found ${products.length} products for suggestions`);
@@ -116,7 +121,7 @@ const Suggestions = () => {
         description: product.description || '',
         code: product.code || '',
         image: product.image || "/placeholder.svg",
-        purchase_price: product.purchase_price || product.price * 0.7,
+        purchase_price: product.purchase_price,
         user_id: user.id,
         is_public: false
       };

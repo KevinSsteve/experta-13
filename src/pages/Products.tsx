@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -70,21 +69,27 @@ const Products = () => {
   const { data: publicProductsData, isLoading: isLoadingPublicProducts, error: publicProductsError } = useQuery({
     queryKey: ['publicProducts'],
     queryFn: async () => {
-      console.log("Fetching public products...");
+      console.log("Fetching all products for store...");
       
+      // Buscar todos os produtos disponíveis (não apenas públicos)
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('is_public', true)
         .order('name');
       
       if (error) {
-        console.error("Error fetching public products:", error);
+        console.error("Error fetching store products:", error);
         throw error;
       }
       
-      console.log("Public products fetched:", data);
-      return data as Product[];
+      // Garantir que todos os produtos tenham purchase_price
+      const productsWithPurchasePrice = (data || []).map(product => ({
+        ...product,
+        purchase_price: product.purchase_price || product.price * 0.7,
+      })) as Product[];
+      
+      console.log("Store products fetched:", productsWithPurchasePrice);
+      return productsWithPurchasePrice;
     }
   });
 

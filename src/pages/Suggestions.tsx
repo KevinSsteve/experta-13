@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Card } from "@/components/ui/card";
@@ -9,7 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ProductCard } from "@/components/products/ProductCard";
-import { getBackupProducts } from "@/lib/products-data";
 import {
   Carousel,
   CarouselContent,
@@ -32,34 +32,26 @@ const Suggestions = () => {
     queryFn: async () => {
       console.log('Fetching products for suggestions page...');
       
-      // Primeiro tenta buscar produtos públicos
-      let products = await getBackupProducts(100);
+      // Buscar todos os produtos disponíveis, priorizando produtos públicos
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name')
+        .limit(100);
       
-      // Se não encontrar produtos públicos, busca todos os produtos
-      if (!products || products.length === 0) {
-        console.log('No public products found, fetching all products...');
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .order('name')
-          .limit(100);
-        
-        if (error) {
-          console.error('Error fetching all products:', error);
-          throw error;
-        }
-        
-        // Garantir que todos os produtos tenham purchase_price obrigatório
-        const productsWithPurchasePrice = (data || []).map(product => ({
-          ...product,
-          purchase_price: product.purchase_price || product.price * 0.7,
-        })) as Product[];
-        
-        products = productsWithPurchasePrice;
+      if (error) {
+        console.error('Error fetching products:', error);
+        throw error;
       }
       
-      console.log(`Found ${products.length} products for suggestions`);
-      return products;
+      // Garantir que todos os produtos tenham purchase_price obrigatório
+      const productsWithPurchasePrice = (data || []).map(product => ({
+        ...product,
+        purchase_price: product.purchase_price || product.price * 0.7,
+      })) as Product[];
+      
+      console.log(`Found ${productsWithPurchasePrice.length} products for suggestions`);
+      return productsWithPurchasePrice;
     },
     retry: 3,
     retryDelay: 1000,
@@ -230,31 +222,37 @@ const Suggestions = () => {
 
                 {categories.map(category => (
                   <TabsContent key={category} value={category} className="mt-0">
-                    <Carousel
-                      opts={{
-                        align: "start",
-                        slidesToScroll: 3,
-                      }}
-                      className="w-full"
-                    >
-                      <CarouselContent>
-                        {(category === "all" ? filteredProducts : 
-                          filteredProducts.filter(p => p.category === category))
-                          .map((product) => (
-                          <CarouselItem key={product.id} className="basis-1/3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
-                            <div className="h-full p-0.5">
-                              <ProductCard
-                                product={product}
-                                onAddToCart={addToStock}
-                                priority={true}
-                              />
-                            </div>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                      <CarouselPrevious />
-                      <CarouselNext />
-                    </Carousel>
+                    {filteredProducts.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>Nenhum produto encontrado nesta categoria.</p>
+                      </div>
+                    ) : (
+                      <Carousel
+                        opts={{
+                          align: "start",
+                          slidesToScroll: 3,
+                        }}
+                        className="w-full"
+                      >
+                        <CarouselContent>
+                          {(category === "all" ? filteredProducts : 
+                            filteredProducts.filter(p => p.category === category))
+                            .map((product) => (
+                            <CarouselItem key={product.id} className="basis-1/3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+                              <div className="h-full p-0.5">
+                                <ProductCard
+                                  product={product}
+                                  onAddToCart={addToStock}
+                                  priority={true}
+                                />
+                              </div>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                      </Carousel>
+                    )}
                   </TabsContent>
                 ))}
               </Tabs>

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/lib/products/types';
 
@@ -20,7 +21,7 @@ export const getBackupProducts = async (limit?: number): Promise<Product[]> => {
     
     if (error) {
       console.error('Error fetching backup products:', error);
-      // Se der erro, tenta buscar todos os produtos da tabela products
+      // Se der erro buscando produtos públicos, tenta buscar todos
       console.log('Trying to fetch all products as fallback...');
       const fallbackQuery = supabase
         .from('products')
@@ -35,12 +36,24 @@ export const getBackupProducts = async (limit?: number): Promise<Product[]> => {
         return [];
       }
       
-      console.log(`Successfully fetched ${fallbackData?.length || 0} products (fallback)`);
-      return fallbackData as Product[] || [];
+      // Garantir que todos os produtos tenham purchase_price
+      const productsWithPurchasePrice = (fallbackData || []).map(product => ({
+        ...product,
+        purchase_price: product.purchase_price || product.price * 0.7,
+      })) as Product[];
+      
+      console.log(`Successfully fetched ${productsWithPurchasePrice.length} products (fallback)`);
+      return productsWithPurchasePrice;
     }
     
-    console.log(`Successfully fetched ${data?.length || 0} public products`);
-    return data as Product[] || [];
+    // Garantir que todos os produtos tenham purchase_price
+    const productsWithPurchasePrice = (data || []).map(product => ({
+      ...product,
+      purchase_price: product.purchase_price || product.price * 0.7,
+    })) as Product[];
+    
+    console.log(`Successfully fetched ${productsWithPurchasePrice.length} public products`);
+    return productsWithPurchasePrice;
   } catch (error) {
     console.error('Error in getBackupProducts:', error);
     return [];

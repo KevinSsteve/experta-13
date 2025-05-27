@@ -25,29 +25,45 @@ const Suggestions = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
-  // Buscar todos os produtos disponíveis
+  // Buscar todos os produtos disponíveis (de ambas as tabelas)
   const { data: allProducts = [], isLoading, error } = useQuery({
     queryKey: ['suggestions-products'],
     queryFn: async () => {
       console.log('Fetching products for suggestions page...');
       
-      const { data, error } = await supabase
+      // Buscar produtos da tabela "products"
+      const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('*')
         .order('name');
       
-      if (error) {
-        console.error('Error fetching products:', error);
-        throw error;
+      if (productsError) {
+        console.error('Error fetching products:', productsError);
       }
       
+      // Buscar produtos da tabela "New"
+      const { data: newProductsData, error: newProductsError } = await supabase
+        .from('New')
+        .select('*')
+        .order('name');
+      
+      if (newProductsError) {
+        console.error('Error fetching New products:', newProductsError);
+      }
+      
+      // Combinar produtos das duas tabelas
+      const combinedProducts = [
+        ...(productsData || []),
+        ...(newProductsData || [])
+      ];
+      
       // Garantir que todos os produtos tenham purchase_price obrigatório
-      const productsWithPurchasePrice = (data || []).map(product => ({
+      const productsWithPurchasePrice = combinedProducts.map(product => ({
         ...product,
         purchase_price: product.purchase_price || product.price * 0.7,
       })) as Product[];
       
-      console.log(`Found ${productsWithPurchasePrice.length} products for suggestions`);
+      console.log(`Found ${productsWithPurchasePrice.length} total products for suggestions (${productsData?.length || 0} from products + ${newProductsData?.length || 0} from New)`);
       return productsWithPurchasePrice;
     },
     retry: 3,

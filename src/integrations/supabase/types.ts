@@ -290,37 +290,52 @@ export type Database = {
       }
       New: {
         Row: {
-          category: string | null
+          category: string
           code: string | null
+          created_at: string | null
           description: string | null
-          Id: number
-          name: string | null
-          price: number | null
-          purchase_price: number | null
-          stock: number | null
-          user_id: number | null
+          id: string
+          image: string | null
+          is_public: boolean | null
+          name: string
+          price: number
+          profit_margin: number | null
+          purchase_price: number
+          stock: number
+          updated_at: string | null
+          user_id: string
         }
         Insert: {
-          category?: string | null
+          category: string
           code?: string | null
+          created_at?: string | null
           description?: string | null
-          Id: number
-          name?: string | null
-          price?: number | null
-          purchase_price?: number | null
-          stock?: number | null
-          user_id?: number | null
+          id?: string
+          image?: string | null
+          is_public?: boolean | null
+          name: string
+          price: number
+          profit_margin?: number | null
+          purchase_price?: number
+          stock?: number
+          updated_at?: string | null
+          user_id: string
         }
         Update: {
-          category?: string | null
+          category?: string
           code?: string | null
+          created_at?: string | null
           description?: string | null
-          Id?: number
-          name?: string | null
-          price?: number | null
-          purchase_price?: number | null
-          stock?: number | null
-          user_id?: number | null
+          id?: string
+          image?: string | null
+          is_public?: boolean | null
+          name?: string
+          price?: number
+          profit_margin?: number | null
+          purchase_price?: number
+          stock?: number
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

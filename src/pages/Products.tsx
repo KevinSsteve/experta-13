@@ -71,24 +71,39 @@ const Products = () => {
     queryFn: async () => {
       console.log("Fetching all products for store...");
       
-      // Buscar todos os produtos disponíveis
-      const { data, error } = await supabase
+      // Buscar produtos da tabela "products"
+      const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('*')
         .order('name');
       
-      if (error) {
-        console.error("Error fetching store products:", error);
-        throw error;
+      if (productsError) {
+        console.error("Error fetching products:", productsError);
       }
       
+      // Buscar produtos da tabela "New"
+      const { data: newProductsData, error: newProductsError } = await supabase
+        .from('New')
+        .select('*')
+        .order('name');
+      
+      if (newProductsError) {
+        console.error("Error fetching New products:", newProductsError);
+      }
+      
+      // Combinar os produtos das duas tabelas
+      const allProducts = [
+        ...(productsData || []),
+        ...(newProductsData || [])
+      ];
+      
       // Garantir que todos os produtos tenham purchase_price
-      const productsWithPurchasePrice = (data || []).map(product => ({
+      const productsWithPurchasePrice = allProducts.map(product => ({
         ...product,
         purchase_price: product.purchase_price || product.price * 0.7,
       })) as Product[];
       
-      console.log("Store products fetched:", productsWithPurchasePrice);
+      console.log(`Store products fetched: ${productsWithPurchasePrice.length} total (${productsData?.length || 0} from products + ${newProductsData?.length || 0} from New)`);
       return productsWithPurchasePrice;
     }
   });

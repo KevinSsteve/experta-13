@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Card } from "@/components/ui/card";
@@ -18,7 +17,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 const Suggestions = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -192,7 +191,7 @@ const Suggestions = () => {
   return (
     <MainLayout>
       <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-        <div className="container mx-auto px-4 py-6 space-y-8">
+        <div className="container mx-auto px-4 py-6 space-y-6">
           {/* Header Section */}
           <div className="text-center space-y-3">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -201,6 +200,36 @@ const Suggestions = () => {
             <p className="text-lg text-muted-foreground">
               Explore nossa seleção de {allProducts.length} produtos populares para seu estoque
             </p>
+          </div>
+
+          {/* Products Carousel - Now at the top */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-center">Produtos em Destaque</h2>
+            <div className="relative px-12">
+              <Carousel
+                opts={{
+                  align: "start",
+                  slidesToScroll: 1,
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {allProducts.slice(0, 20).map((product) => (
+                    <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/2 lg:basis-1/3">
+                      <div className="h-full">
+                        <ProductCard
+                          product={product}
+                          onAddToCart={addToStock}
+                          priority={true}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-0" />
+                <CarouselNext className="right-0" />
+              </Carousel>
+            </div>
           </div>
 
           {/* Search Section */}
@@ -216,69 +245,51 @@ const Suggestions = () => {
             </div>
           </Card>
 
-          {/* Categories Section */}
-          <div className="space-y-6">
-            <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
-              <div className="flex justify-center">
-                <TabsList className="flex-wrap gap-2 h-auto p-2">
-                  {categories.map(category => (
-                    <TabsTrigger 
-                      key={category} 
-                      value={category}
-                      className="text-sm px-3 py-2"
-                    >
-                      {category === "all" ? "Todas Categorias" : category}
-                      {category !== "all" && (
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {allProducts.filter(p => p.category === category).length}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
+          {/* Categories as Button List */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-center">Categorias</h3>
+            <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
+              {categories.map(category => (
+                <Button
+                  key={category}
+                  variant={activeCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveCategory(category)}
+                  className="text-sm"
+                >
+                  {category === "all" ? "Todas Categorias" : category}
+                  {category !== "all" && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {allProducts.filter(p => p.category === category).length}
+                    </Badge>
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
 
-              {/* Products Content */}
-              <div className="mt-8">
-                {categories.map(category => (
-                  <TabsContent key={category} value={category} className="mt-0">
-                    {filteredProducts.length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <p className="text-lg">Nenhum produto encontrado nesta categoria.</p>
-                      </div>
-                    ) : (
-                      <div className="relative px-12">
-                        <Carousel
-                          opts={{
-                            align: "start",
-                            slidesToScroll: 2,
-                          }}
-                          className="w-full"
-                        >
-                          <CarouselContent className="-ml-2 md:-ml-4">
-                            {(category === "all" ? filteredProducts : 
-                              filteredProducts.filter(p => p.category === category))
-                              .map((product) => (
-                              <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
-                                <div className="h-full">
-                                  <ProductCard
-                                    product={product}
-                                    onAddToCart={addToStock}
-                                    priority={true}
-                                  />
-                                </div>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                          <CarouselPrevious className="left-0" />
-                          <CarouselNext className="right-0" />
-                        </Carousel>
-                      </div>
-                    )}
-                  </TabsContent>
+          {/* Filtered Products Grid */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-center">
+              {activeCategory === "all" ? "Todos os Produtos" : `Categoria: ${activeCategory}`}
+            </h3>
+            
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-lg">Nenhum produto encontrado nesta categoria.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAddToCart={addToStock}
+                    priority={false}
+                  />
                 ))}
               </div>
-            </Tabs>
+            )}
           </div>
 
           {/* Results Counter */}

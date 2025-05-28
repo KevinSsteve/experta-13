@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Card } from "@/components/ui/card";
@@ -191,89 +192,98 @@ const Suggestions = () => {
   return (
     <MainLayout>
       <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Descubra Novos Produtos
-              </h1>
-              <p className="text-lg text-muted-foreground mt-2">
-                Explore nossa seleção de {allProducts.length} produtos populares para seu estoque
-              </p>
+        <div className="container mx-auto px-4 py-6 space-y-8">
+          {/* Header Section */}
+          <div className="text-center space-y-3">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Descubra Novos Produtos
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Explore nossa seleção de {allProducts.length} produtos populares para seu estoque
+            </p>
+          </div>
+
+          {/* Search Section */}
+          <Card className="p-4 backdrop-blur-sm bg-background/80 max-w-md mx-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produtos por nome ou categoria..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
+          </Card>
 
-            <Card className="p-4 backdrop-blur-sm bg-background/80">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar produtos por nome ou categoria..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </Card>
-
-            <div className="space-y-4">
-              <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                <TabsList className="mb-4 flex flex-wrap">
+          {/* Categories Section */}
+          <div className="space-y-6">
+            <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
+              <div className="flex justify-center">
+                <TabsList className="flex-wrap gap-2 h-auto p-2">
                   {categories.map(category => (
                     <TabsTrigger 
                       key={category} 
                       value={category}
-                      className="mb-1 mr-1"
+                      className="text-sm px-3 py-2"
                     >
                       {category === "all" ? "Todas Categorias" : category}
                       {category !== "all" && (
-                        <Badge variant="outline" className="ml-2">
+                        <Badge variant="outline" className="ml-2 text-xs">
                           {allProducts.filter(p => p.category === category).length}
                         </Badge>
                       )}
                     </TabsTrigger>
                   ))}
                 </TabsList>
+              </div>
 
+              {/* Products Content */}
+              <div className="mt-8">
                 {categories.map(category => (
                   <TabsContent key={category} value={category} className="mt-0">
                     {filteredProducts.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p>Nenhum produto encontrado nesta categoria.</p>
+                      <div className="text-center py-12 text-muted-foreground">
+                        <p className="text-lg">Nenhum produto encontrado nesta categoria.</p>
                       </div>
                     ) : (
-                      <Carousel
-                        opts={{
-                          align: "start",
-                          slidesToScroll: 3,
-                        }}
-                        className="w-full"
-                      >
-                        <CarouselContent>
-                          {(category === "all" ? filteredProducts : 
-                            filteredProducts.filter(p => p.category === category))
-                            .map((product) => (
-                            <CarouselItem key={product.id} className="basis-1/3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
-                              <div className="h-full p-0.5">
-                                <ProductCard
-                                  product={product}
-                                  onAddToCart={addToStock}
-                                  priority={true}
-                                />
-                              </div>
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                        <CarouselPrevious />
-                        <CarouselNext />
-                      </Carousel>
+                      <div className="relative px-12">
+                        <Carousel
+                          opts={{
+                            align: "start",
+                            slidesToScroll: 2,
+                          }}
+                          className="w-full"
+                        >
+                          <CarouselContent className="-ml-2 md:-ml-4">
+                            {(category === "all" ? filteredProducts : 
+                              filteredProducts.filter(p => p.category === category))
+                              .map((product) => (
+                              <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                                <div className="h-full">
+                                  <ProductCard
+                                    product={product}
+                                    onAddToCart={addToStock}
+                                    priority={true}
+                                  />
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          <CarouselPrevious className="left-0" />
+                          <CarouselNext className="right-0" />
+                        </Carousel>
+                      </div>
                     )}
                   </TabsContent>
                 ))}
-              </Tabs>
-            </div>
+              </div>
+            </Tabs>
+          </div>
 
-            <div className="text-center text-muted-foreground mt-8">
-              <p>{filteredProducts.length} produtos encontrados</p>
-            </div>
+          {/* Results Counter */}
+          <div className="text-center text-muted-foreground">
+            <p>{filteredProducts.length} produtos encontrados</p>
           </div>
         </div>
       </div>

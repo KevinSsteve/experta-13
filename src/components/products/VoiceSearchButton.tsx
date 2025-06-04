@@ -138,13 +138,10 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
         onResult(correctedTranscript);
         
         // Mensagem diferente se houve correção
-        const wascorrected = transcript.toLowerCase() !== correctedTranscript.toLowerCase();
+        const wasCorrected = transcript.toLowerCase() !== correctedTranscript.toLowerCase();
         toast({
-          title: wasCorrec
-
-
-ted ? "Busca por voz (corrigida)" : "Busca por voz",
-          description: wasCorreected ? `"${transcript}" → "${correctedTranscript}"` : `"${correctedTranscript}"`,
+          title: wasCorrected ? "Busca por voz (corrigida)" : "Busca por voz",
+          description: wasCorrected ? `"${transcript}" → "${correctedTranscript}"` : `"${correctedTranscript}"`,
         });
       }
     };

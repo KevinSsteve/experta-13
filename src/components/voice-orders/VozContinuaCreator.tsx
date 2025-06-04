@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ProductSuggestions } from "./ProductSuggestions";
 import { useAuth } from "@/contexts/AuthContext";
+import { applyVoiceCorrections } from "@/utils/speechCorrectionUtils";
 
 interface VozContinuaCreatorProps {
   onListCreated: (products: string[]) => void;
@@ -213,15 +214,20 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
   };
   
   // Processar um item após o silêncio
-  const processItemAfterSilence = (text: string) => {
+  const processItemAfterSilence = async (text: string) => {
     if (!text.trim()) return;
     
     try {
+      // NOVO FLUXO: Aplica correções SEMPRE que o texto reconhecido estiver nas correções
+      const correctedText = await applyVoiceCorrections(text.trim(), user?.id);
+      console.log(`Transcrição original: "${text.trim()}"`);
+      console.log(`Transcrição corrigida: "${correctedText}"`);
+      
       // Primeiro tentamos processar usando parseVoiceInput para capturar o nome e preço
-      const parsedInput = parseVoiceInput(text.trim());
+      const parsedInput = parseVoiceInput(correctedText);
       
       // Depois processamos com parseVoiceOrder para obter informações adicionais como quantidade
-      const processedItem = parseVoiceOrder(text.trim());
+      const processedItem = parseVoiceOrder(correctedText);
 
       // Combinamos as informações de ambas funções para garantir que capturamos tanto
       // o nome quanto o preço corretamente
@@ -229,7 +235,7 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
         name: parsedInput.name || processedItem.name, // Usamos o nome de qualquer função que retornou um resultado
         price: parsedInput.price || processedItem.price, // Priorizamos o preço capturado
         quantity: processedItem.quantity || 1,
-        originalText: text.trim()
+        originalText: correctedText // Usar o texto corrigido como originalText
       });
       
       console.log("Item processado:", JSON.parse(itemJson));
@@ -242,17 +248,28 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
       const displayPrice = parsedInput.price || processedItem.price;
       
       const priceDisplay = displayPrice ? ` (${displayPrice})` : '';
+      
+      // Verificar se houve correção para informar o usuário
+      const wasCorrected = text.trim().toLowerCase() !== correctedText.toLowerCase();
+      
       toast({
-        title: "Item adicionado",
-        description: `Item "${displayName}${priceDisplay}" adicionado à lista.`
+        title: wasCorrected ? "Item adicionado (corrigido)" : "Item adicionado",
+        description: wasCorrected 
+          ? `"${text.trim()}" → "${displayName}${priceDisplay}"`
+          : `Item "${displayName}${priceDisplay}" adicionado à lista.`
       });
     } catch (error) {
       console.error("Erro ao processar item:", error);
       // Fallback para texto simples se houver erro no processamento
-      setProducts(prev => [...prev, text.trim()]);
+      const correctedText = await applyVoiceCorrections(text.trim(), user?.id);
+      setProducts(prev => [...prev, correctedText]);
+      
+      const wasCorrected = text.trim().toLowerCase() !== correctedText.toLowerCase();
       toast({
-        title: "Item adicionado (texto bruto)",
-        description: `"${text.trim()}" adicionado à lista.`
+        title: wasCorrected ? "Item adicionado (texto corrigido)" : "Item adicionado (texto bruto)",
+        description: wasCorrected 
+          ? `"${text.trim()}" → "${correctedText}"`
+          : `"${correctedText}" adicionado à lista.`
       });
     }
   };
@@ -347,6 +364,8 @@ export function VozContinuaCreator({ onListCreated }: VozContinuaCreatorProps) {
         </CardTitle>
         <CardDescription>
           Pressione o botão de microfone e fale os itens para sua lista. Faça uma pausa de 3 segundos entre cada item.
+          <br />
+          <strong>Novo:</strong> O sistema agora aplica correções automaticamente quando reconhece termos que você já corrigiu.
         </CardDescription>
       </CardHeader>
       

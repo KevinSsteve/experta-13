@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, List, HelpCircle } from "lucide-react";
@@ -16,6 +15,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { applyVoiceCorrections, findPossibleCorrections } from "@/utils/speechCorrectionUtils";
 
 interface VoiceOrdersCreatorProps {
   onListCreated: (products: string[]) => void;
@@ -27,6 +28,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
   const [recognizedText, setRecognizedText] = useState<string>("");
   const [suggestions, setSuggestions] = useState<Array<Product & { similarity: number }>>([]);
   const { toast } = useToast();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const [noResultsFor, setNoResultsFor] = useState<string | null>(null);
   const [previousQueries, setPreviousQueries] = useState<Set<string>>(new Set());
@@ -47,23 +49,6 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
       }
       
       console.log(`Quantidade de produtos encontrados: ${data?.length || 0}`);
-      if (data && data.length > 0) {
-        console.log('Exemplo dos primeiros produtos:');
-        data.slice(0, 5).forEach(p => {
-          console.log(`- ${p.name} (${p.category})`);
-        });
-        
-        // Verificar todos os produtos com "leite", "kiame", "yummi", "ngusso", "alimo" no nome
-        const testTerms = ['leite', 'kiame', 'yummi', 'ngusso', 'alimo'];
-        testTerms.forEach(term => {
-          const matchingProducts = data.filter(p => 
-            p.name.toLowerCase().includes(term) || 
-            p.category.toLowerCase().includes(term)
-          );
-          console.log(`Produtos com "${term}" no nome ou categoria: ${matchingProducts.length}`);
-          matchingProducts.forEach(p => console.log(`  - ${p.name} (${p.category})`));
-        });
-      }
       return data as Product[];
     }
   });
@@ -85,54 +70,40 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
     recognition.continuous = false;
     recognition.interimResults = false;
 
-    recognition.onresult = (event) => {
+    recognition.onresult = async (event) => {
       const transcript = event.results[0][0].transcript;
-      setRecognizedText(transcript);
+      console.log(`Transcrição de voz recebida: "${transcript}"`);
+      
+      // NOVO FLUXO: Aplica correções SEMPRE que o texto reconhecido estiver nas correções
+      const correctedTranscript = await applyVoiceCorrections(transcript, user?.id);
+      console.log(`Transcrição corrigida: "${correctedTranscript}"`);
+      
+      setRecognizedText(correctedTranscript);
       setNoResultsFor(null);
       
       // Adiciona a consulta ao histórico para evitar mensagens repetitivas
-      setPreviousQueries(prev => new Set([...prev, transcript.toLowerCase()]));
+      setPreviousQueries(prev => new Set([...prev, correctedTranscript.toLowerCase()]));
       
       if (catalogProducts && catalogProducts.length > 0) {
-        console.log(`Buscando sugestões para: "${transcript}"`);
+        console.log(`Buscando sugestões para: "${correctedTranscript}"`);
         console.log(`Total de produtos no catálogo: ${catalogProducts.length}`);
         
         // Usar limiar mais baixo (0.35) para encontrar mais produtos com a nova lógica fonética
-        const matchedProducts = findSimilarProducts(transcript, catalogProducts, 0.35);
+        const matchedProducts = findSimilarProducts(correctedTranscript, catalogProducts, 0.35);
         console.log(`Produtos encontrados com similaridade: ${matchedProducts.length}`);
         matchedProducts.forEach(p => {
           console.log(`- ${p.name} (similaridade: ${p.similarity.toFixed(2)})`);
         });
         
         if (matchedProducts.length === 0) {
-          setNoResultsFor(transcript);
+          setNoResultsFor(correctedTranscript);
           
-          // Mensagem mais específica para termos conhecidos
-          const knownTerms = {
-            'kiame': 'Kiame',
-            'que ame': 'Kiame',
-            'quiame': 'Kiame',
-            'yummi': 'Yummi',
-            'filme': 'Yummi',
-            'ngusso': 'Ngusso',
-            'moço': 'Ngusso',
-            'alimo': 'Alimo',
-            'aline': 'Alimo',
-            'alemão': 'Alimo',
-            'alemao': 'Alimo'
-          };
-          
-          // Verifica se o texto reconhecido pode ser uma marca específica
-          const normalizedText = transcript.toLowerCase();
-          const potentialBrand = Object.entries(knownTerms).find(([variant]) => 
-            normalizedText.includes(variant)
-          );
-          
-          if (potentialBrand) {
-            const [variant, actual] = potentialBrand;
+          // Verifica se houve correção e informa o usuário
+          const wasCorreted = transcript.toLowerCase() !== correctedTranscript.toLowerCase();
+          if (wasCorreted) {
             toast({
-              title: "Dica de busca",
-              description: `Você disse "${variant}", mas talvez esteja procurando por produtos "${actual}"?`,
+              title: "Texto corrigido mas produto não encontrado",
+              description: `"${transcript}" foi corrigido para "${correctedTranscript}", mas nenhum produto foi encontrado.`,
               variant: "default"
             });
           }
@@ -213,8 +184,8 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p>
-                Se o produto não for reconhecido corretamente, você poderá
-                selecionar a opção correta nas sugestões apresentadas.
+                O sistema agora aplica correções automaticamente quando reconhece termos que você já corrigiu anteriormente.
+                Se o produto não for encontrado, você pode selecionar a opção correta nas sugestões.
               </p>
             </TooltipContent>
           </Tooltip>
@@ -255,8 +226,7 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
                 Tente usar palavras diferentes ou verifique se o produto está cadastrado.
                 <br />
                 <span className="text-xs italic mt-1 block">
-                  Dica: Para marcas específicas como Kiame, Yummi, Ngusso ou Alimo, 
-                  tente pronunciar claramente ou verificar a ortografia.
+                  Dica: Você pode cadastrar correções de voz na página de Treinamento para melhorar o reconhecimento.
                 </span>
               </p>
             </div>
@@ -309,4 +279,3 @@ export function VoiceOrdersCreator({ onListCreated }: VoiceOrdersCreatorProps) {
     </div>
   );
 }
-

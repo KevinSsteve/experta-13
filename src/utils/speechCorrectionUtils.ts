@@ -13,6 +13,7 @@ interface SpeechCorrection {
 
 /**
  * Aplica correções registradas pelo usuário ao texto reconhecido pelo Google Speech
+ * NOVO FLUXO: Aplica correção sempre que o texto reconhecido estiver presente nas correções
  * @param text Texto reconhecido pelo Google Speech
  * @param userId ID do usuário para buscar suas correções
  * @returns Texto corrigido com base nas correções do usuário
@@ -35,19 +36,19 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       return text;
     }
 
-    // Aplicar correções exatas primeiro
+    // NOVO FLUXO: Aplica correções sempre que o texto reconhecido corresponder
     let correctedText = text;
+    
+    // Primeiro, tenta correções exatas (case-insensitive)
     for (const correction of corrections) {
-      // Correção exata (case-insensitive)
       if (correctedText.toLowerCase() === correction.original_text.toLowerCase()) {
         console.log(`Correção exata aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         return correction.corrected_text;
       }
     }
 
-    // Se não encontrou correção exata, tenta correções parciais
+    // Depois, tenta correções parciais dentro do texto
     for (const correction of corrections) {
-      // Verifica se o texto contém a string original (case-insensitive)
       const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
       if (regex.test(correctedText)) {
         console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
@@ -156,10 +157,6 @@ export async function findPossibleCorrections(text: string, userId?: string): Pr
         }
       }
     }
-    
-    // Se não encontrou nenhuma correção com essa abordagem simples
-    // Podemos usar técnicas mais avançadas como algoritmos de distância de edição
-    // ou outras heurísticas de similaridade fonética
     
     return possibleCorrections;
   } catch (error) {

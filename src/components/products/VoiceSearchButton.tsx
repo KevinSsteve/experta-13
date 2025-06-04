@@ -40,11 +40,11 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
       const transcript = event.results[0][0].transcript;
       console.log(`Transcrição de voz recebida: "${transcript}"`);
       
-      // Aplica correções de voz registradas pelo usuário
+      // NOVO FLUXO: Aplica correções SEMPRE que o texto reconhecido estiver nas correções
       const correctedTranscript = await applyVoiceCorrections(transcript, user?.id);
       console.log(`Transcrição corrigida: "${correctedTranscript}"`);
       
-      // Busca possíveis correções alternativas
+      // Busca possíveis correções alternativas para expandir a busca
       const alternativeCorrections = await findPossibleCorrections(transcript, user?.id);
       console.log("Correções alternativas encontradas:", alternativeCorrections);
       
@@ -122,8 +122,8 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
         onMultiSearch(searchTerms);
         
         toast({
-          title: "Busca por voz com alternativas",
-          description: `Principais termos: "${correctedTranscript}" e ${alternativeCorrections.length} alternativas`,
+          title: "Busca por voz com correções",
+          description: `Termo principal: "${correctedTranscript}" + ${alternativeCorrections.length} alternativas`,
         });
       } else if (products.length > 1 && onMultiSearch) {
         // Chama o callback para busca múltipla
@@ -137,9 +137,14 @@ export const VoiceSearchButton = ({ onResult, onMultiSearch }: VoiceSearchButton
         // Busca simples de um único produto
         onResult(correctedTranscript);
         
+        // Mensagem diferente se houve correção
+        const wascorrected = transcript.toLowerCase() !== correctedTranscript.toLowerCase();
         toast({
-          title: "Busca por voz",
-          description: `"${correctedTranscript}"`,
+          title: wasCorrec
+
+
+ted ? "Busca por voz (corrigida)" : "Busca por voz",
+          description: wasCorreected ? `"${transcript}" → "${correctedTranscript}"` : `"${correctedTranscript}"`,
         });
       }
     };

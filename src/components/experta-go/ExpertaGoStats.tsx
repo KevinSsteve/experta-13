@@ -92,6 +92,24 @@ export function ExpertaGoStats() {
     }
   };
 
+  // Função para exibir o nome do produto corretamente
+  const getDisplayProductName = (sale: any): string => {
+    if (sale.is_generic_product) {
+      // Se é produto genérico, mostrar o processed_text ao invés do product_name
+      return sale.processed_text || sale.product_name;
+    }
+    return sale.product_name;
+  };
+
+  // Função para exibir a descrição da despesa corretamente
+  const getDisplayExpenseDescription = (expense: any): string => {
+    if (expense.is_generic_description) {
+      // Se é descrição genérica, mostrar o processed_text ao invés da description
+      return expense.processed_text || expense.description;
+    }
+    return expense.description;
+  };
+
   if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-3">
@@ -169,7 +187,7 @@ export function ExpertaGoStats() {
                 stats.recentSales.map((sale) => (
                   <div key={sale.id} className="flex justify-between items-center">
                     <div>
-                      <p className="font-medium">{sale.product_name}</p>
+                      <p className="font-medium">{getDisplayProductName(sale)}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDistance(new Date(sale.created_at), new Date(), { 
                           addSuffix: true,
@@ -207,7 +225,7 @@ export function ExpertaGoStats() {
                 stats.recentExpenses.map((expense) => (
                   <div key={expense.id} className="flex justify-between items-center">
                     <div>
-                      <p className="font-medium">{expense.description}</p>
+                      <p className="font-medium">{getDisplayExpenseDescription(expense)}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDistance(new Date(expense.created_at), new Date(), { 
                           addSuffix: true,

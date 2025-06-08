@@ -123,6 +123,177 @@ export type Database = {
         }
         Relationships: []
       }
+      experta_go_corrections: {
+        Row: {
+          corrected_text: string | null
+          correction_date: string
+          created_at: string
+          id: string
+          is_corrected: boolean
+          item_id: string
+          item_type: string
+          original_text: string
+          suggested_correction: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          corrected_text?: string | null
+          correction_date?: string
+          created_at?: string
+          id?: string
+          is_corrected?: boolean
+          item_id: string
+          item_type: string
+          original_text: string
+          suggested_correction?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          corrected_text?: string | null
+          correction_date?: string
+          created_at?: string
+          id?: string
+          is_corrected?: boolean
+          item_id?: string
+          item_type?: string
+          original_text?: string
+          suggested_correction?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      experta_go_expenses: {
+        Row: {
+          amount: number
+          correction_pending: boolean
+          created_at: string
+          description: string
+          expense_date: string
+          id: string
+          is_generic_description: boolean
+          original_voice_input: string
+          processed_text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          correction_pending?: boolean
+          created_at?: string
+          description: string
+          expense_date?: string
+          id?: string
+          is_generic_description?: boolean
+          original_voice_input: string
+          processed_text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          correction_pending?: boolean
+          created_at?: string
+          description?: string
+          expense_date?: string
+          id?: string
+          is_generic_description?: boolean
+          original_voice_input?: string
+          processed_text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      experta_go_products: {
+        Row: {
+          created_at: string
+          current_stock: number
+          id: string
+          is_generic: boolean
+          last_unit_price: number
+          name: string
+          original_voice_inputs: string[]
+          total_sold: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_stock?: number
+          id?: string
+          is_generic?: boolean
+          last_unit_price: number
+          name: string
+          original_voice_inputs?: string[]
+          total_sold?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_stock?: number
+          id?: string
+          is_generic?: boolean
+          last_unit_price?: number
+          name?: string
+          original_voice_inputs?: string[]
+          total_sold?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      experta_go_sales: {
+        Row: {
+          correction_pending: boolean
+          created_at: string
+          id: string
+          is_generic_product: boolean
+          original_voice_input: string
+          processed_text: string
+          product_name: string
+          quantity: number
+          sale_date: string
+          total_amount: number
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          correction_pending?: boolean
+          created_at?: string
+          id?: string
+          is_generic_product?: boolean
+          original_voice_input: string
+          processed_text: string
+          product_name: string
+          quantity?: number
+          sale_date?: string
+          total_amount: number
+          unit_price: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          correction_pending?: boolean
+          created_at?: string
+          id?: string
+          is_generic_product?: boolean
+          original_voice_input?: string
+          processed_text?: string
+          product_name?: string
+          quantity?: number
+          sale_date?: string
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_metrics: {
         Row: {
           comparison_value: number | null

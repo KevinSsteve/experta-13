@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -31,6 +30,7 @@ import ForcePasswordChange from "./pages/ForcePasswordChange";
 import Suggestions from "./pages/Suggestions";
 import MeatImport from "./pages/MeatImport";
 import Treinamento from "./pages/Treinamento";
+import ExpertaGo from "./pages/ExpertaGo";
 
 const App = () => {
   const PasswordChangeRoute = () => {
@@ -85,6 +85,7 @@ const App = () => {
                     <Route path="/listas-voz" element={<ListaVozContinua />} />
                     <Route path="/pedido-voz" element={<VoiceToCart />} />
                     <Route path="/experta-ai" element={<ExpertaAI />} />
+                    <Route path="/experta-go" element={<ExpertaGo />} />
                     <Route path="/expenses" element={<Expenses />} />
                     <Route path="/meat-import" element={<MeatImport />} />
                     <Route path="/treinamento" element={<Treinamento />} />

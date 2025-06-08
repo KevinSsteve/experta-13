@@ -45,7 +45,13 @@ export function PendingCorrections() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      setCorrections(data || []);
+      // Type assertion to ensure item_type is correctly typed
+      const typedCorrections = (data || []).map(correction => ({
+        ...correction,
+        item_type: correction.item_type as 'sale' | 'expense'
+      }));
+
+      setCorrections(typedCorrections);
     } catch (error) {
       console.error("Erro ao carregar correções:", error);
     } finally {

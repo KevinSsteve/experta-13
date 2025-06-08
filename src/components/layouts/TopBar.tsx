@@ -25,6 +25,10 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
     navigate('/auth');
   };
 
+  const goToHome = () => {
+    navigate('/experta-go');
+  };
+
   return (
     <header className="fixed top-0 z-50 w-full bg-black/80 backdrop-blur-xl border-b border-white/10 overflow-x-hidden">
       <div className="px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -38,7 +42,10 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center">
-            <span className="text-2xl font-bold tracking-ultra text-white">
+            <span 
+              className="text-2xl font-bold tracking-ultra text-white cursor-pointer hover:text-white/80 transition-colors"
+              onClick={goToHome}
+            >
               experta
             </span>
           </div>

@@ -1,5 +1,5 @@
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   TrendingUp,
@@ -11,6 +11,11 @@ import {
 const SidebarNav = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const goToHome = () => {
+    navigate('/experta-go');
+  };
 
   const menuItems = [
     {
@@ -43,7 +48,10 @@ const SidebarNav = () => {
   return (
     <div className="flex flex-col h-full px-4 py-6 bg-black border-r border-white/10">
       <div className="mb-8 px-2">
-        <span className="text-3xl font-bold tracking-ultra text-white">
+        <span 
+          className="text-3xl font-bold tracking-ultra text-white cursor-pointer hover:text-white/80 transition-colors"
+          onClick={goToHome}
+        >
           experta
         </span>
       </div>

@@ -13,7 +13,7 @@ export default function ExpertaGo() {
           <div className="text-center space-y-6">
             <div className="flex items-center justify-center gap-3">
               <h1 className="text-6xl font-bold tracking-ultra text-white">
-                experta go
+                experta
               </h1>
             </div>
             <p className="text-xl font-extralight tracking-wider text-white/80 max-w-3xl mx-auto leading-relaxed">

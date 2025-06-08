@@ -14,7 +14,7 @@ const SidebarNav = () => {
 
   const menuItems = [
     {
-      title: "experta go",
+      title: "experta",
       href: "/experta-go",
       icon: TrendingUp,
     },

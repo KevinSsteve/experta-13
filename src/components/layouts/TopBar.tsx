@@ -39,7 +39,7 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
           </Button>
           <div className="flex items-center">
             <span className="text-2xl font-bold tracking-ultra text-white">
-              experta go
+              experta
             </span>
           </div>
         </div>

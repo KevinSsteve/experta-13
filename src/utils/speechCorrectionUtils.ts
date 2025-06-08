@@ -12,6 +12,52 @@ interface SpeechCorrection {
 }
 
 /**
+ * Extrai valores numéricos de um texto corrigido
+ * @param text Texto para extrair valores
+ * @returns Objeto com valores encontrados
+ */
+function extractNumericValues(text: string): { price?: number, quantity?: number } {
+  const result: { price?: number, quantity?: number } = {};
+  
+  // Padrões para encontrar preços
+  const pricePatterns = [
+    /\b(?:de|por|custa|vale|custou|paguei|gastei)\s+(\d+(?:[,.]\d{1,2})?)\b/i,
+    /\b(\d+(?:[,.]\d{1,2})?)\s*(?:kz|kwanzas?|reais?)\b/i,
+    /\b(?:r\$|kz)\s*(\d+(?:[,.]\d{1,2})?)\b/i,
+    /\b(\d+(?:[,.]\d{1,2})?)\s*(?:cada|unidade|por)\b/i,
+  ];
+
+  // Padrões para encontrar quantidade
+  const quantityPatterns = [
+    /^(\d+)\s+/,  // "2 pacotes..."
+    /\b(\d+)\s+(?:unidades?|unids?|pcs?|peças?|pacotes?)\b/i,
+  ];
+
+  // Buscar preço
+  for (const pattern of pricePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const priceStr = match[1].replace(',', '.');
+      result.price = parseFloat(priceStr);
+      console.log(`Preço extraído após correção: ${result.price}`);
+      break;
+    }
+  }
+
+  // Buscar quantidade
+  for (const pattern of quantityPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      result.quantity = parseInt(match[1]);
+      console.log(`Quantidade extraída após correção: ${result.quantity}`);
+      break;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Aplica correções registradas pelo usuário ao texto reconhecido pelo Google Speech
  * FLUXO ATUALIZADO: Aplica correção sempre que o texto reconhecido corresponder
  * @param text Texto reconhecido pelo Google Speech
@@ -48,6 +94,24 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       
       if (normalizedInput === normalizedOriginal) {
         console.log(`Correção exata aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+        
+        // Extrair valores numéricos do texto corrigido
+        const extractedValues = extractNumericValues(correction.corrected_text);
+        
+        // Se o texto corrigido tem valores numéricos mas o original não tinha, 
+        // tentar incorporar esses valores no resultado final
+        if (extractedValues.price || extractedValues.quantity) {
+          let enhancedText = correction.corrected_text;
+          
+          // Se encontrou preço mas não estava explícito no texto corrigido, adicionar
+          if (extractedValues.price && !correction.corrected_text.match(/\d+(?:[,.]\d{1,2})?\s*(?:kz|reais?)/i)) {
+            enhancedText += ` de ${extractedValues.price} kz`;
+          }
+          
+          console.log(`Texto corrigido com valores extraídos: "${enhancedText}"`);
+          return enhancedText;
+        }
+        
         return correction.corrected_text;
       }
     }
@@ -61,11 +125,26 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
         console.log(`Correção parcial (contém) aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
         correctedText = correctedText.replace(regex, correction.corrected_text);
+        
+        // Verificar se precisa adicionar valores numéricos
+        const extractedValues = extractNumericValues(correctedText);
+        if (extractedValues.price && !correctedText.match(/\d+(?:[,.]\d{1,2})?\s*(?:kz|reais?)/i)) {
+          correctedText += ` de ${extractedValues.price} kz`;
+        }
       }
       // Verifica se o texto reconhecido está contido no original (para casos de reconhecimento parcial)
       else if (normalizedOriginal.includes(normalizedInput)) {
         console.log(`Correção parcial (é parte de) aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
-        return correction.corrected_text;
+        
+        // Extrair e aplicar valores numéricos se necessário
+        const extractedValues = extractNumericValues(correction.corrected_text);
+        let enhancedText = correction.corrected_text;
+        
+        if (extractedValues.price && !correction.corrected_text.match(/\d+(?:[,.]\d{1,2})?\s*(?:kz|reais?)/i)) {
+          enhancedText += ` de ${extractedValues.price} kz`;
+        }
+        
+        return enhancedText;
       }
     }
 
@@ -86,7 +165,16 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       
       if (similarity >= 0.7) {
         console.log(`Correção por similaridade (${Math.round(similarity * 100)}%) aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
-        return correction.corrected_text;
+        
+        // Extrair e aplicar valores numéricos se necessário
+        const extractedValues = extractNumericValues(correction.corrected_text);
+        let enhancedText = correction.corrected_text;
+        
+        if (extractedValues.price && !correction.corrected_text.match(/\d+(?:[,.]\d{1,2})?\s*(?:kz|reais?)/i)) {
+          enhancedText += ` de ${extractedValues.price} kz`;
+        }
+        
+        return enhancedText;
       }
     }
 

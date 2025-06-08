@@ -2,7 +2,8 @@
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { ExpertaGoInterface } from "@/components/experta-go/ExpertaGoInterface";
 import { Card, CardContent } from "@/components/ui/card";
-import { Zap, Mic, TrendingUp } from "lucide-react";
+import { Zap, Mic, TrendingUp, Package } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function ExpertaGo() {
   return (

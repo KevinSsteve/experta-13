@@ -18,8 +18,8 @@ export default {
         'sm': '640px',
         'md': '768px', 
         'lg': '1024px',
-        'xl': '1280px',
-        '2xl': '1400px'
+        'xl': '1200px',
+        '2xl': '1200px'
       }
     },
     extend: {
@@ -30,7 +30,7 @@ export default {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
+          DEFAULT: 'rgba(59, 130, 246, 0.8)',
           foreground: 'hsl(var(--primary-foreground))'
         },
         secondary: {
@@ -67,18 +67,40 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        // Cores temáticas da Experta (anteriormente Contascom)
-        experta: {
-          primary: '#094d91',    // Azul escuro
-          secondary: '#28c7c0',  // Turquesa
-          background: '#e0e8f1', // Azul claro suave
-          muted: '#8E9196',      // Mantendo a cor neutra atual para textos secundários
+        // Cores futuristas personalizadas
+        futuristic: {
+          primary: '#000000',
+          text: '#ffffff',
+          'text-secondary': 'rgba(255, 255, 255, 0.8)',
+          'text-muted': 'rgba(255, 255, 255, 0.4)',
+          accent: 'rgba(59, 130, 246, 0.8)',
+          card: 'rgba(255, 255, 255, 0.05)',
+          border: 'rgba(255, 255, 255, 0.1)',
         }
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)'
+      },
+      fontWeight: {
+        'ultralight': '200',
+        'extralight': '300',
+      },
+      letterSpacing: {
+        'wide': '0.05em',
+        'wider': '0.1em',
+        'widest': '0.15em',
+        'ultra': '0.2em',
+      },
+      backdropBlur: {
+        'xs': '2px',
+        'sm': '4px',
+        'md': '8px',
+        'lg': '12px',
+        'xl': '16px',
+        '2xl': '24px',
+        '3xl': '40px',
       },
       keyframes: {
         'accordion-down': {
@@ -98,12 +120,12 @@ export default {
           }
         },
         'fade-in': {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' }
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
         },
         'fade-out': {
-          '0%': { opacity: '1' },
-          '100%': { opacity: '0' }
+          '0%': { opacity: '1', transform: 'translateY(0)' },
+          '100%': { opacity: '0', transform: 'translateY(10px)' }
         },
         'slide-in': {
           '0%': { transform: 'translateX(-100%)' },
@@ -112,6 +134,14 @@ export default {
         'slide-out': {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-100%)' }
+        },
+        'glow': {
+          '0%, 100%': { 
+            boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' 
+          },
+          '50%': { 
+            boxShadow: '0 0 40px rgba(59, 130, 246, 0.6)' 
+          }
         }
       },
       animation: {
@@ -120,11 +150,12 @@ export default {
         'fade-in': 'fade-in 0.3s ease-out',
         'fade-out': 'fade-out 0.3s ease-out',
         'slide-in': 'slide-in 0.3s ease-out',
-        'slide-out': 'slide-out 0.3s ease-out'
+        'slide-out': 'slide-out 0.3s ease-out',
+        'glow': 'glow 2s ease-in-out infinite'
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        poppins: ['Poppins', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        inter: ['Inter', 'system-ui', 'sans-serif'],
       },
     }
   },

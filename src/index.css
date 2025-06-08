@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,83 +7,83 @@
 
 @layer base {
   :root {
-    --background: 213 44% 97%;
-    --foreground: 214 76% 14%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
     
-    --card: 0 0% 100%;
-    --card-foreground: 214 76% 14%;
+    --card: 0 0% 100% / 0.05;
+    --card-foreground: 0 0% 100%;
     
-    --popover: 0 0% 100%;
-    --popover-foreground: 214 76% 14%;
+    --popover: 0 0% 100% / 0.05;
+    --popover-foreground: 0 0% 100%;
     
-    --primary: 213 79% 31%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 177 67% 47%;
-    --secondary-foreground: 214 76% 14%;
+    --secondary: 0 0% 100% / 0.1;
+    --secondary-foreground: 0 0% 100%;
     
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 57%;
+    --muted: 0 0% 100% / 0.05;
+    --muted-foreground: 0 0% 100% / 0.4;
     
-    --accent: 213 44% 97%;
-    --accent-foreground: 214 76% 14%;
+    --accent: 0 0% 100% / 0.05;
+    --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 213 79% 31%;
+    --border: 0 0% 100% / 0.1;
+    --input: 0 0% 100% / 0.05;
+    --ring: 217 91% 60% / 0.3;
     
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 214 76% 14%;
-    --sidebar-primary: 213 79% 31%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 213 44% 97%;
-    --sidebar-accent-foreground: 214 76% 14%;
-    --sidebar-border: 213 44% 95%;
-    --sidebar-ring: 213 79% 31%;
+    --sidebar-accent: 0 0% 100% / 0.05;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100% / 0.1;
+    --sidebar-ring: 217 91% 60% / 0.3;
   }
 
   .dark {
-    --background: 214 76% 14%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
     
-    --card: 214 76% 14%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100% / 0.05;
+    --card-foreground: 0 0% 100%;
     
-    --popover: 214 76% 14%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100% / 0.05;
+    --popover-foreground: 0 0% 100%;
     
-    --primary: 213 79% 31%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 177 67% 47%;
-    --secondary-foreground: 214 76% 14%;
+    --secondary: 0 0% 100% / 0.1;
+    --secondary-foreground: 0 0% 100%;
     
-    --muted: 214 37% 25%;
-    --muted-foreground: 215 20% 75%;
+    --muted: 0 0% 100% / 0.05;
+    --muted-foreground: 0 0% 100% / 0.4;
     
-    --accent: 214 37% 20%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 100% / 0.05;
+    --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 215 27% 30%;
-    --input: 215 27% 30%;
-    --ring: 213 79% 31%;
+    --border: 0 0% 100% / 0.1;
+    --input: 0 0% 100% / 0.05;
+    --ring: 217 91% 60% / 0.3;
 
-    --sidebar-background: 214 76% 14%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 213 79% 31%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 214 37% 20%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 214 37% 25%;
-    --sidebar-ring: 213 79% 31%;
+    --sidebar-accent: 0 0% 100% / 0.05;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100% / 0.1;
+    --sidebar-ring: 217 91% 60% / 0.3;
   }
 }
 
@@ -94,10 +95,39 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    background: #000000;
+    color: #ffffff;
   }
 
   html {
     @apply scroll-smooth;
+    background: #000000;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 200;
+    letter-spacing: 0.15em;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 200;
+    letter-spacing: 0.2em;
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-weight: 200;
+    letter-spacing: 0.15em;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
   }
 }
 
@@ -112,14 +142,52 @@
   }
 
   .glass {
-    @apply backdrop-blur-md bg-white/80 border border-white/20 dark:bg-black/40 dark:border-white/10;
+    @apply backdrop-blur-[10px] bg-white/5 border border-white/10;
   }
   
   .text-balance {
     text-wrap: balance;
   }
+
+  .futuristic-card {
+    @apply glass rounded-xl p-6 transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5;
+    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
+  }
+
+  .futuristic-button {
+    @apply bg-white/10 border border-white/20 rounded-xl px-6 py-3 font-light tracking-wider transition-all duration-300 hover:bg-white/20 hover:-translate-y-0.5;
+    backdrop-filter: blur(10px);
+  }
+
+  .futuristic-input {
+    @apply bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-light tracking-wide transition-all duration-300 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:bg-white/10;
+    backdrop-filter: blur(10px);
+  }
+
+  .text-primary-glow {
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .gradient-border {
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1px;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    background: linear-gradient(45deg, rgba(59, 130, 246, 0.3), rgba(255, 255, 255, 0.1));
+    border-radius: inherit;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+  }
 }
 
 #root {
   @apply min-h-screen w-full;
+  background: #000000;
 }

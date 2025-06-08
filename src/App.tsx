@@ -40,7 +40,7 @@ const App = () => {
 
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen bg-black">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
         </div>
       );
@@ -49,7 +49,7 @@ const App = () => {
     return mustChangePassword ? (
       <ForcePasswordChange />
     ) : (
-      <Navigate to="/dashboard" replace />
+      <Navigate to="/experta-go" replace />
     );
   };
 
@@ -69,34 +69,18 @@ const App = () => {
                   {/* Nova rota para alteração de senha */}
                   <Route path="/change-password" element={<PasswordChangeRoute />} />
                   
-                  {/* Rotas protegidas */}
+                  {/* Rotas protegidas - apenas Experta Go */}
                   <Route element={<ProtectedRoute />}>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/suggestions" element={<Suggestions />} />
-                    <Route path="/products/:id" element={<ProductDetails />} />
-                    <Route path="/inventory" element={<Inventory />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/sales-history" element={<SalesHistory />} />
-                    <Route path="/sales-history/:id" element={<SaleDetails />} />
-                    <Route path="/credit-notes" element={<CreditNotes />} />
-                    <Route path="/scan" element={<ScanProducts />} />
-                    <Route path="/listas-voz" element={<ListaVozContinua />} />
-                    <Route path="/pedido-voz" element={<VoiceToCart />} />
-                    <Route path="/experta-ai" element={<ExpertaAI />} />
+                    <Route path="/" element={<Navigate to="/experta-go" replace />} />
                     <Route path="/experta-go" element={<ExpertaGo />} />
                     <Route path="/experta-go/dashboard" element={<ExpertaGoDashboard />} />
                     <Route path="/experta-go/inventory" element={<ExpertaGoInventory />} />
-                    <Route path="/expenses" element={<Expenses />} />
-                    <Route path="/meat-import" element={<MeatImport />} />
-                    <Route path="/treinamento" element={<Treinamento />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/profile" element={<Profile />} />
                   </Route>
                   
                   {/* Rota para página não encontrada */}
-                  <Route path="*" element={<NotFound />} />
+                  <Route path="*" element={<Navigate to="/experta-go" replace />} />
                 </Routes>
               </CartProvider>
             </BrowserRouter>

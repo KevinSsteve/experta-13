@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { Mic, MicOff, Timer, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { processExpertaGoVoiceInput } from "@/utils/expertaGoUtils";
+import { applyVoiceCorrections } from "@/utils/speechCorrectionUtils";
 
 interface VoiceRecorderProps {
   type: 'sale' | 'expense';
@@ -52,7 +52,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
       const recognition = new SpeechRecognitionAPI();
       
       recognition.lang = "pt-BR";
-      recognition.continuous = false; // Mudado para false para evitar múltiplas capturas
+      recognition.continuous = false;
       recognition.interimResults = true;
 
       recognition.onstart = () => {
@@ -62,19 +62,30 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
         console.log("Reconhecimento iniciado para:", type);
       };
 
-      recognition.onresult = (event) => {
+      recognition.onresult = async (event) => {
         const current = event.resultIndex;
-        const transcript = event.results[current][0].transcript;
-        setTranscript(transcript);
+        const originalTranscript = event.results[current][0].transcript;
+        
+        // Aplicar correções automaticamente ao texto reconhecido
+        const correctedTranscript = await applyVoiceCorrections(originalTranscript, user?.id);
+        
+        // Mostrar na interface o texto já corrigido
+        setTranscript(correctedTranscript);
 
-        // Se o resultado for final, processar
+        // Log para debug
+        if (originalTranscript.toLowerCase() !== correctedTranscript.toLowerCase()) {
+          console.log(`Correção aplicada automaticamente: "${originalTranscript}" → "${correctedTranscript}"`);
+        }
+
+        // Se o resultado for final, processar com o texto corrigido
         if (event.results[current].isFinal) {
-          console.log("Texto final reconhecido:", transcript);
+          console.log("Texto final reconhecido (original):", originalTranscript);
+          console.log("Texto final corrigido:", correctedTranscript);
           
           // Verificar se já processamos este texto
-          if (!processedTranscriptsRef.current.has(transcript.trim())) {
-            processedTranscriptsRef.current.add(transcript.trim());
-            processVoiceInput(transcript);
+          if (!processedTranscriptsRef.current.has(correctedTranscript.trim())) {
+            processedTranscriptsRef.current.add(correctedTranscript.trim());
+            processVoiceInput(correctedTranscript);
           }
         }
       };

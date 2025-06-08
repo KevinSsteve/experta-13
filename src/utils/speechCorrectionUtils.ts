@@ -13,7 +13,7 @@ interface SpeechCorrection {
 
 /**
  * Aplica correções registradas pelo usuário ao texto reconhecido pelo Google Speech
- * NOVO FLUXO: Aplica correção sempre que o texto reconhecido estiver presente nas correções
+ * FLUXO ATUALIZADO: Aplica correção sempre que o texto reconhecido corresponder
  * @param text Texto reconhecido pelo Google Speech
  * @param userId ID do usuário para buscar suas correções
  * @returns Texto corrigido com base nas correções do usuário
@@ -36,23 +36,57 @@ export async function applyVoiceCorrections(text: string, userId?: string): Prom
       return text;
     }
 
-    // NOVO FLUXO: Aplica correções sempre que o texto reconhecido corresponder
     let correctedText = text;
+    
+    // Normalizar o texto de entrada para comparação (minúsculas, sem espaços extras)
+    const normalizeText = (str: string) => str.toLowerCase().trim().replace(/\s+/g, ' ');
+    const normalizedInput = normalizeText(text);
     
     // Primeiro, tenta correções exatas (case-insensitive)
     for (const correction of corrections) {
-      if (correctedText.toLowerCase() === correction.original_text.toLowerCase()) {
+      const normalizedOriginal = normalizeText(correction.original_text);
+      
+      if (normalizedInput === normalizedOriginal) {
         console.log(`Correção exata aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
         return correction.corrected_text;
       }
     }
 
-    // Depois, tenta correções parciais dentro do texto
+    // Depois, tenta correções parciais (palavras similares)
     for (const correction of corrections) {
-      const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-      if (regex.test(correctedText)) {
-        console.log(`Correção parcial aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+      const normalizedOriginal = normalizeText(correction.original_text);
+      
+      // Verifica se o texto original está contido no texto reconhecido
+      if (normalizedInput.includes(normalizedOriginal)) {
+        console.log(`Correção parcial (contém) aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+        const regex = new RegExp(correction.original_text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
         correctedText = correctedText.replace(regex, correction.corrected_text);
+      }
+      // Verifica se o texto reconhecido está contido no original (para casos de reconhecimento parcial)
+      else if (normalizedOriginal.includes(normalizedInput)) {
+        console.log(`Correção parcial (é parte de) aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+        return correction.corrected_text;
+      }
+    }
+
+    // Verifica similaridade por palavras individuais
+    const inputWords = normalizedInput.split(' ');
+    for (const correction of corrections) {
+      const originalWords = normalizeText(correction.original_text).split(' ');
+      
+      // Se mais de 70% das palavras coincidirem, aplica a correção
+      const matchingWords = inputWords.filter(word => 
+        originalWords.some(origWord => 
+          word.includes(origWord) || origWord.includes(word) || 
+          word === origWord
+        )
+      );
+      
+      const similarity = matchingWords.length / Math.max(inputWords.length, originalWords.length);
+      
+      if (similarity >= 0.7) {
+        console.log(`Correção por similaridade (${Math.round(similarity * 100)}%) aplicada: "${correction.original_text}" -> "${correction.corrected_text}"`);
+        return correction.corrected_text;
       }
     }
 

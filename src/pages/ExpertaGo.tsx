@@ -2,7 +2,7 @@
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { ExpertaGoInterface } from "@/components/experta-go/ExpertaGoInterface";
 import { Card, CardContent } from "@/components/ui/card";
-import { Zap, Mic, TrendingUp } from "lucide-react";
+import { Mic, TrendingUp } from "lucide-react";
 
 export default function ExpertaGo() {
   return (
@@ -12,9 +12,8 @@ export default function ExpertaGo() {
           {/* Header minimalista */}
           <div className="text-center space-y-6">
             <div className="flex items-center justify-center gap-3">
-              <Zap className="h-12 w-12 text-primary animate-glow" />
-              <h1 className="text-6xl font-ultralight tracking-ultra text-primary-glow">
-                EXPERTA GO
+              <h1 className="text-6xl font-bold tracking-ultra text-white">
+                experta go
               </h1>
             </div>
             <p className="text-xl font-extralight tracking-wider text-white/80 max-w-3xl mx-auto leading-relaxed">
@@ -41,7 +40,9 @@ export default function ExpertaGo() {
             <Card className="futuristic-card text-center group">
               <CardContent className="p-8">
                 <div className="space-y-4">
-                  <Zap className="h-12 w-12 text-primary mx-auto group-hover:scale-110 transition-transform duration-300" />
+                  <div className="h-12 w-12 text-primary mx-auto group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
+                    <div className="w-8 h-8 bg-primary rounded-full"></div>
+                  </div>
                   <h3 className="text-xl font-extralight tracking-wider">PROCESSA</h3>
                   <p className="text-sm font-light text-white/60 tracking-wide">
                     Sistema registra automaticamente

@@ -38,8 +38,8 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center">
-            <span className="text-2xl font-ultralight tracking-ultra text-primary text-primary-glow">
-              EXPERTA GO
+            <span className="text-2xl font-bold tracking-ultra text-white">
+              experta go
             </span>
           </div>
         </div>

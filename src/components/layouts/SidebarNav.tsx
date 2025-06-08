@@ -2,7 +2,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  Zap,
   TrendingUp,
   Package,
   Settings,
@@ -15,9 +14,9 @@ const SidebarNav = () => {
 
   const menuItems = [
     {
-      title: "Experta Go",
+      title: "experta go",
       href: "/experta-go",
-      icon: Zap,
+      icon: TrendingUp,
     },
     {
       title: "Dashboard",
@@ -44,8 +43,8 @@ const SidebarNav = () => {
   return (
     <div className="flex flex-col h-full px-4 py-6 bg-black border-r border-white/10">
       <div className="mb-8 px-2">
-        <span className="text-3xl font-ultralight tracking-ultra text-primary text-primary-glow">
-          EXPERTA
+        <span className="text-3xl font-bold tracking-ultra text-white">
+          experta
         </span>
       </div>
       

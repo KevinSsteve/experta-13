@@ -24,7 +24,6 @@ function generateGenericExpenseDescription(): string {
 
 // Extrair informações de venda da fala
 function parseSaleVoiceInput(text: string) {
-  // Usar a função existente parseVoiceInput
   const parsed = parseVoiceInput(text);
   
   // Tentar extrair quantidade usando padrões mais robustos
@@ -43,11 +42,15 @@ function parseSaleVoiceInput(text: string) {
     }
   }
 
+  // Se não encontrou nome válido, usar genérico
+  const productName = parsed.name && parsed.name.trim() ? parsed.name : generateGenericProductName();
+
   return {
-    name: parsed.name || generateGenericProductName(),
+    name: productName,
     price: parsed.price || 0,
     quantity: quantity,
-    originalText: text
+    originalText: text,
+    processedText: `${quantity} ${productName}${parsed.price > 0 ? ` de ${parsed.price} kz cada` : ''}`
   };
 }
 
@@ -88,15 +91,27 @@ function parseExpenseVoiceInput(text: string) {
     description = generateGenericExpenseDescription();
   }
 
+  const processedText = `${description}${amount > 0 ? ` de ${amount} kz` : ''}`;
+
   return {
     description,
     amount,
-    originalText: text
+    originalText: text,
+    processedText
   };
 }
 
+// Flag para evitar processamento duplicado
+let isProcessing = false;
+
 // Processar entrada de voz para venda
 async function processSale(text: string, userId: string): Promise<ProcessResult> {
+  if (isProcessing) {
+    return { success: false, message: "Processamento em andamento..." };
+  }
+
+  isProcessing = true;
+
   try {
     const saleData = parseSaleVoiceInput(text);
     const totalAmount = saleData.price * saleData.quantity;
@@ -107,12 +122,12 @@ async function processSale(text: string, userId: string): Promise<ProcessResult>
       .insert({
         user_id: userId,
         original_voice_input: text,
-        processed_text: saleData.originalText,
+        processed_text: saleData.processedText,
         product_name: saleData.name,
         quantity: saleData.quantity,
         unit_price: saleData.price,
         total_amount: totalAmount,
-        is_generic_product: !saleData.name.includes('Produto') ? false : true,
+        is_generic_product: saleData.name.includes('Produto'),
         correction_pending: true
       })
       .select()
@@ -149,7 +164,7 @@ async function processSale(text: string, userId: string): Promise<ProcessResult>
         .insert({
           user_id: userId,
           name: saleData.name,
-          current_stock: 0, // Assumindo que vendeu do que tinha
+          current_stock: 0,
           total_sold: saleData.quantity,
           last_unit_price: saleData.price,
           is_generic: saleData.name.includes('Produto'),
@@ -162,27 +177,34 @@ async function processSale(text: string, userId: string): Promise<ProcessResult>
       .from('experta_go_corrections')
       .insert({
         user_id: userId,
-        original_text: text,
+        original_text: saleData.processedText,
         item_type: 'sale',
         item_id: sale.id,
         correction_date: new Date().toISOString().split('T')[0]
       });
 
-    const priceText = saleData.price > 0 ? ` por ${saleData.price} kz cada` : '';
     return {
       success: true,
-      message: `${saleData.quantity}x ${saleData.name}${priceText} registrado como venda.`,
+      message: saleData.processedText,
       data: sale
     };
 
   } catch (error) {
     console.error("Erro ao processar venda:", error);
     return { success: false, message: "Erro inesperado ao processar venda." };
+  } finally {
+    isProcessing = false;
   }
 }
 
 // Processar entrada de voz para despesa
 async function processExpense(text: string, userId: string): Promise<ProcessResult> {
+  if (isProcessing) {
+    return { success: false, message: "Processamento em andamento..." };
+  }
+
+  isProcessing = true;
+
   try {
     const expenseData = parseExpenseVoiceInput(text);
 
@@ -192,7 +214,7 @@ async function processExpense(text: string, userId: string): Promise<ProcessResu
       .insert({
         user_id: userId,
         original_voice_input: text,
-        processed_text: expenseData.originalText,
+        processed_text: expenseData.processedText,
         description: expenseData.description,
         amount: expenseData.amount,
         is_generic_description: expenseData.description.includes('Despesa'),
@@ -211,22 +233,23 @@ async function processExpense(text: string, userId: string): Promise<ProcessResu
       .from('experta_go_corrections')
       .insert({
         user_id: userId,
-        original_text: text,
+        original_text: expenseData.processedText,
         item_type: 'expense',
         item_id: expense.id,
         correction_date: new Date().toISOString().split('T')[0]
       });
 
-    const amountText = expenseData.amount > 0 ? ` de ${expenseData.amount} kz` : '';
     return {
       success: true,
-      message: `Despesa "${expenseData.description}"${amountText} registrada.`,
+      message: expenseData.processedText,
       data: expense
     };
 
   } catch (error) {
     console.error("Erro ao processar despesa:", error);
     return { success: false, message: "Erro inesperado ao processar despesa." };
+  } finally {
+    isProcessing = false;
   }
 }
 

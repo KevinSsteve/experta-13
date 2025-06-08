@@ -31,6 +31,8 @@ import Suggestions from "./pages/Suggestions";
 import MeatImport from "./pages/MeatImport";
 import Treinamento from "./pages/Treinamento";
 import ExpertaGo from "./pages/ExpertaGo";
+import ExpertaGoDashboard from "./pages/ExpertaGoDashboard";
+import ExpertaGoInventory from "./pages/ExpertaGoInventory";
 
 const App = () => {
   const PasswordChangeRoute = () => {
@@ -86,6 +88,8 @@ const App = () => {
                     <Route path="/pedido-voz" element={<VoiceToCart />} />
                     <Route path="/experta-ai" element={<ExpertaAI />} />
                     <Route path="/experta-go" element={<ExpertaGo />} />
+                    <Route path="/experta-go/dashboard" element={<ExpertaGoDashboard />} />
+                    <Route path="/experta-go/inventory" element={<ExpertaGoInventory />} />
                     <Route path="/expenses" element={<Expenses />} />
                     <Route path="/meat-import" element={<MeatImport />} />
                     <Route path="/treinamento" element={<Treinamento />} />

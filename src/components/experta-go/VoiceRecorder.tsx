@@ -23,7 +23,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
   const { toast } = useToast();
   const { user } = useAuth();
   const recognitionRef = useRef<any>(null);
-  const timerRef = useRef<number | null>(null);
+  const processedTranscriptsRef = useRef<Set<string>>(new Set());
 
   // Timer para contar tempo de gravação
   useEffect(() => {
@@ -52,7 +52,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
       const recognition = new SpeechRecognitionAPI();
       
       recognition.lang = "pt-BR";
-      recognition.continuous = true;
+      recognition.continuous = false; // Mudado para false para evitar múltiplas capturas
       recognition.interimResults = true;
 
       recognition.onstart = () => {
@@ -70,7 +70,12 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
         // Se o resultado for final, processar
         if (event.results[current].isFinal) {
           console.log("Texto final reconhecido:", transcript);
-          processVoiceInput(transcript);
+          
+          // Verificar se já processamos este texto
+          if (!processedTranscriptsRef.current.has(transcript.trim())) {
+            processedTranscriptsRef.current.add(transcript.trim());
+            processVoiceInput(transcript);
+          }
         }
       };
 
@@ -116,7 +121,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
   };
 
   const processVoiceInput = async (text: string) => {
-    if (!text.trim() || !user) return;
+    if (!text.trim() || !user || isProcessing) return;
 
     setIsProcessing(true);
     
@@ -124,7 +129,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
       const result = await processExpertaGoVoiceInput(text, type, user.id);
       
       if (result.success) {
-        const typeLabel = type === 'sale' ? 'venda' : 'despesa';
+        const typeLabel = type === 'sale' ? 'Venda' : 'Despesa';
         toast({
           title: `${typeLabel} registrada!`,
           description: result.message,
@@ -147,6 +152,10 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
     } finally {
       setIsProcessing(false);
       setTranscript("");
+      // Limpar cache após um tempo
+      setTimeout(() => {
+        processedTranscriptsRef.current.clear();
+      }, 5000);
     }
   };
 

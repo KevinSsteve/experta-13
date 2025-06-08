@@ -48,6 +48,43 @@ export default function ExpertaGo() {
         </Card>
 
         <ExpertaGoInterface />
+
+        {/* Links para páginas específicas */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardContent className="p-6">
+              <Link 
+                to="/experta-go/dashboard" 
+                className="flex items-center gap-4 text-left w-full"
+              >
+                <TrendingUp className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h3 className="font-semibold text-lg">Dashboard Completo</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Veja estatísticas detalhadas das suas vendas e despesas por voz
+                  </p>
+                </div>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardContent className="p-6">
+              <Link 
+                to="/experta-go/inventory" 
+                className="flex items-center gap-4 text-left w-full"
+              >
+                <Package className="h-8 w-8 text-purple-600" />
+                <div>
+                  <h3 className="font-semibold text-lg">Estoque Automático</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Gerencie produtos criados automaticamente pelo reconhecimento de voz
+                  </p>
+                </div>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </MainLayout>
   );

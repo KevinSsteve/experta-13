@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,8 +67,12 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
         const current = event.resultIndex;
         const originalTranscript = event.results[current][0].transcript;
         
+        console.log(`Texto original reconhecido: "${originalTranscript}"`);
+        
         // Aplicar correções automaticamente ao texto reconhecido
         const correctedTranscript = await applyVoiceCorrections(originalTranscript, user?.id);
+        
+        console.log(`Texto após correções: "${correctedTranscript}"`);
         
         // Mostrar na interface o texto já corrigido
         setTranscript(correctedTranscript);
@@ -75,6 +80,11 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
         // Log para debug
         if (originalTranscript.toLowerCase() !== correctedTranscript.toLowerCase()) {
           console.log(`Correção aplicada automaticamente: "${originalTranscript}" → "${correctedTranscript}"`);
+          toast({
+            title: "Correção aplicada",
+            description: `"${originalTranscript}" foi corrigido para "${correctedTranscript}"`,
+            duration: 3000
+          });
         }
 
         // Se o resultado for final, processar com o texto corrigido

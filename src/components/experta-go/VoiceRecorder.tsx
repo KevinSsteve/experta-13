@@ -69,8 +69,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
         
         console.log(`Texto original reconhecido: "${originalTranscript}"`);
         
-        // APLICAR A MESMA LÓGICA DA PÁGINA DE TREINAMENTO
-        // Aplicar correções automaticamente ao texto reconhecido
+        // DETECTAR E APLICAR CORREÇÕES DA BASE DE DADOS
         const correctedTranscript = await applyVoiceCorrections(originalTranscript, user?.id);
         
         console.log(`Texto após correções: "${correctedTranscript}"`);
@@ -78,9 +77,9 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
         // Mostrar na interface o texto já corrigido
         setTranscript(correctedTranscript);
 
-        // Log para debug e notificação igual ao treinamento
+        // Notificar se correção foi aplicada
         if (originalTranscript.toLowerCase() !== correctedTranscript.toLowerCase()) {
-          console.log(`Correção aplicada automaticamente: "${originalTranscript}" → "${correctedTranscript}"`);
+          console.log(`✅ Correção aplicada automaticamente: "${originalTranscript}" → "${correctedTranscript}"`);
           toast({
             title: "Correção aplicada",
             description: `"${originalTranscript}" foi corrigido para "${correctedTranscript}"`,

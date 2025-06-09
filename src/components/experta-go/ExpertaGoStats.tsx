@@ -92,15 +92,6 @@ export function ExpertaGoStats() {
     }
   };
 
-  // Função para exibir o nome do produto corretamente
-  const getDisplayProductName = (sale: any): string => {
-    if (sale.is_generic_product) {
-      // Se é produto genérico, mostrar o processed_text ao invés do product_name
-      return sale.processed_text || sale.product_name;
-    }
-    return sale.product_name;
-  };
-
   // Função para exibir a descrição da despesa corretamente
   const getDisplayExpenseDescription = (expense: any): string => {
     if (expense.is_generic_description) {
@@ -187,7 +178,7 @@ export function ExpertaGoStats() {
                 stats.recentSales.map((sale) => (
                   <div key={sale.id} className="flex justify-between items-center">
                     <div>
-                      <p className="font-medium">{getDisplayProductName(sale)}</p>
+                      <p className="font-medium">Venda</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDistance(new Date(sale.created_at), new Date(), { 
                           addSuffix: true,

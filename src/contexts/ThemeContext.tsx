@@ -36,7 +36,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Aplica a classe ao elemento root quando o tema muda
   useEffect(() => {
     const root = window.document.documentElement;
+    const body = window.document.body;
     
+    // Remove todas as classes de tema
+    root.classList.remove('light', 'dark');
+    body.classList.remove('light', 'dark');
+    
+    // Adiciona a classe do tema atual
+    root.classList.add(theme);
+    body.classList.add(theme);
+    
+    // Para compatibilidade com componentes que usam a classe dark
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {

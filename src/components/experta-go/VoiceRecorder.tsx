@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -276,22 +275,22 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
     <div className="space-y-4">
       {/* Notificação de Correção */}
       {correctionNotification.show && (
-        <Card className="bg-yellow-50 border-yellow-200">
+        <Card className="border-accent/30 bg-accent/10">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
               <div className="flex-1 space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-yellow-900">
+                  <p className="text-sm font-medium text-foreground">
                     Corrija o texto reconhecido
                   </p>
-                  <p className="text-xs text-yellow-700 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     O reconhecimento de voz pode ter erros. Por favor, verifique e corrija se necessário:
                   </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <p className="text-xs text-yellow-600">
+                  <p className="text-xs text-muted-foreground">
                     <strong>Sistema entendeu:</strong> "{correctionNotification.originalText}"
                   </p>
                   
@@ -302,7 +301,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
                       "Ex: 2 pacotes de manteiga de 400 kz cada" : 
                       "Ex: Comprei carne para o restaurante por 5000 kz"
                     }
-                    className="w-full bg-white"
+                    className="bg-input border-border"
                   />
                   
                   <div className="flex gap-2">
@@ -360,13 +359,13 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
       </div>
 
       {transcript && (
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="border-primary/30 bg-primary/10">
           <CardContent className="p-3">
             <div className="flex items-start gap-2">
-              <Volume2 className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <Volume2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-blue-900">Ouvindo:</p>
-                <p className="text-sm text-blue-700">"{transcript}"</p>
+                <p className="text-sm font-medium text-foreground">Ouvindo:</p>
+                <p className="text-sm text-muted-foreground">"{transcript}"</p>
               </div>
             </div>
           </CardContent>

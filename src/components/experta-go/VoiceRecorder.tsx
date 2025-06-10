@@ -155,7 +155,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
           console.log("Texto final reconhecido (original):", originalTranscript);
           console.log("Texto final corrigido:", correctedTranscript);
           
-          // VERIFICAR SE TEM PREÇO (obrigatório)
+          // VERIFICAR SE TEM PREÇO (obrigatório) - se não tiver, mostrar correção
           if (!hasPriceInfo(correctedTranscript)) {
             console.log("⚠️ Falta preço, mostrando notificação de correção");
             showCorrectionNotification(correctedTranscript);
@@ -273,10 +273,10 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
               <div className="flex-1 space-y-3">
                 <div>
                   <p className="text-sm font-medium text-yellow-900">
-                    Falta informação do preço!
+                    Corrija o texto reconhecido
                   </p>
                   <p className="text-xs text-yellow-700 mt-1">
-                    Detectamos que falta o preço no que você disse. Por favor, corrija:
+                    O reconhecimento de voz pode ter erros. Por favor, verifique e corrija se necessário:
                   </p>
                 </div>
                 

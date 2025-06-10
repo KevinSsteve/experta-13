@@ -137,11 +137,14 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
         
         console.log(`Texto após correções: "${correctedTranscript}"`);
         
+        // Verificar se houve correção automática
+        const wasAutoCorrected = originalTranscript.toLowerCase() !== correctedTranscript.toLowerCase();
+        
         // Mostrar na interface o texto já corrigido
         setTranscript(correctedTranscript);
 
         // Notificar se correção foi aplicada
-        if (originalTranscript.toLowerCase() !== correctedTranscript.toLowerCase()) {
+        if (wasAutoCorrected) {
           console.log(`✅ Correção aplicada automaticamente: "${originalTranscript}" → "${correctedTranscript}"`);
           toast({
             title: "Correção aplicada",
@@ -155,11 +158,18 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
           console.log("Texto final reconhecido (original):", originalTranscript);
           console.log("Texto final corrigido:", correctedTranscript);
           
-          // VERIFICAR SE TEM PREÇO (obrigatório) - se não tiver, mostrar correção
+          // VERIFICAR SE TEM PREÇO (obrigatório) - mas só mostrar correção se NÃO houve correção automática
           if (!hasPriceInfo(correctedTranscript)) {
-            console.log("⚠️ Falta preço, mostrando notificação de correção");
-            showCorrectionNotification(correctedTranscript);
-            return;
+            // Só mostrar a notificação se não houve correção automática
+            if (!wasAutoCorrected) {
+              console.log("⚠️ Falta preço e não houve correção automática, mostrando notificação de correção");
+              showCorrectionNotification(correctedTranscript);
+              return;
+            } else {
+              console.log("⚠️ Falta preço mas houve correção automática, processando mesmo assim");
+              // Se houve correção automática mas ainda falta preço, processar assim mesmo
+              // pois pode ser um caso onde a correção automática não incluiu o preço
+            }
           }
           
           // Verificar se já processamos este texto

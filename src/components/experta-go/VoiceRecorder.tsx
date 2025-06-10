@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { processExpertaGoVoiceInput } from "@/utils/expertaGoUtils";
 import { applyVoiceCorrections } from "@/utils/speechCorrectionUtils";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 
 interface VoiceRecorderProps {
   type: 'sale' | 'expense';
@@ -49,8 +49,8 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
     }
   }, [isListening]);
 
-  // Função para detectar se o texto tem informação numérica suficiente
-  const hasNumericInfo = (text: string): boolean => {
+  // Função para detectar se o texto tem preço (informação obrigatória)
+  const hasPriceInfo = (text: string): boolean => {
     // Padrões para detectar preços
     const pricePatterns = [
       /\b\d+(?:[,.]\d{1,2})?\s*(?:kz|kwanzas?|reais?)\b/i,
@@ -59,22 +59,7 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
       /\b\d+(?:[,.]\d{1,2})?\s*(?:cada|unidade|por)\b/i,
     ];
 
-    // Padrões para detectar quantidade
-    const quantityPatterns = [
-      /^\d+\s+/,  // "2 pacotes..."
-      /\b\d+\s+(?:unidades?|unids?|pcs?|peças?|pacotes?)\b/i,
-    ];
-
-    const hasPrice = pricePatterns.some(pattern => pattern.test(text));
-    const hasQuantity = quantityPatterns.some(pattern => pattern.test(text));
-
-    // Para vendas, precisa de quantidade E preço ou pelo menos um valor numérico claro
-    if (type === 'sale') {
-      return hasPrice || hasQuantity || /\b\d+\b/.test(text);
-    }
-    
-    // Para despesas, precisa de valor monetário
-    return hasPrice || /\b\d+\b/.test(text);
+    return pricePatterns.some(pattern => pattern.test(text));
   };
 
   const showCorrectionNotification = (originalText: string) => {
@@ -93,43 +78,24 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
     setCorrectionText("");
   };
 
-  const saveCorrection = async () => {
-    if (!user || !correctionText.trim() || !correctionNotification.originalText) return;
+  const applyCorrectionImmediately = async () => {
+    if (!correctionText.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from("speech_corrections")
-        .insert([{
-          original_text: correctionNotification.originalText,
-          corrected_text: correctionText.trim(),
-          user_id: user.id,
-          active: true
-        }]);
-
-      if (error) {
-        console.error("Erro ao salvar correção:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível salvar a correção.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      toast({
-        title: "Correção salva!",
-        description: "Sua correção foi registrada e será aplicada nos próximos reconhecimentos.",
-      });
-
-      // Processar o texto corrigido
-      processVoiceInput(correctionText.trim());
+      // Processar o texto corrigido diretamente
+      await processVoiceInput(correctionText.trim());
       hideCorrectionNotification();
 
+      toast({
+        title: "Correção aplicada!",
+        description: "Sua correção foi processada com sucesso.",
+      });
+
     } catch (error) {
-      console.error("Erro ao salvar correção:", error);
+      console.error("Erro ao aplicar correção:", error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao salvar a correção.",
+        description: "Ocorreu um erro ao aplicar a correção.",
         variant: "destructive"
       });
     }
@@ -184,14 +150,14 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
           });
         }
 
-        // Se o resultado for final, verificar se tem informação numérica
+        // Se o resultado for final, verificar se tem preço
         if (event.results[current].isFinal) {
           console.log("Texto final reconhecido (original):", originalTranscript);
           console.log("Texto final corrigido:", correctedTranscript);
           
-          // VERIFICAR SE TEM INFORMAÇÃO NUMÉRICA SUFICIENTE
-          if (!hasNumericInfo(correctedTranscript)) {
-            console.log("⚠️ Falta informação numérica, mostrando notificação de correção");
+          // VERIFICAR SE TEM PREÇO (obrigatório)
+          if (!hasPriceInfo(correctedTranscript)) {
+            console.log("⚠️ Falta preço, mostrando notificação de correção");
             showCorrectionNotification(correctedTranscript);
             return;
           }
@@ -307,10 +273,10 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
               <div className="flex-1 space-y-3">
                 <div>
                   <p className="text-sm font-medium text-yellow-900">
-                    Falta informação importante!
+                    Falta informação do preço!
                   </p>
                   <p className="text-xs text-yellow-700 mt-1">
-                    Detectamos que faltam números (quantidade/preço) no que você disse. Por favor, corrija:
+                    Detectamos que falta o preço no que você disse. Por favor, corrija:
                   </p>
                 </div>
                 
@@ -331,11 +297,11 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
                   
                   <div className="flex gap-2">
                     <Button 
-                      onClick={saveCorrection}
+                      onClick={applyCorrectionImmediately}
                       size="sm"
                       disabled={!correctionText.trim()}
                     >
-                      Salvar Correção
+                      Aplicar Correção
                     </Button>
                     <Button 
                       onClick={hideCorrectionNotification}

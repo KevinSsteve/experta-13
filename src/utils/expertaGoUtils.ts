@@ -33,13 +33,18 @@ function parseSaleVoiceInput(text: string) {
     /\b(\d+)\s+(?:kg|quilos?|gramas?|g)\b/i,
   ];
   
-  let quantity = 1;
+  let quantity = 0;
   for (const pattern of quantityPatterns) {
     const match = text.match(pattern);
     if (match) {
       quantity = parseInt(match[1]);
       break;
     }
+  }
+
+  // Se quantidade for 0, assumir 1
+  if (quantity === 0) {
+    quantity = 1;
   }
 
   // Se não encontrou nome válido, usar genérico

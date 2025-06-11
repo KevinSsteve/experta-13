@@ -5,16 +5,16 @@ import { ExpertaGoInterface } from "@/components/experta-go/ExpertaGoInterface";
 export default function ExpertaGo() {
   return (
     <MainLayout>
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-background text-foreground">
         <div className="max-w-4xl mx-auto py-12 px-6 space-y-12">
           {/* Header minimalista */}
           <div className="text-center space-y-6">
             <div className="flex items-center justify-center gap-3">
-              <h1 className="text-6xl font-bold tracking-ultra text-white">
+              <h1 className="text-6xl font-bold tracking-ultra text-foreground">
                 experta
               </h1>
             </div>
-            <p className="text-xl font-extralight tracking-wider text-white/80 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl font-extralight tracking-wider text-foreground/80 max-w-3xl mx-auto leading-relaxed">
               Registre vendas e despesas usando sua voz
             </p>
           </div>

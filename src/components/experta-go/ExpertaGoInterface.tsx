@@ -15,10 +15,10 @@ export function ExpertaGoInterface() {
       {/* Botões principais */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card className={`cursor-pointer transition-all hover:shadow-lg ${
-          activeRecording === 'sale' ? 'ring-2 ring-green-500 bg-green-50' : ''
+          activeRecording === 'sale' ? 'ring-2 ring-green-500 bg-green-500/10' : ''
         }`}>
           <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2 text-green-700">
+            <CardTitle className="flex items-center justify-center gap-2 text-green-600">
               <ShoppingCart className="h-6 w-6" />
               Registrar Venda
             </CardTitle>
@@ -33,10 +33,10 @@ export function ExpertaGoInterface() {
         </Card>
 
         <Card className={`cursor-pointer transition-all hover:shadow-lg ${
-          activeRecording === 'expense' ? 'ring-2 ring-red-500 bg-red-50' : ''
+          activeRecording === 'expense' ? 'ring-2 ring-red-500 bg-red-500/10' : ''
         }`}>
           <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2 text-red-700">
+            <CardTitle className="flex items-center justify-center gap-2 text-red-600">
               <CreditCard className="h-6 w-6" />
               Registrar Despesa
             </CardTitle>

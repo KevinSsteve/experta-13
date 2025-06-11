@@ -46,10 +46,10 @@ const SidebarNav = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full px-4 py-6 bg-black border-r border-white/10">
+    <div className="flex flex-col h-full px-4 py-6 bg-background border-r border-border">
       <div className="mb-8 px-2">
         <span 
-          className="text-3xl font-bold tracking-ultra text-white cursor-pointer hover:text-white/80 transition-colors"
+          className="text-3xl font-bold tracking-ultra text-foreground cursor-pointer hover:text-foreground/80 transition-colors"
           onClick={goToHome}
         >
           experta
@@ -61,10 +61,10 @@ const SidebarNav = () => {
           <Link
             key={item.href}
             to={item.href}
-            className={`flex items-center gap-3 px-4 py-3 text-sm font-light tracking-wide rounded-xl transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5 ${
+            className={`flex items-center gap-3 px-4 py-3 text-sm font-light tracking-wide rounded-xl transition-all duration-300 hover:bg-secondary hover:-translate-y-0.5 ${
               location.pathname === item.href
-                ? "bg-white/10 text-primary border border-primary/30"
-                : "text-white/80 hover:text-white"
+                ? "bg-secondary text-primary border border-primary/30"
+                : "text-foreground/80 hover:text-foreground"
             }`}
           >
             <item.icon className="w-5 h-5" />

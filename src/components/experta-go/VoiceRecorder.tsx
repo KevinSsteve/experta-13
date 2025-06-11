@@ -328,21 +328,22 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
         </Card>
       )}
 
-      {/* Interface de Gravação Existente */}
+      {/* Interface de Gravação */}
       <div className="text-center">
         <Button
           onClick={isListening ? stopListening : startListening}
           disabled={isProcessing || correctionNotification.show}
           size="lg"
           variant={isListening ? "destructive" : "default"}
-          className={`h-20 w-20 rounded-full text-lg ${
-            isListening ? 'animate-pulse' : ''
+          className={`h-16 w-16 rounded-full text-lg transition-all duration-300 ${
+            isListening ? 'animate-pulse bg-red-500/20 border-red-500/30 hover:bg-red-500/30' : 
+            'bg-primary/20 border-primary/30 hover:bg-primary/30 text-primary'
           }`}
         >
           {isListening ? (
-            <MicOff className="h-8 w-8" />
+            <MicOff className="h-6 w-6" />
           ) : (
-            <Mic className="h-8 w-8" />
+            <Mic className="h-6 w-6" />
           )}
         </Button>
         

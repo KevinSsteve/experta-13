@@ -1,11 +1,12 @@
 
-// Variável para guardar o cache
-const CACHE_NAME = 'moloja-pwa-v1';
+// Cache da Experta PWA
+const CACHE_NAME = 'experta-pwa-v1';
 
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/lovable-uploads/a92acaf4-4004-4496-847a-5cb564d3f809.png',
   // Adicionar mais URLs que devem ser cacheadas
 ];
 
@@ -14,7 +15,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Cache aberto');
+        console.log('Cache da Experta aberto');
         return cache.addAll(urlsToCache);
       })
   );
@@ -66,4 +67,11 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+});
+
+// Notificação de atualização disponível
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

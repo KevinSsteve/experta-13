@@ -130,6 +130,19 @@
 @layer base {
   * {
     @apply border-border selection:bg-primary/20 selection:text-primary;
+    /* Desabilita seleção de texto globalmente */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Permite seleção apenas em inputs, textareas e elementos editáveis */
+  input, textarea, [contenteditable="true"], [role="textbox"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
   }
   
   body {
@@ -253,6 +266,14 @@
     border-radius: inherit;
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: xor;
+  }
+
+  /* Classe para permitir seleção de texto quando necessário */
+  .text-selectable {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
   }
 }
 

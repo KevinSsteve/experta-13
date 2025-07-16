@@ -191,8 +191,8 @@ export default function Auth() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Experta</CardTitle>
-          <CardDescription>Sistema de Gerenciamento de Loja</CardDescription>
+          <CardTitle className="text-2xl select-none">experta</CardTitle>
+          <CardDescription className="select-none">Sistema de Gerenciamento de Loja</CardDescription>
         </CardHeader>
         <CardContent>
           {authError && (
@@ -212,8 +212,8 @@ export default function Auth() {
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Cadastro</TabsTrigger>
+              <TabsTrigger value="login" className="select-none">Login</TabsTrigger>
+              <TabsTrigger value="signup" className="select-none">Cadastro</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -227,7 +227,7 @@ export default function Auth() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel className="select-none">Email</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -251,7 +251,7 @@ export default function Auth() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Senha</FormLabel>
+                        <FormLabel className="select-none">Senha</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="******" 
@@ -289,7 +289,7 @@ export default function Auth() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nome</FormLabel>
+                        <FormLabel className="select-none">Nome</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="Seu nome" 
@@ -307,7 +307,7 @@ export default function Auth() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel className="select-none">Email</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -330,7 +330,7 @@ export default function Auth() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Senha</FormLabel>
+                        <FormLabel className="select-none">Senha</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="******" 
@@ -358,7 +358,7 @@ export default function Auth() {
           </Tabs>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Experta - Todos os direitos reservados
+          <span className="select-none">&copy; {new Date().getFullYear()} experta - Todos os direitos reservados</span>
         </CardFooter>
       </Card>
     </div>

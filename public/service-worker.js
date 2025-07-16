@@ -6,7 +6,7 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/lovable-uploads/a92acaf4-4004-4496-847a-5cb564d3f809.png',
+  '/lovable-uploads/19200a3d-7dc1-4223-8670-e1bbdec84009.png',
   // Adicionar mais URLs que devem ser cacheadas
 ];
 

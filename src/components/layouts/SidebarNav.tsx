@@ -24,6 +24,11 @@ const SidebarNav = () => {
       icon: TrendingUp,
     },
     {
+      title: "experta offline",
+      href: "/experta-go/offline",
+      icon: TrendingUp,
+    },
+    {
       title: "Dashboard",
       href: "/experta-go/dashboard", 
       icon: TrendingUp,

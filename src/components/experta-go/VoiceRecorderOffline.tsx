@@ -108,20 +108,15 @@ export function VoiceRecorderOffline({ type, isActive, onActiveChange }: VoiceRe
     setIsProcessing(true);
     
     try {
-      // Simular processamento e salvar offline
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { offlineStorage } = await import('@/lib/offline-storage');
       
-      // Aqui salvaria no IndexedDB
-      const offlineData = {
-        id: crypto.randomUUID(),
+      await offlineStorage.saveRecord({
         type,
         transcript,
         timestamp: new Date().toISOString(),
-        processed: false
-      };
-      
-      // Simular salvamento local
-      console.log('Salvando offline:', offlineData);
+        processed: true,
+        description: transcript
+      });
       
       setSavedOffline(true);
       toast.success(`${type === 'sale' ? 'Venda' : 'Despesa'} salva offline!`);

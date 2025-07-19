@@ -1,16 +1,45 @@
 import { useState } from "react";
 import { VoiceRecorderOffline } from "./VoiceRecorderOffline";
+import { VoiceRecorderWithWhisper } from "./VoiceRecorderWithWhisper";
 import { ExpertaGoOfflineStats } from "./ExpertaGoOfflineStats";
 import { OfflinePendingSync } from "./OfflinePendingSync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, CreditCard, BarChart3, CloudOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ShoppingCart, CreditCard, BarChart3, CloudOff, Brain } from "lucide-react";
 
 export function ExpertaGoOfflineInterface() {
   const [activeRecording, setActiveRecording] = useState<'sale' | 'expense' | null>(null);
+  const [useWhisper, setUseWhisper] = useState(false);
 
   return (
     <div className="space-y-6">
+      {/* Toggle para Whisper */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Brain className="h-5 w-5 text-primary" />
+              <Label htmlFor="whisper-mode" className="font-medium">
+                Usar Whisper Local (IA Offline)
+              </Label>
+            </div>
+            <Switch
+              id="whisper-mode"
+              checked={useWhisper}
+              onCheckedChange={setUseWhisper}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            {useWhisper 
+              ? "Transcrição com IA local - maior precisão, funciona offline"
+              : "Transcrição nativa do navegador - mais rápido"
+            }
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Botões principais */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card className={`cursor-pointer transition-all hover:shadow-lg ${
@@ -23,11 +52,19 @@ export function ExpertaGoOfflineInterface() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <VoiceRecorderOffline 
-              type="sale" 
-              isActive={activeRecording === 'sale'}
-              onActiveChange={(active) => setActiveRecording(active ? 'sale' : null)}
-            />
+            {useWhisper ? (
+              <VoiceRecorderWithWhisper 
+                type="sale" 
+                isActive={activeRecording === 'sale'}
+                onActiveChange={(active) => setActiveRecording(active ? 'sale' : null)}
+              />
+            ) : (
+              <VoiceRecorderOffline 
+                type="sale" 
+                isActive={activeRecording === 'sale'}
+                onActiveChange={(active) => setActiveRecording(active ? 'sale' : null)}
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -41,11 +78,19 @@ export function ExpertaGoOfflineInterface() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <VoiceRecorderOffline 
-              type="expense" 
-              isActive={activeRecording === 'expense'}
-              onActiveChange={(active) => setActiveRecording(active ? 'expense' : null)}
-            />
+            {useWhisper ? (
+              <VoiceRecorderWithWhisper 
+                type="expense" 
+                isActive={activeRecording === 'expense'}
+                onActiveChange={(active) => setActiveRecording(active ? 'expense' : null)}
+              />
+            ) : (
+              <VoiceRecorderOffline 
+                type="expense" 
+                isActive={activeRecording === 'expense'}
+                onActiveChange={(active) => setActiveRecording(active ? 'expense' : null)}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

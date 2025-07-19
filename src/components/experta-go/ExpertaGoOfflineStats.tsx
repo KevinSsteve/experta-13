@@ -1,16 +1,33 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Package, DollarSign } from "lucide-react";
 
 export function ExpertaGoOfflineStats() {
-  // Dados simulados do armazenamento local
-  const offlineStats = {
-    todaySales: 5,
-    todayExpenses: 2,
-    totalRevenue: 15000,
-    totalExpenses: 3500,
-    pendingSync: 7
-  };
+  const [stats, setStats] = useState({
+    totalRecords: 0,
+    unsyncedRecords: 0,
+    salesCount: 0,
+    expensesCount: 0,
+  });
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const { offlineStorage } = await import('@/lib/offline-storage');
+        const currentStats = await offlineStorage.getStats();
+        setStats(currentStats);
+      } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+      }
+    };
+
+    loadStats();
+    
+    // Atualizar a cada 5 segundos
+    const interval = setInterval(loadStats, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -24,7 +41,7 @@ export function ExpertaGoOfflineStats() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{offlineStats.todaySales}</div>
+            <div className="text-2xl font-bold">{stats.salesCount}</div>
             <Badge variant="secondary" className="text-xs mt-1">
               Offline
             </Badge>
@@ -39,7 +56,7 @@ export function ExpertaGoOfflineStats() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{offlineStats.todayExpenses}</div>
+            <div className="text-2xl font-bold">{stats.expensesCount}</div>
             <Badge variant="secondary" className="text-xs mt-1">
               Offline
             </Badge>
@@ -54,8 +71,8 @@ export function ExpertaGoOfflineStats() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{offlineStats.totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">AOA</p>
+            <div className="text-2xl font-bold">{stats.totalRecords}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total</p>
           </CardContent>
         </Card>
 
@@ -67,8 +84,8 @@ export function ExpertaGoOfflineStats() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{offlineStats.totalExpenses.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">AOA</p>
+            <div className="text-2xl font-bold">{stats.unsyncedRecords}</div>
+            <p className="text-xs text-muted-foreground mt-1">Pendente</p>
           </CardContent>
         </Card>
       </div>
@@ -84,9 +101,9 @@ export function ExpertaGoOfflineStats() {
                 Estas estatísticas são baseadas nos dados salvos no seu dispositivo. 
                 Quando houver conexão, os dados serão sincronizados com o servidor.
               </p>
-              {offlineStats.pendingSync > 0 && (
+              {stats.unsyncedRecords > 0 && (
                 <Badge variant="outline" className="mt-2 text-blue-600 border-blue-600/20">
-                  {offlineStats.pendingSync} itens aguardando sincronização
+                  {stats.unsyncedRecords} itens aguardando sincronização
                 </Badge>
               )}
             </div>
@@ -102,16 +119,16 @@ export function ExpertaGoOfflineStats() {
         <CardContent className="space-y-4">
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-sm">Total de Vendas</span>
-            <span className="font-medium">{offlineStats.todaySales} transações</span>
+            <span className="font-medium">{stats.salesCount} registros</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-sm">Total de Despesas</span>
-            <span className="font-medium">{offlineStats.todayExpenses} transações</span>
+            <span className="font-medium">{stats.expensesCount} registros</span>
           </div>
           <div className="flex justify-between items-center py-2">
-            <span className="text-sm font-medium">Saldo do Dia</span>
-            <span className="font-bold text-green-600">
-              +{(offlineStats.totalRevenue - offlineStats.totalExpenses).toLocaleString()} AOA
+            <span className="text-sm font-medium">Total de Registros</span>
+            <span className="font-bold text-primary">
+              {stats.totalRecords} itens
             </span>
           </div>
         </CardContent>

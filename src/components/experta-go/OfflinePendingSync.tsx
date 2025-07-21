@@ -1,45 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CloudUpload, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { offlineStorage, OfflineTransaction } from "@/lib/offline-storage";
 
 export function OfflinePendingSync() {
   const [isSyncing, setIsSyncing] = useState(false);
-  
-  // Dados simulados de sincronização pendente
-  const pendingItems = [
-    {
-      id: '1',
-      type: 'sale',
-      description: '3 garrafas de água por 500 kwanzas cada',
-      timestamp: '2024-01-20 14:30',
-      amount: 1500
-    },
-    {
-      id: '2',
-      type: 'expense',
-      description: 'Combustível para entrega',
-      timestamp: '2024-01-20 15:45',
-      amount: 2000
-    },
-    {
-      id: '3',
-      type: 'sale',
-      description: '2 refrigerantes por 300 kwanzas cada',
-      timestamp: '2024-01-20 16:15',
-      amount: 600
+  const [pendingItems, setPendingItems] = useState<OfflineTransaction[]>([]);
+
+  useEffect(() => {
+    loadPendingItems();
+    
+    // Recarregar a cada 30 segundos
+    const interval = setInterval(loadPendingItems, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadPendingItems = async () => {
+    try {
+      const items = await offlineStorage.getPendingSync();
+      setPendingItems(items);
+    } catch (error) {
+      console.error('Erro ao carregar itens pendentes:', error);
     }
-  ];
+  };
 
   const handleSyncAll = async () => {
     setIsSyncing(true);
     
     try {
-      // Simular sincronização
+      // Simular sincronização com o servidor
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      // Marcar todos como sincronizados
+      for (const item of pendingItems) {
+        await offlineStorage.markAsSynced(item.id);
+      }
+      
+      await loadPendingItems();
       toast.success("Todos os dados foram sincronizados!");
       
     } catch (error) {
@@ -121,7 +121,7 @@ export function OfflinePendingSync() {
                       </div>
                       <p className="text-sm font-medium">{item.description}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {item.timestamp}
+                        {new Date(item.timestamp).toLocaleString('pt-BR')}
                       </p>
                     </div>
                   </div>

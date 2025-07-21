@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Mic, Square, Play } from "lucide-react";
 import { toast } from "sonner";
+import { offlineStorage } from "@/lib/offline-storage";
 
 interface VoiceRecorderOfflineProps {
   type: 'sale' | 'expense';
@@ -108,20 +109,20 @@ export function VoiceRecorderOffline({ type, isActive, onActiveChange }: VoiceRe
     setIsProcessing(true);
     
     try {
-      // Simular processamento e salvar offline
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Processar a transcrição para extrair informações
+      const amount = extractAmount(transcript);
+      const description = transcript;
       
-      // Aqui salvaria no IndexedDB
-      const offlineData = {
-        id: crypto.randomUUID(),
+      // Salvar no IndexedDB
+      const savedTransaction = await offlineStorage.saveTransaction({
         type,
-        transcript,
+        description,
+        amount,
         timestamp: new Date().toISOString(),
-        processed: false
-      };
+        date: new Date().toISOString().split('T')[0],
+      });
       
-      // Simular salvamento local
-      console.log('Salvando offline:', offlineData);
+      console.log('Transação salva offline:', savedTransaction);
       
       setSavedOffline(true);
       toast.success(`${type === 'sale' ? 'Venda' : 'Despesa'} salva offline!`);
@@ -134,6 +135,26 @@ export function VoiceRecorderOffline({ type, isActive, onActiveChange }: VoiceRe
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const extractAmount = (text: string): number => {
+    // Buscar valores numéricos no texto
+    const patterns = [
+      /(\d+(?:\.\d{3})*(?:,\d{2})?)\s*(?:kwanzas?|aoa|AOA)/i,
+      /(?:por|custou|valor|preço)\s*(\d+(?:\.\d{3})*(?:,\d{2})?)/i,
+      /(\d+(?:\.\d{3})*(?:,\d{2})?)/g
+    ];
+    
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) {
+        const value = match[1].replace(/\./g, '').replace(',', '.');
+        const amount = parseFloat(value);
+        if (!isNaN(amount)) return amount;
+      }
+    }
+    
+    return 0;
   };
 
   const formatTime = (seconds: number): string => {

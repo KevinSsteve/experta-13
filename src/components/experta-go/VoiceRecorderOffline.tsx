@@ -48,9 +48,9 @@ export function VoiceRecorderOffline({ type, isActive, onActiveChange }: VoiceRe
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognitionRef.current = new SpeechRecognition();
     
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = 'pt-BR';
+    recognitionRef.current.continuous = false;
+    recognitionRef.current.interimResults = true;
 
     recognitionRef.current.onstart = () => {
       setIsRecording(true);

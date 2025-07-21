@@ -62,31 +62,47 @@ export function VoiceRecorderOffline({ type, isActive, onActiveChange }: VoiceRe
 
     recognitionRef.current.onresult = (event: any) => {
       let finalTranscript = '';
+      let interimTranscript = '';
       
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
         }
       }
       
       if (finalTranscript) {
-        setTranscript(finalTranscript);
+        setTranscript(prev => prev + finalTranscript);
       }
     };
 
     recognitionRef.current.onerror = (event: any) => {
       console.error('Erro no reconhecimento de voz:', event.error);
-      toast.error("Erro no reconhecimento de voz");
-      stopListening();
+      toast.error(`Erro no reconhecimento de voz: ${event.error}`);
+      setIsRecording(false);
+      onActiveChange(false);
     };
 
     recognitionRef.current.onend = () => {
-      if (transcript && isRecording) {
-        processOfflineInput();
-      }
+      setIsRecording(false);
+      onActiveChange(false);
+      // Processar após um pequeno delay para garantir que o transcript foi atualizado
+      setTimeout(() => {
+        if (transcript.trim()) {
+          processOfflineInput();
+        }
+      }, 100);
     };
 
-    recognitionRef.current.start();
+    try {
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('Erro ao iniciar reconhecimento:', error);
+      toast.error("Erro ao iniciar reconhecimento de voz");
+      setIsRecording(false);
+      onActiveChange(false);
+    }
   };
 
   const stopListening = () => {

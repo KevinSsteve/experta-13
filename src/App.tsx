@@ -31,7 +31,7 @@ import Suggestions from "./pages/Suggestions";
 import MeatImport from "./pages/MeatImport";
 import Treinamento from "./pages/Treinamento";
 import ExpertaGo from "./pages/ExpertaGo";
-import ExpertaGoOffline from "./pages/ExpertaGoOffline";
+
 import ExpertaGoDashboard from "./pages/ExpertaGoDashboard";
 import ExpertaGoInventory from "./pages/ExpertaGoInventory";
 
@@ -74,7 +74,7 @@ const App = () => {
                   <Route element={<ProtectedRoute />}>
                     <Route path="/" element={<Navigate to="/experta-go" replace />} />
                     <Route path="/experta-go" element={<ExpertaGo />} />
-                    <Route path="/experta-go/offline" element={<ExpertaGoOffline />} />
+                    
                     <Route path="/experta-go/dashboard" element={<ExpertaGoDashboard />} />
                     <Route path="/experta-go/inventory" element={<ExpertaGoInventory />} />
                     <Route path="/settings" element={<Settings />} />

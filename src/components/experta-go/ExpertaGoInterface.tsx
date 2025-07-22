@@ -5,24 +5,13 @@ import { ExpertaGoStats } from "./ExpertaGoStats";
 import { PendingCorrections } from "./PendingCorrections";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { ShoppingCart, CreditCard, BarChart3, Settings, CloudOff } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ShoppingCart, CreditCard, BarChart3, Settings } from "lucide-react";
 
 export function ExpertaGoInterface() {
   const [activeRecording, setActiveRecording] = useState<'sale' | 'expense' | null>(null);
 
   return (
     <div className="space-y-6">
-      {/* Botão para versão offline */}
-      <div className="flex justify-center">
-        <Link to="/experta-go/offline">
-          <Button variant="outline" className="flex items-center gap-2 border-blue-500/20 text-blue-600 hover:bg-blue-500/10">
-            <CloudOff className="h-4 w-4" />
-            Experimentar Versão Offline (v2)
-          </Button>
-        </Link>
-      </div>
       {/* Botões principais */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card className={`cursor-pointer transition-all hover:shadow-lg ${

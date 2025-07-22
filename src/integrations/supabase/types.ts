@@ -675,6 +675,7 @@ export type Database = {
           needs_password_change: boolean | null
           phone: string | null
           position: string | null
+          profit_rate: number | null
           receipt_additional_info: string | null
           receipt_footer_text: string | null
           receipt_logo: string | null
@@ -703,6 +704,7 @@ export type Database = {
           needs_password_change?: boolean | null
           phone?: string | null
           position?: string | null
+          profit_rate?: number | null
           receipt_additional_info?: string | null
           receipt_footer_text?: string | null
           receipt_logo?: string | null
@@ -731,6 +733,7 @@ export type Database = {
           needs_password_change?: boolean | null
           phone?: string | null
           position?: string | null
+          profit_rate?: number | null
           receipt_additional_info?: string | null
           receipt_footer_text?: string | null
           receipt_logo?: string | null

@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tax_id: data.tax_id || null,
         currency: data.currency || null,
         tax_rate: data.tax_rate || null,
+        profit_rate: data.profit_rate || null,
         receipt_message: data.receipt_message || null,
         receipt_logo: data.receipt_logo || null,
         receipt_title: data.receipt_title || null,

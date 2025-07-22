@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, User, LogOut, Settings, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { DailyProfitDisplay } from "@/components/experta-go/DailyProfitDisplay";
 import { 
   DropdownMenu,
   DropdownMenuContent, 
@@ -53,6 +54,13 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Exibir lucro diário apenas no Experta Go */}
+          {window.location.pathname.includes('/experta-go') && (
+            <div className="hidden sm:block">
+              <DailyProfitDisplay />
+            </div>
+          )}
+          
           <Button
             variant="ghost"
             size="icon"

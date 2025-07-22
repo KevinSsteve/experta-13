@@ -56,6 +56,7 @@ const formSchema = z.object({
   }),
   currency: z.string(),
   taxRate: z.coerce.number().min(0).max(100),
+  profitRate: z.coerce.number().min(0).max(100),
   receiptMessage: z.string(),
   receiptShowLogo: z.boolean().optional(),
   receiptShowSignature: z.boolean().optional(),
@@ -87,6 +88,7 @@ const Settings = () => {
       taxId: '5417623490',
       currency: 'AOA',
       taxRate: 14,
+      profitRate: 5,
       receiptMessage: 'Obrigado pela preferência!',
       receiptShowLogo: false,
       receiptShowSignature: false,
@@ -107,6 +109,7 @@ const Settings = () => {
         taxId: profile.tax_id || '5417623490', // Garantindo que está usando o campo tax_id do perfil
         currency: profile.currency || 'AOA',
         taxRate: profile.tax_rate || 14,
+        profitRate: profile.profit_rate || 5,
         receiptMessage: profile.receipt_message || 'Obrigado pela preferência!',
         receiptShowLogo: profile.receipt_show_logo || false,
         receiptShowSignature: profile.receipt_show_signature || false,
@@ -136,6 +139,7 @@ const Settings = () => {
           tax_id: values.taxId, // Garantindo que o NIF seja armazenado no campo tax_id
           currency: values.currency,
           tax_rate: values.taxRate,
+          profit_rate: values.profitRate,
           receipt_message: values.receiptMessage,
           receipt_show_logo: values.receiptShowLogo,
           receipt_show_signature: values.receiptShowSignature,
@@ -307,19 +311,38 @@ const Settings = () => {
                           )}
                         />
                         
-                        <FormField
-                          control={form.control}
-                          name="receiptMessage"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Mensagem do Recibo</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Mensagem personalizada para recibos" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                         <FormField
+                           control={form.control}
+                           name="profitRate"
+                           render={({ field }) => (
+                             <FormItem>
+                               <FormLabel>Taxa de Lucro (%)</FormLabel>
+                               <FormControl>
+                                 <Input {...field} type="number" step="0.1" min="0" max="100" />
+                               </FormControl>
+                               <FormDescription>
+                                 Taxa percentual aplicada sobre vendas para calcular lucro estimado
+                               </FormDescription>
+                               <FormMessage />
+                             </FormItem>
+                           )}
+                         />
+                       </div>
+                       
+                       <div className="grid grid-cols-1 gap-4">
+                         <FormField
+                           control={form.control}
+                           name="receiptMessage"
+                           render={({ field }) => (
+                             <FormItem>
+                               <FormLabel>Mensagem do Recibo</FormLabel>
+                               <FormControl>
+                                 <Input {...field} placeholder="Mensagem personalizada para recibos" />
+                               </FormControl>
+                               <FormMessage />
+                             </FormItem>
+                           )}
+                         />
                       </div>
                     </CardContent>
                   </Card>

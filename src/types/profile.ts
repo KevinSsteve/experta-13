@@ -12,6 +12,7 @@ export interface ExtendedProfile {
   tax_id: string | null;
   currency: string | null;
   tax_rate: number | null;
+  profit_rate: number | null;
   receipt_message: string | null;
   receipt_logo: string | null;
   receipt_title: string | null;

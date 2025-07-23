@@ -54,11 +54,9 @@ export function TopBar({ toggleSidebar }: TopBarProps) {
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* Exibir lucro diário apenas no Experta Go */}
+          {/* Exibir lucro diário apenas no Experta Go - visível em todos os dispositivos */}
           {window.location.pathname.includes('/experta-go') && (
-            <div className="hidden sm:block">
-              <DailyProfitDisplay />
-            </div>
+            <DailyProfitDisplay />
           )}
           
           <Button

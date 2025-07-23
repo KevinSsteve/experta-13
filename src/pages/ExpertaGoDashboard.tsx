@@ -1,6 +1,7 @@
 
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { ExpertaGoStats } from "@/components/experta-go/ExpertaGoStats";
+import { MonthlySalesOverview } from "@/components/experta-go/MonthlySalesOverview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, BarChart3, TrendingUp, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -66,6 +67,8 @@ export default function ExpertaGoDashboard() {
           </Card>
         </div>
 
+        <MonthlySalesOverview />
+        
         <ExpertaGoStats />
       </div>
     </MainLayout>

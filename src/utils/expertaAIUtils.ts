@@ -1,7 +1,7 @@
 
 import { Product } from "@/contexts/CartContext";
 import { normalizeText } from "./voiceCartUtils";
-
+import { normalizeThousandsInText, parsePTNumberFlexible } from "@/utils/ptNumber";
 // Tipos de comandos que a Experta AI pode reconhecer
 export enum CommandType {
   ADD_PRODUCT = "add_product",
@@ -121,13 +121,15 @@ export function processVoiceCommand(text: string, products: Product[] = []): Rec
  * Extrai informações sobre vendas do comando de voz
  */
 function extractSaleInfo(text: string): any {
-  const normalizedText = text.toLowerCase();
+  const originalLower = text.toLowerCase();
+  const normalizedText = normalizeThousandsInText(originalLower);
   
   // Extrai valor da venda
   let amount = 0;
-  const amountMatch = normalizedText.match(/(?:valor|total|venda de|vendido por|vendi por|por)\s+(?:r\$|\$)?\s*(\d+(?:[,.]\d+)?)/i);
+  const amountMatch = normalizedText.match(/(?:valor|total|venda de|vendido por|vendi por|por)\s+(?:r\$|\$)?\s*([\d.,]+)/i);
   if (amountMatch) {
-    amount = parseFloat(amountMatch[1].replace(',', '.'));
+    const parsed = parsePTNumberFlexible(amountMatch[1]);
+    if (!isNaN(parsed)) amount = parsed;
   }
   
   // Extrai possível nome do cliente
@@ -166,13 +168,15 @@ function extractSaleInfo(text: string): any {
  * Extrai informações sobre despesas do comando de voz
  */
 function extractExpenseInfo(text: string): any {
-  const normalizedText = text.toLowerCase();
+  const originalLower = text.toLowerCase();
+  const normalizedText = normalizeThousandsInText(originalLower);
   
   // Extrai valor da despesa
   let amount = 0;
-  const amountMatch = normalizedText.match(/(?:valor|despesa de|gasto de|paguei|pagamento de|custa|custou|gastei|custo de)\s+(?:r\$|\$)?\s*(\d+(?:[,.]\d+)?)/i);
+  const amountMatch = normalizedText.match(/(?:valor|despesa de|gasto de|paguei|pagamento de|custa|custou|gastei|custo de)\s+(?:r\$|\$)?\s*([\d.,]+)/i);
   if (amountMatch) {
-    amount = parseFloat(amountMatch[1].replace(',', '.'));
+    const parsed = parsePTNumberFlexible(amountMatch[1]);
+    if (!isNaN(parsed)) amount = parsed;
   }
   
   // Identifica categoria da despesa

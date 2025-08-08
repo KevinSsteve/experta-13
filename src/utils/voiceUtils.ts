@@ -1,3 +1,4 @@
+import { normalizeThousandsInText, parsePTNumberFlexible } from "@/utils/ptNumber";
 
 export interface ParsedVoiceItem {
   name: string;
@@ -29,8 +30,14 @@ export function parseVoiceInput(text: string): ParsedVoiceItem {
   for (const pattern of pricePatterns) {
     const match = cleanText.match(pattern);
     if (match) {
-      const priceStr = match[1].replace(',', '.');
-      price = parseFloat(priceStr);
+      const raw = match[1];
+      const normalizedNum = parsePTNumberFlexible(raw);
+      if (!Number.isNaN(normalizedNum)) {
+        price = normalizedNum;
+      } else {
+        const priceStr = raw.replace(',', '.');
+        price = parseFloat(priceStr);
+      }
       
       // Remove a parte do preço do nome do produto
       // Usa o índice do começo do match para preservar o nome corretamente
@@ -41,8 +48,17 @@ export function parseVoiceInput(text: string): ParsedVoiceItem {
         name = cleanText.replace(pattern, "").trim();
       }
       
-      console.log(`Preço encontrado: ${price}, Nome: ${name}, Padrão: ${pattern}`);
+      console.log(`Preço encontrado (normalizado): ${price}, Nome: ${name}`);
       break;
+    }
+  }
+  // Se não achou via regex, tenta por extenso com "mil"
+  if (price === undefined) {
+    const normalizedAll = normalizeThousandsInText(cleanText);
+    const m = normalizedAll.match(/\b(\d{4,})\b/);
+    if (m) {
+      price = parseInt(m[1], 10);
+      name = cleanText.replace(m[0], "").trim();
     }
   }
 

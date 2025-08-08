@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { processExpertaGoVoiceInput } from "@/utils/expertaGoUtils";
 import { applyVoiceCorrections } from "@/utils/speechCorrectionUtils";
 import { Input } from "@/components/ui/input";
+import { normalizeThousandsInText } from "@/utils/ptNumber";
 
 interface VoiceRecorderProps {
   type: 'sale' | 'expense';
@@ -171,10 +172,12 @@ export function VoiceRecorder({ type, isActive, onActiveChange }: VoiceRecorderP
             }
           }
           
+          // Normaliza milhares antes de processar
+          const normalizedForThousands = normalizeThousandsInText(correctedTranscript);
           // Verificar se já processamos este texto
-          if (!processedTranscriptsRef.current.has(correctedTranscript.trim())) {
-            processedTranscriptsRef.current.add(correctedTranscript.trim());
-            processVoiceInput(correctedTranscript);
+          if (!processedTranscriptsRef.current.has(normalizedForThousands.trim())) {
+            processedTranscriptsRef.current.add(normalizedForThousands.trim());
+            processVoiceInput(normalizedForThousands);
           }
         }
       };

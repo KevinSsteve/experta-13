@@ -34,6 +34,7 @@ import ExpertaGo from "./pages/ExpertaGo";
 
 import ExpertaGoDashboard from "./pages/ExpertaGoDashboard";
 import ExpertaGoInventory from "./pages/ExpertaGoInventory";
+import Landing from "./pages/Landing";
 
 const App = () => {
   const PasswordChangeRoute = () => {
@@ -70,9 +71,10 @@ const App = () => {
                   {/* Nova rota para alteração de senha */}
                   <Route path="/change-password" element={<PasswordChangeRoute />} />
                   
+                  <Route path="/" element={<Landing />} />
                   {/* Rotas protegidas - apenas Experta Go */}
                   <Route element={<ProtectedRoute />}>
-                    <Route path="/" element={<Navigate to="/experta-go" replace />} />
+                    
                     <Route path="/experta-go" element={<ExpertaGo />} />
                     
                     <Route path="/experta-go/dashboard" element={<ExpertaGoDashboard />} />
@@ -82,7 +84,7 @@ const App = () => {
                   </Route>
                   
                   {/* Rota para página não encontrada */}
-                  <Route path="*" element={<Navigate to="/experta-go" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </CartProvider>
             </BrowserRouter>

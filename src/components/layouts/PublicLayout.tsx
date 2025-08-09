@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 
 interface PublicLayoutProps {
   children: ReactNode;
@@ -25,6 +27,26 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="md:hidden" aria-label="Abrir menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72">
+                <SheetHeader>
+                  <SheetTitle>Navegação</SheetTitle>
+                </SheetHeader>
+                <nav className="mt-4 flex flex-col gap-3">
+                  <a href="#como-funciona" className="story-link">Como funciona</a>
+                  <a href="#beneficios" className="story-link">Benefícios</a>
+                  <a href="#tecnologia" className="story-link">Tecnologia</a>
+                  <a href="#para-quem" className="story-link">Para quem</a>
+                  <a href="#equipa" className="story-link">Equipa</a>
+                </nav>
+              </SheetContent>
+            </Sheet>
+
             <Link to="/auth" className="hidden sm:inline-block">
               <Button variant="ghost">Entrar</Button>
             </Link>

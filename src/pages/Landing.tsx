@@ -84,7 +84,7 @@ export default function Landing() {
           </article>
 
           <aside className="relative">
-            <div className="aspect-[4/3] rounded-2xl border border-border bg-muted/20 grid place-items-center overflow-hidden">
+            <div className="aspect-square sm:aspect-[16/10] md:aspect-[4/3] rounded-2xl border border-border bg-muted/20 grid place-items-center overflow-hidden">
               <div className="flex flex-col items-center gap-3 p-6 text-center">
                 <Sparkles className="h-10 w-10 text-primary" />
                 <p className="text-sm text-muted-foreground max-w-sm">
@@ -98,7 +98,7 @@ export default function Landing() {
       </header>
 
       {/* Por que existimos */}
-      <section aria-labelledby="sec-missao" className="container mx-auto px-4 py-12" id="porque-existimos">
+      <section aria-labelledby="sec-missao" className="container mx-auto px-4 py-12 scroll-mt-24" id="porque-existimos">
         <h2 id="sec-missao" className="text-2xl font-semibold mb-6">Por que existimos</h2>
         <div className="grid md:grid-cols-3 gap-6">
           <Card>
@@ -127,9 +127,9 @@ export default function Landing() {
       </section>
 
       {/* Como funciona */}
-      <section aria-labelledby="sec-como-funciona" id="como-funciona" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-como-funciona" id="como-funciona" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-como-funciona" className="text-2xl font-semibold mb-6">Como funciona</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           {[
             { icon: Mic, title: "Fale", desc: "Registe vendas e despesas por voz." },
             { icon: BrainCircuit, title: "IA registra", desc: "A IA entende, normaliza milhares e organiza os dados." },
@@ -148,9 +148,9 @@ export default function Landing() {
       </section>
 
       {/* Benefícios */}
-      <section aria-labelledby="sec-beneficios" id="beneficios" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-beneficios" id="beneficios" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-beneficios" className="text-2xl font-semibold mb-6">Benefícios reais</h2>
-        <div className="grid md:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { icon: TrendingUp, title: "Aumenta lucros", desc: "Descubra os produtos que mais rendem." },
             { icon: ShieldCheck, title: "Evita prejuízos", desc: "Alerte-se para erros e despesas excessivas." },
@@ -169,7 +169,7 @@ export default function Landing() {
       </section>
 
       {/* Tecnologia */}
-      <section aria-labelledby="sec-tecnologia" id="tecnologia" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-tecnologia" id="tecnologia" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-tecnologia" className="text-2xl font-semibold mb-6">A Tecnologia</h2>
         <div className="grid md:grid-cols-2 gap-6 items-start">
           <div className="space-y-3">
@@ -188,9 +188,9 @@ export default function Landing() {
       </section>
 
       {/* Para quem é */}
-      <section aria-labelledby="sec-para-quem" id="para-quem" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-para-quem" id="para-quem" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-para-quem" className="text-2xl font-semibold mb-6">Para quem é</h2>
-        <div className="grid md:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { title: "Comerciantes", cta: "Quero experimentar", to: "/auth", icon: Users },
             { title: "Bancos & Microcrédito", cta: "Falar com a equipa", to: "https://wa.me/244924000171", icon: Building2 },
@@ -213,9 +213,9 @@ export default function Landing() {
       </section>
 
       {/* Prova social */}
-      <section aria-labelledby="sec-prova" id="prova-social" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-prova" id="prova-social" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-prova" className="text-2xl font-semibold mb-6">Prova social e validação</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Métricas e projeções — em construção</p></CardContent></Card>
           <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Parceiros envolvidos — em negociação</p></CardContent></Card>
           <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Na mídia — em breve</p></CardContent></Card>
@@ -223,7 +223,7 @@ export default function Landing() {
       </section>
 
       {/* Nossa jornada */}
-      <section aria-labelledby="sec-jornada" id="jornada" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-jornada" id="jornada" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-jornada" className="text-2xl font-semibold mb-6">Nossa jornada</h2>
         <ol className="relative border-l border-border pl-6 space-y-6">
           {[
@@ -242,7 +242,7 @@ export default function Landing() {
       </section>
 
       {/* Equipa */}
-      <section aria-labelledby="sec-equipa" id="equipa" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-equipa" id="equipa" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-equipa" className="text-2xl font-semibold mb-6">Equipa</h2>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           {[1,2,3].map((i) => (
@@ -261,7 +261,7 @@ export default function Landing() {
       </section>
 
       {/* Chamada final */}
-      <section aria-labelledby="sec-final" id="cta-final" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-final" id="cta-final" className="container mx-auto px-4 py-12 scroll-mt-24">
         <Card>
           <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
@@ -278,9 +278,9 @@ export default function Landing() {
       </section>
 
       {/* Conteúdo vivo */}
-      <section aria-labelledby="sec-conteudo" id="conteudo" className="container mx-auto px-4 py-12">
+      <section aria-labelledby="sec-conteudo" id="conteudo" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-conteudo" className="text-2xl font-semibold mb-6">Conteúdo vivo</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           {["Gestão simples com IA", "Guia prático para o comerciante", "Caso de estudo: padaria"].map((t, i) => (
             <Card key={i}>
               <CardContent className="p-6 space-y-2">

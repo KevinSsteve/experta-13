@@ -149,7 +149,7 @@ const Dashboard = () => {
           {userId && isAuthReady && noData && !isLoading && (
             <Card>
               <CardContent className="p-6 text-center">
-                <Info className="h-10 w-10 mx-auto mb-4 text-blue-500" />
+                <Info className="h-10 w-10 mx-auto mb-4 text-foreground" />
                 <h3 className="text-lg font-medium mb-2">Nenhum dado encontrado</h3>
                 <p className="text-muted-foreground mb-4">
                   Não encontramos dados para exibir neste dashboard. Isso pode ocorrer por dois motivos:

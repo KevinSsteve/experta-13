@@ -32,7 +32,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72">
+              <SheetContent side="left" className="w-[85vw] max-w-sm">
                 <SheetHeader>
                   <SheetTitle>Navegação</SheetTitle>
                 </SheetHeader>

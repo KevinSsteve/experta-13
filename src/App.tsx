@@ -63,7 +63,8 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <CartProvider>
+              <div className="theme-bw">
+                <CartProvider>
                 <Routes>
                   {/* Rota pública */}
                   <Route path="/auth" element={<Auth />} />
@@ -86,7 +87,8 @@ const App = () => {
                   {/* Rota para página não encontrada */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-              </CartProvider>
+                </CartProvider>
+              </div>
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>

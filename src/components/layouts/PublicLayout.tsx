@@ -12,10 +12,9 @@ export function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-        <nav className="container mx-auto flex items-center justify-between py-4 px-4">
-          <Link to="/" className="flex items-center gap-2 hover-scale" aria-label="Ir para a página inicial">
-            <img src="/logo.png" alt="Logo Experta" className="h-8 w-8" loading="eager" />
-            <span className="text-lg font-bold tracking-wide">experta</span>
+        <nav className="container mx-auto flex items-center justify-between gap-2 py-3 md:py-4 px-4">
+          <Link to="/" className="flex items-center hover-scale" aria-label="Ir para a página inicial">
+            <span className="text-xl md:text-2xl font-bold tracking-wide bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">experta</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm">
@@ -51,7 +50,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               <Button variant="ghost">Entrar</Button>
             </Link>
             <Link to="/auth">
-              <Button>Experimente grátis</Button>
+              <Button className="px-3 md:px-4">Experimente grátis</Button>
             </Link>
           </div>
         </nav>

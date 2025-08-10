@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicLayout } from "@/components/layouts/PublicLayout";
-import { CheckCircle2, Mic, BrainCircuit, ShieldCheck, TrendingUp, Users, Building2, Handshake, LineChart, Calendar, Linkedin, Sparkles } from "lucide-react";
-
+import { CheckCircle2, Mic, BrainCircuit, ShieldCheck, TrendingUp, Users, Building2, Handshake, LineChart, Calendar, Linkedin } from "lucide-react";
+import heroImage from "@/assets/hero-merchant-ai.jpg";
 export default function Landing() {
   useEffect(() => {
     // SEO: title, description, canonical
@@ -83,16 +83,14 @@ export default function Landing() {
             </ul>
           </article>
 
-          <aside className="relative">
-            <div className="aspect-square sm:aspect-[16/10] md:aspect-[4/3] rounded-2xl border border-border bg-muted/20 grid place-items-center overflow-hidden">
-              <div className="flex flex-col items-center gap-3 p-6 text-center">
-                <Sparkles className="h-10 w-10 text-primary" />
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  Imagine: você fala "Vendi 12 pães por 1.000" e a Experta registra, corrige milhares e gera o relatório.
-                </p>
-              </div>
-              <img src="/logo.png" alt="Demonstração Experta IA" className="absolute right-4 bottom-4 h-10 w-10 opacity-70" loading="lazy" />
-            </div>
+          <aside className="relative animate-fade-in">
+            <figure className="aspect-square sm:aspect-[16/10] md:aspect-[4/3] rounded-2xl border border-border bg-gradient-to-b from-muted/40 to-background overflow-hidden">
+              <img
+                src={heroImage}
+                alt="Comerciante falando e a IA registrando vendas em tempo real"
+                className="h-full w-full object-cover"
+              />
+            </figure>
           </aside>
         </div>
       </header>

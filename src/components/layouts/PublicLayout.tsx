@@ -10,11 +10,11 @@ interface PublicLayoutProps {
 
 export function PublicLayout({ children }: PublicLayoutProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="theme-bw min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
         <nav className="container mx-auto flex items-center justify-between gap-2 py-3 md:py-4 px-4">
           <Link to="/" className="flex items-center hover-scale" aria-label="Ir para a página inicial">
-            <span className="text-xl md:text-2xl font-bold tracking-wide bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">experta</span>
+            <span className="text-xl md:text-2xl font-bold tracking-wide text-foreground">experta</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm">
@@ -50,7 +50,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               <Button variant="ghost">Entrar</Button>
             </Link>
             <Link to="/auth">
-              <Button className="px-3 md:px-4">Experimente grátis</Button>
+              <Button className="px-2 md:px-4 text-sm md:text-base whitespace-nowrap">Experimente grátis</Button>
             </Link>
           </div>
         </nav>

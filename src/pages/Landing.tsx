@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicLayout } from "@/components/layouts/PublicLayout";
 import { CheckCircle2, Mic, BrainCircuit, ShieldCheck, TrendingUp, Users, Building2, Handshake, LineChart, Calendar, Linkedin } from "lucide-react";
-import heroImage from "@/assets/hero-merchant-ai.jpg";
+// usando imagem pública enviada pelo usuário
 export default function Landing() {
   useEffect(() => {
     // SEO: title, description, canonical
@@ -86,7 +86,7 @@ export default function Landing() {
           <aside className="relative animate-fade-in">
             <figure className="aspect-square sm:aspect-[16/10] md:aspect-[4/3] rounded-2xl border border-border bg-gradient-to-b from-muted/40 to-background overflow-hidden">
               <img
-                src={heroImage}
+                src="/lovable-uploads/c571acf3-8bdf-44fb-898f-5c93a8d4059b.png"
                 alt="Comerciante falando e a IA registrando vendas em tempo real"
                 className="h-full w-full object-cover"
               />

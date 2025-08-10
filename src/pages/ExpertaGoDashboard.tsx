@@ -30,10 +30,10 @@ export default function ExpertaGoDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Vendas por Voz</CardTitle>
-              <TrendingUp className="h-4 w-4 text-foreground" />
+              <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">Hoje</div>
+              <div className="text-2xl font-bold text-green-600">Hoje</div>
               <p className="text-xs text-muted-foreground">
                 Registros rápidos e automáticos
               </p>
@@ -43,10 +43,10 @@ export default function ExpertaGoDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Despesas por Voz</CardTitle>
-              <Wallet className="h-4 w-4 text-foreground" />
+              <Wallet className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">Hoje</div>
+              <div className="text-2xl font-bold text-red-600">Hoje</div>
               <p className="text-xs text-muted-foreground">
                 Controle automático de gastos
               </p>
@@ -56,7 +56,7 @@ export default function ExpertaGoDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Produtos</CardTitle>
-              <BarChart3 className="h-4 w-4 text-foreground" />
+              <BarChart3 className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">Automático</div>

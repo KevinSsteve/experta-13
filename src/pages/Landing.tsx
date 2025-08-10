@@ -84,12 +84,11 @@ export default function Landing() {
           </article>
 
           <aside className="relative animate-fade-in">
-            <figure className="relative rounded-2xl border border-border bg-muted overflow-hidden p-2 md:p-4 aspect-square sm:aspect-[16/10] md:aspect-[4/3]">
+            <figure className="aspect-square sm:aspect-[16/10] md:aspect-[4/3] rounded-2xl border border-border bg-gradient-to-b from-muted/40 to-background overflow-hidden">
               <img
                 src="/lovable-uploads/c571acf3-8bdf-44fb-898f-5c93a8d4059b.png"
                 alt="Comerciante falando e a IA registrando vendas em tempo real"
-                className="w-full h-full object-contain fade-edges"
-                loading="eager"
+                className="h-full w-full object-cover"
               />
             </figure>
           </aside>

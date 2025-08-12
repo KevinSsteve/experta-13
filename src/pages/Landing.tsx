@@ -8,7 +8,7 @@ import { CheckCircle2, Mic, BrainCircuit, ShieldCheck, TrendingUp, Users, Buildi
 export default function Landing() {
   useEffect(() => {
     // SEO: title, description, canonical
-    document.title = "IA que entende o seu negócio | Experta";
+    document.title = "Experta: assistente financeira por voz";
 
     const setMeta = (name: string, content: string) => {
       let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
@@ -20,7 +20,7 @@ export default function Landing() {
       el.setAttribute("content", content);
     };
 
-    setMeta("description", "Inteligência Artificial de voz para pequenos comerciantes: registre vendas e despesas falando e tenha relatórios e insights. Experimente grátis.");
+    setMeta("description", "Assistente financeira por voz para empreendedores informais em Angola. Entende o contexto local e ajuda a gerir receitas, despesas e metas financeiras.");
 
     // canonical
     let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
@@ -65,10 +65,10 @@ export default function Landing() {
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <article className="space-y-6">
             <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-              Inteligência Artificial que entende o seu negócio como você fala
+              Assistente financeira por voz que entende o seu negócio como você fala
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl">
-              Gestão financeira por voz para pequenos comerciantes. Fale e a IA registra vendas e despesas com insights em tempo real.
+              Gestão financeira por voz para pequenos comerciantes. Fale e a assistente regista vendas e despesas com indicadores em tempo real.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link to="/auth"><Button size="lg">Experimente grátis</Button></Link>
@@ -85,11 +85,12 @@ export default function Landing() {
 
           <aside className="relative animate-fade-in">
             <figure className="aspect-square sm:aspect-[16/10] md:aspect-[4/3] rounded-2xl border border-border bg-gradient-to-b from-muted/40 to-background overflow-hidden">
-              <img
-                src="/lovable-uploads/c571acf3-8bdf-44fb-898f-5c93a8d4059b.png"
-                alt="Comerciante falando e a IA registrando vendas em tempo real"
-                className="h-full w-full object-cover"
-              />
+              <div className="h-full w-full flex items-center justify-center bg-gradient-to-b from-muted/40 to-background">
+                <div className="text-center px-6">
+                  <p className="text-sm uppercase tracking-wide text-muted-foreground">Experta</p>
+                  <p className="text-lg font-medium">Assistente financeira por voz</p>
+                </div>
+              </div>
             </figure>
           </aside>
         </div>
@@ -130,7 +131,7 @@ export default function Landing() {
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           {[
             { icon: Mic, title: "Fale", desc: "Registe vendas e despesas por voz." },
-            { icon: BrainCircuit, title: "IA registra", desc: "A IA entende, normaliza milhares e organiza os dados." },
+            { icon: BrainCircuit, title: "Assistente organiza", desc: "A assistente entende o contexto local, normaliza e organiza os dados." },
             { icon: LineChart, title: "Relatórios", desc: "Veja relatórios simples e insights automáticos." },
           ].map((s, i) => (
             <Card key={i}>
@@ -171,7 +172,7 @@ export default function Landing() {
         <h2 id="sec-tecnologia" className="text-2xl font-semibold mb-6">A Tecnologia</h2>
         <div className="grid md:grid-cols-2 gap-6 items-start">
           <div className="space-y-3">
-            <p className="text-muted-foreground">IA de voz adaptada ao contexto angolano, treinada para sotaques e termos locais.</p>
+            <p className="text-muted-foreground">Tecnologia de voz adaptada ao contexto angolano, com suporte a sotaques e termos locais.</p>
             <p className="text-muted-foreground">Privacidade e segurança de dados desde a concepção.</p>
             <p className="text-muted-foreground">Mais simples e humano do que soluções tradicionais.</p>
           </div>
@@ -225,7 +226,7 @@ export default function Landing() {
         <h2 id="sec-jornada" className="text-2xl font-semibold mb-6">Nossa jornada</h2>
         <ol className="relative border-l border-border pl-6 space-y-6">
           {[
-            { title: "Prototipagem", desc: "Primeiros testes com IA de voz." },
+            { title: "Prototipagem", desc: "Primeiros testes com tecnologia de voz." },,
             { title: "Pilotos", desc: "Pilotos com comerciantes locais." },
             { title: "Lançamento", desc: "Disponível como PWA." },
             { title: "Expansão", desc: "Parcerias B2B2C e bancos." },
@@ -279,7 +280,7 @@ export default function Landing() {
       <section aria-labelledby="sec-conteudo" id="conteudo" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-conteudo" className="text-2xl font-semibold mb-6">Conteúdo vivo</h2>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {["Gestão simples com IA", "Guia prático para o comerciante", "Caso de estudo: padaria"].map((t, i) => (
+          {["Gestão simples por voz", "Guia prático para o comerciante", "Caso de estudo: padaria"].map((t, i) => (
             <Card key={i}>
               <CardContent className="p-6 space-y-2">
                 <h3 className="font-medium">{t}</h3>

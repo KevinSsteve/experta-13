@@ -9,6 +9,11 @@ import aiAssistant from "@/assets/ai-assistant.jpg";
 import workspace from "@/assets/workspace.jpg";
 import analytics from "@/assets/analytics.jpg";
 import teamCollaboration from "@/assets/team-collaboration.jpg";
+import missionVision from "@/assets/mission-vision.jpg";
+import howItWorks from "@/assets/how-it-works.jpg";
+import realBenefits from "@/assets/real-benefits.jpg";
+import targetAudience from "@/assets/target-audience.jpg";
+import ourJourney from "@/assets/our-journey.jpg";
 export default function Landing() {
   useEffect(() => {
     // SEO: title, description, canonical
@@ -100,73 +105,104 @@ export default function Landing() {
       </header>
 
       {/* Por que existimos */}
-      <section aria-labelledby="sec-missao" className="container mx-auto px-4 py-12 scroll-mt-24" id="porque-existimos">
-        <h2 id="sec-missao" className="text-2xl font-semibold mb-6">Por que existimos</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6 space-y-2">
-              <h3 className="font-medium">Missão</h3>
-              <p className="text-sm text-muted-foreground">Tornar a gestão financeira acessível e intuitiva para quem prefere falar a escrever.</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 space-y-2">
-              <h3 className="font-medium">Visão</h3>
-              <p className="text-sm text-muted-foreground">Transformar negócios informais em empresas sustentáveis usando IA.</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 space-y-2">
-              <h3 className="font-medium">Pilares</h3>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Acessível</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Inteligente</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Humana</li>
-              </ul>
-            </CardContent>
-          </Card>
+      <section aria-labelledby="sec-missao" className="container mx-auto px-4 py-16 scroll-mt-24" id="porque-existimos">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="order-2 md:order-1">
+            <h2 id="sec-missao" className="text-3xl font-semibold mb-8">Por que existimos</h2>
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-xl font-medium mb-3 text-primary">Missão</h3>
+                <p className="text-muted-foreground leading-relaxed">Tornar a gestão financeira acessível e intuitiva para quem prefere falar a escrever, democratizando o acesso a ferramentas empresariais.</p>
+              </div>
+              <div>
+                <h3 className="text-xl font-medium mb-3 text-primary">Visão</h3>
+                <p className="text-muted-foreground leading-relaxed">Transformar negócios informais em empresas sustentáveis usando IA, criando um ecossistema próspero para empreendedores angolanos.</p>
+              </div>
+              <div>
+                <h3 className="text-xl font-medium mb-3 text-primary">Pilares</h3>
+                <ul className="space-y-3 text-muted-foreground">
+                  <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" /> <span>Acessível: simples de usar, sem barreiras tecnológicas</span></li>
+                  <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" /> <span>Inteligente: IA que entende o contexto local</span></li>
+                  <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" /> <span>Humana: interface natural por voz</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <figure className="order-1 md:order-2 rounded-3xl overflow-hidden shadow-2xl">
+            <img 
+              src={missionVision} 
+              alt="Visualização da missão com contexto empresarial africano mostrando união e colaboração"
+              className="h-full w-full object-cover aspect-[4/3]"
+            />
+          </figure>
         </div>
       </section>
 
       {/* Como funciona */}
-      <section aria-labelledby="sec-como-funciona" id="como-funciona" className="container mx-auto px-4 py-12 scroll-mt-24">
-        <h2 id="sec-como-funciona" className="text-2xl font-semibold mb-6">Como funciona</h2>
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {[
-            { icon: Mic, title: "Fale", desc: "Registe vendas e despesas por voz." },
-            { icon: BrainCircuit, title: "Assistente organiza", desc: "A assistente entende o contexto local, normaliza e organiza os dados." },
-            { icon: LineChart, title: "Relatórios", desc: "Veja relatórios simples e insights automáticos." },
-          ].map((s, i) => (
-            <Card key={i}>
-              <CardContent className="p-6 space-y-2">
-                <s.icon className="h-5 w-5 text-primary" />
-                <h3 className="font-medium">{s.title}</h3>
-                <p className="text-sm text-muted-foreground">{s.desc}</p>
-              </CardContent>
-            </Card>
-          ))}
+      <section aria-labelledby="sec-como-funciona" id="como-funciona" className="container mx-auto px-4 py-16 scroll-mt-24">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <figure className="rounded-3xl overflow-hidden shadow-2xl">
+            <img 
+              src={howItWorks} 
+              alt="Fluxo de trabalho de tecnologia por voz mostrando ondas de microfone transformando-se em gráficos organizados"
+              className="h-full w-full object-cover aspect-[4/3]"
+            />
+          </figure>
+          <div>
+            <h2 id="sec-como-funciona" className="text-3xl font-semibold mb-8">Como funciona</h2>
+            <div className="space-y-6">
+              {[
+                { icon: Mic, title: "1. Fale naturalmente", desc: "Registe vendas e despesas por voz, como se estivesse conversando com um assistente pessoal." },
+                { icon: BrainCircuit, title: "2. IA organiza tudo", desc: "A assistente entende o contexto local angolano, normaliza preços em kwanzas e organiza automaticamente os dados." },
+                { icon: LineChart, title: "3. Insights instantâneos", desc: "Veja relatórios simples, gráficos intuitivos e insights automáticos sobre o seu negócio." },
+              ].map((s, i) => (
+                <div key={i} className="flex gap-4 items-start">
+                  <div className="bg-primary/10 p-3 rounded-2xl flex-shrink-0">
+                    <s.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">{s.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">{s.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 p-4 bg-muted/50 rounded-2xl">
+              <p className="text-sm text-muted-foreground"><strong>Vantagem única:</strong> Funciona offline. Não precisa ler ou escrever. Perfeito para quem está sempre em movimento.</p>
+            </div>
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-4">Funciona offline. Não precisa ler ou escrever.</p>
       </section>
 
       {/* Benefícios */}
-      <section aria-labelledby="sec-beneficios" id="beneficios" className="container mx-auto px-4 py-12 scroll-mt-24">
-        <h2 id="sec-beneficios" className="text-2xl font-semibold mb-6">Benefícios reais</h2>
-        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { icon: TrendingUp, title: "Aumenta lucros", desc: "Descubra os produtos que mais rendem." },
-            { icon: ShieldCheck, title: "Evita prejuízos", desc: "Alerte-se para erros e despesas excessivas." },
-            { icon: Building2, title: "Acesso a crédito", desc: "Histórico organizado facilita crédito." },
-            { icon: Calendar, title: "Mais tempo", desc: "Menos papelada, mais foco no negócio." },
-          ].map((b, i) => (
-            <Card key={i}>
-              <CardContent className="p-6 space-y-2">
-                <b.icon className="h-5 w-5 text-primary" />
-                <h3 className="font-medium">{b.title}</h3>
-                <p className="text-sm text-muted-foreground">{b.desc}</p>
-              </CardContent>
-            </Card>
-          ))}
+      <section aria-labelledby="sec-beneficios" id="beneficios" className="container mx-auto px-4 py-16 scroll-mt-24">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="order-2 md:order-1">
+            <h2 id="sec-beneficios" className="text-3xl font-semibold mb-8">Benefícios reais para o seu negócio</h2>
+            <div className="grid sm:grid-cols-2 gap-6">
+              {[
+                { icon: TrendingUp, title: "Aumenta lucros", desc: "Identifique os produtos mais rentáveis e otimize sua estratégia de vendas com dados precisos." },
+                { icon: ShieldCheck, title: "Evita prejuízos", desc: "Receba alertas automáticos sobre erros, despesas excessivas e flutuações anômalas no negócio." },
+                { icon: Building2, title: "Facilita crédito", desc: "Histórico financeiro organizado e relatórios profissionais aceleram aprovação de empréstimos." },
+                { icon: Calendar, title: "Economiza tempo", desc: "Elimine planilhas e papelada. Foque no que realmente importa: fazer o negócio crescer." },
+              ].map((b, i) => (
+                <div key={i} className="space-y-3">
+                  <div className="bg-primary/10 p-3 rounded-2xl w-fit">
+                    <b.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-lg">{b.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <figure className="order-1 md:order-2 rounded-3xl overflow-hidden shadow-2xl">
+            <img 
+              src={realBenefits} 
+              alt="Visualização de benefícios empresariais com gráficos de crescimento e setas de aumento de lucro"
+              className="h-full w-full object-cover aspect-[4/3]"
+            />
+          </figure>
         </div>
       </section>
 
@@ -190,27 +226,41 @@ export default function Landing() {
       </section>
 
       {/* Para quem é */}
-      <section aria-labelledby="sec-para-quem" id="para-quem" className="container mx-auto px-4 py-12 scroll-mt-24">
-        <h2 id="sec-para-quem" className="text-2xl font-semibold mb-6">Para quem é</h2>
-        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { title: "Comerciantes", cta: "Quero experimentar", to: "/auth", icon: Users },
-            { title: "Bancos & Microcrédito", cta: "Falar com a equipa", to: "https://wa.me/244924000171", icon: Building2 },
-            { title: "Parceiros tecnológicos", cta: "Seja parceiro", to: "https://wa.me/244924000171", icon: Handshake },
-            { title: "Investidores", cta: "Quero investir", to: "https://wa.me/244924000171", icon: TrendingUp },
-          ].map((p, i) => (
-            <Card key={i}>
-              <CardContent className="p-6 space-y-3">
-                <p.icon className="h-5 w-5 text-primary" />
-                <h3 className="font-medium">{p.title}</h3>
-                {p.to.startsWith("http") ? (
-                  <a href={p.to} target="_blank" rel="noreferrer" className="text-sm underline">{p.cta}</a>
-                ) : (
-                  <Link to={p.to} className="text-sm underline">{p.cta}</Link>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+      <section aria-labelledby="sec-para-quem" id="para-quem" className="container mx-auto px-4 py-16 scroll-mt-24">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <figure className="rounded-3xl overflow-hidden shadow-2xl">
+            <img 
+              src={targetAudience} 
+              alt="Ilustração de público-alvo diverso mostrando comerciantes, representantes bancários, parceiros tech e investidores"
+              className="h-full w-full object-cover aspect-[4/3]"
+            />
+          </figure>
+          <div>
+            <h2 id="sec-para-quem" className="text-3xl font-semibold mb-8">Para quem é a Experta</h2>
+            <div className="grid gap-6">
+              {[
+                { title: "Comerciantes & Empreendedores", desc: "Pequenos negócios que querem crescer de forma organizada", cta: "Quero experimentar", to: "/auth", icon: Users },
+                { title: "Bancos & Microcrédito", desc: "Instituições que precisam avaliar histórico de clientes", cta: "Falar com a equipa", to: "https://wa.me/244924000171", icon: Building2 },
+                { title: "Parceiros Tecnológicos", desc: "Empresas que querem integrar nossa solução", cta: "Seja parceiro", to: "https://wa.me/244924000171", icon: Handshake },
+                { title: "Investidores", desc: "Quem acredita no potencial do mercado angolano", cta: "Quero investir", to: "https://wa.me/244924000171", icon: TrendingUp },
+              ].map((p, i) => (
+                <div key={i} className="flex gap-4 items-start p-6 rounded-2xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div className="bg-primary/10 p-3 rounded-2xl flex-shrink-0">
+                    <p.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg mb-2">{p.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">{p.desc}</p>
+                    {p.to.startsWith("http") ? (
+                      <a href={p.to} target="_blank" rel="noreferrer" className="text-sm font-medium text-primary hover:underline">{p.cta} →</a>
+                    ) : (
+                      <Link to={p.to} className="text-sm font-medium text-primary hover:underline">{p.cta} →</Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -241,22 +291,39 @@ export default function Landing() {
       </section>
 
       {/* Nossa jornada */}
-      <section aria-labelledby="sec-jornada" id="jornada" className="container mx-auto px-4 py-12 scroll-mt-24">
-        <h2 id="sec-jornada" className="text-2xl font-semibold mb-6">Nossa jornada</h2>
-        <ol className="relative border-l border-border pl-6 space-y-6">
-          {[
-            { title: "Prototipagem", desc: "Primeiros testes com tecnologia de voz." },,
-            { title: "Pilotos", desc: "Pilotos com comerciantes locais." },
-            { title: "Lançamento", desc: "Disponível como PWA." },
-            { title: "Expansão", desc: "Parcerias B2B2C e bancos." },
-          ].map((m, i) => (
-            <li key={i} className="ml-2">
-              <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-primary"></div>
-              <h3 className="font-medium">{m.title}</h3>
-              <p className="text-sm text-muted-foreground">{m.desc}</p>
-            </li>
-          ))}
-        </ol>
+      <section aria-labelledby="sec-jornada" id="jornada" className="container mx-auto px-4 py-16 scroll-mt-24">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="order-2 md:order-1">
+            <h2 id="sec-jornada" className="text-3xl font-semibold mb-8">Nossa jornada</h2>
+            <div className="space-y-8">
+              {[
+                { title: "Prototipagem", desc: "Primeiros testes com tecnologia de voz adaptada ao contexto angolano. Validação inicial com comerciantes locais.", status: "completed" },
+                { title: "Testes Pilotos", desc: "Pilotos em mercados de Luanda com foco em pequenos comerciantes. Refinamento baseado no feedback real.", status: "completed" },
+                { title: "Lançamento Beta", desc: "Disponível como PWA para early adopters. Coleta de dados e melhorias contínuas.", status: "current" },
+                { title: "Expansão Estratégica", desc: "Parcerias B2B2C com bancos e microfinanças. Escalabilidade para todo território nacional.", status: "future" },
+              ].map((m, i) => (
+                <div key={i} className="flex gap-4 items-start">
+                  <div className={`mt-2 h-4 w-4 rounded-full flex-shrink-0 ${
+                    m.status === 'completed' ? 'bg-green-500' : 
+                    m.status === 'current' ? 'bg-primary animate-pulse' : 
+                    'bg-muted border-2 border-primary'
+                  }`}></div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">{m.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">{m.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <figure className="order-1 md:order-2 rounded-3xl overflow-hidden shadow-2xl">
+            <img 
+              src={ourJourney} 
+              alt="Visualização de cronograma de jornada com marcos e indicadores de progresso"
+              className="h-full w-full object-cover aspect-[4/3]"
+            />
+          </figure>
+        </div>
       </section>
 
       {/* Equipa */}

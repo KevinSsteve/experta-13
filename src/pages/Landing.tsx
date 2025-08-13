@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicLayout } from "@/components/layouts/PublicLayout";
 import { CheckCircle2, Mic, BrainCircuit, ShieldCheck, TrendingUp, Users, Building2, Handshake, LineChart, Calendar, Linkedin } from "lucide-react";
-// usando imagem pública enviada pelo usuário
+import dashboardHero from "@/assets/dashboard-hero.jpg";
+import aiAssistant from "@/assets/ai-assistant.jpg";
+import workspace from "@/assets/workspace.jpg";
+import analytics from "@/assets/analytics.jpg";
+import teamCollaboration from "@/assets/team-collaboration.jpg";
 export default function Landing() {
   useEffect(() => {
     // SEO: title, description, canonical
@@ -84,13 +88,12 @@ export default function Landing() {
           </article>
 
           <aside className="relative animate-fade-in">
-            <figure className="aspect-square sm:aspect-[16/10] md:aspect-[4/3] rounded-2xl border border-border bg-gradient-to-b from-muted/40 to-background overflow-hidden">
-              <div className="h-full w-full flex items-center justify-center bg-gradient-to-b from-muted/40 to-background">
-                <div className="text-center px-6">
-                  <p className="text-sm uppercase tracking-wide text-muted-foreground">Experta</p>
-                  <p className="text-lg font-medium">Assistente financeira por voz</p>
-                </div>
-              </div>
+            <figure className="aspect-square sm:aspect-[16/10] md:aspect-[4/3] rounded-3xl border border-border/50 overflow-hidden shadow-lg">
+              <img 
+                src={dashboardHero} 
+                alt="Dashboard financeiro moderno com interface limpa e análises"
+                className="h-full w-full object-cover"
+              />
             </figure>
           </aside>
         </div>
@@ -176,13 +179,13 @@ export default function Landing() {
             <p className="text-muted-foreground">Privacidade e segurança de dados desde a concepção.</p>
             <p className="text-muted-foreground">Mais simples e humano do que soluções tradicionais.</p>
           </div>
-          <Card>
-            <CardContent className="p-6">
-              <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
-                Demonstração técnica breve (vídeo/anim.) — em breve
-              </div>
-            </CardContent>
-          </Card>
+          <figure className="rounded-2xl overflow-hidden shadow-lg">
+            <img 
+              src={aiAssistant} 
+              alt="Interface do assistente de IA com tons azuis suaves e elementos flutuantes"
+              className="h-full w-full object-cover"
+            />
+          </figure>
         </div>
       </section>
 
@@ -214,10 +217,26 @@ export default function Landing() {
       {/* Prova social */}
       <section aria-labelledby="sec-prova" id="prova-social" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-prova" className="text-2xl font-semibold mb-6">Prova social e validação</h2>
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Métricas e projeções — em construção</p></CardContent></Card>
-          <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Parceiros envolvidos — em negociação</p></CardContent></Card>
-          <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Na mídia — em breve</p></CardContent></Card>
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <figure className="rounded-2xl overflow-hidden shadow-lg">
+            <img 
+              src={workspace} 
+              alt="Espaço de trabalho moderno com laptop e gráficos financeiros"
+              className="h-48 w-full object-cover"
+            />
+          </figure>
+          <figure className="rounded-2xl overflow-hidden shadow-lg">
+            <img 
+              src={analytics} 
+              alt="Visualização de análise de negócios com gradientes suaves"
+              className="h-48 w-full object-cover"
+            />
+          </figure>
+          <Card className="flex items-center justify-center">
+            <CardContent className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">Métricas em construção</p>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -243,10 +262,17 @@ export default function Landing() {
       {/* Equipa */}
       <section aria-labelledby="sec-equipa" id="equipa" className="container mx-auto px-4 py-12 scroll-mt-24">
         <h2 id="sec-equipa" className="text-2xl font-semibold mb-6">Equipa</h2>
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {[1,2,3].map((i) => (
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <figure className="rounded-2xl overflow-hidden shadow-lg">
+            <img 
+              src={teamCollaboration} 
+              alt="Equipe colaborando em escritório moderno de tecnologia financeira"
+              className="h-64 w-full object-cover"
+            />
+          </figure>
+          {[1,2].map((i) => (
             <Card key={i}>
-              <CardContent className="p-6 space-y-2">
+              <CardContent className="p-8 space-y-4">
                 <div className="h-16 w-16 rounded-full bg-muted" aria-hidden></div>
                 <h3 className="font-medium">Membro {i}</h3>
                 <p className="text-sm text-muted-foreground">Função principal</p>

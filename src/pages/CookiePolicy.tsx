@@ -177,10 +177,10 @@ export default function CookiePolicy() {
                 <h4 className="font-semibold mt-6">6.2 Configurações do Browser</h4>
                 <p>Pode controlar cookies através das configurações do seu browser:</p>
                 <ul className="list-disc pl-6 space-y-1">
-                  <li><strong>Chrome:</strong> Configurações > Privacidade e segurança > Cookies</li>
-                  <li><strong>Firefox:</strong> Opções > Privacidade e Segurança > Cookies</li>
-                  <li><strong>Safari:</strong> Preferências > Privacidade > Cookies</li>
-                  <li><strong>Edge:</strong> Configurações > Privacidade > Cookies</li>
+                  <li><strong>Chrome:</strong> Configurações {'>'}  Privacidade e segurança {'>'} Cookies</li>
+                  <li><strong>Firefox:</strong> Opções {'>'} Privacidade e Segurança {'>'} Cookies</li>
+                  <li><strong>Safari:</strong> Preferências {'>'} Privacidade {'>'} Cookies</li>
+                  <li><strong>Edge:</strong> Configurações {'>'} Privacidade {'>'} Cookies</li>
                 </ul>
 
                 <h4 className="font-semibold mt-6">6.3 Ferramentas de Opt-out</h4>

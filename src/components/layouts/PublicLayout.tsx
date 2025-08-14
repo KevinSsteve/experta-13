@@ -14,15 +14,15 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
         <nav className="container mx-auto flex items-center justify-between gap-2 py-3 md:py-4 px-4">
           <Link to="/" className="flex items-center hover-scale" aria-label="Ir para a página inicial">
-            <span className="text-xl md:text-2xl font-bold tracking-wide text-foreground">experta</span>
+            <span className="text-xl md:text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: '"Söhne", "Inter", system-ui, sans-serif', letterSpacing: '-0.025em' }}>experta</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm">
-            <a href="#como-funciona" className="story-link">Como funciona</a>
-            <a href="#beneficios" className="story-link">Benefícios</a>
-            <a href="#tecnologia" className="story-link">Tecnologia</a>
-            <a href="#para-quem" className="story-link">Para quem</a>
-            <a href="#equipa" className="story-link">Equipa</a>
+            <Link to="/como-funciona" className="story-link">Como funciona</Link>
+            <Link to="/beneficios" className="story-link">Benefícios</Link>
+            <Link to="/tecnologia" className="story-link">Tecnologia</Link>
+            <Link to="/para-quem" className="story-link">Para quem</Link>
+            <Link to="/equipa" className="story-link">Equipa</Link>
           </div>
 
           <div className="flex items-center gap-2">
@@ -37,11 +37,11 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                   <SheetTitle>Navegação</SheetTitle>
                 </SheetHeader>
                 <nav className="mt-4 flex flex-col gap-3">
-                  <a href="#como-funciona" className="story-link">Como funciona</a>
-                  <a href="#beneficios" className="story-link">Benefícios</a>
-                  <a href="#tecnologia" className="story-link">Tecnologia</a>
-                  <a href="#para-quem" className="story-link">Para quem</a>
-                  <a href="#equipa" className="story-link">Equipa</a>
+                  <Link to="/como-funciona" className="story-link">Como funciona</Link>
+                  <Link to="/beneficios" className="story-link">Benefícios</Link>
+                  <Link to="/tecnologia" className="story-link">Tecnologia</Link>
+                  <Link to="/para-quem" className="story-link">Para quem</Link>
+                  <Link to="/equipa" className="story-link">Equipa</Link>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -75,8 +75,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           <div>
             <h3 className="text-base font-semibold mb-3">Legal</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:underline">Política de Privacidade</a></li>
-              <li><a href="#" className="hover:underline">Termos de Uso</a></li>
+              <li><Link to="/privacy-policy" className="hover:underline">Política de Privacidade</Link></li>
+              <li><Link to="/terms-of-service" className="hover:underline">Termos de Uso</Link></li>
+              <li><Link to="/cookie-policy" className="hover:underline">Política de Cookies</Link></li>
+              <li><Link to="/legal-notice" className="hover:underline">Aviso Legal</Link></li>
               <li><Link to="/auth" className="hover:underline">Download do App (PWA)</Link></li>
             </ul>
           </div>

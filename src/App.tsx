@@ -35,6 +35,15 @@ import ExpertaGo from "./pages/ExpertaGo";
 import ExpertaGoDashboard from "./pages/ExpertaGoDashboard";
 import ExpertaGoInventory from "./pages/ExpertaGoInventory";
 import Landing from "./pages/Landing";
+import ComoFunciona from "./pages/ComoFunciona";
+import Beneficios from "./pages/Beneficios";
+import Tecnologia from "./pages/Tecnologia";
+import ParaQuem from "./pages/ParaQuem";
+import Equipa from "./pages/Equipa";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import CookiePolicy from "./pages/CookiePolicy";
+import LegalNotice from "./pages/LegalNotice";
 
 const App = () => {
   const PasswordChangeRoute = () => {
@@ -72,6 +81,16 @@ const App = () => {
                   <Route path="/change-password" element={<PasswordChangeRoute />} />
                   
                   <Route path="/" element={<Landing />} />
+                  <Route path="/como-funciona" element={<ComoFunciona />} />
+                  <Route path="/beneficios" element={<Beneficios />} />
+                  <Route path="/tecnologia" element={<Tecnologia />} />
+                  <Route path="/para-quem" element={<ParaQuem />} />
+                  <Route path="/equipa" element={<Equipa />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/terms-of-service" element={<TermsOfService />} />
+                  <Route path="/cookie-policy" element={<CookiePolicy />} />
+                  <Route path="/legal-notice" element={<LegalNotice />} />
+                  
                   {/* Rotas protegidas - apenas Experta Go */}
                   <Route element={<ProtectedRoute />}>
                     

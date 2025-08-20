@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -10,12 +9,24 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-white border border-primary/20 hover:bg-primary/90 hover:shadow-md",
-        destructive: "bg-destructive text-white border border-destructive/20 hover:bg-destructive/90 hover:shadow-md",
-        outline: "border border-border bg-background/60 hover:bg-accent hover:text-accent-foreground hover:shadow-sm",
-        secondary: "bg-secondary text-secondary-foreground border border-secondary/20 hover:bg-secondary/80 hover:shadow-sm",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline tracking-normal",
+        // 🔥 Botão padrão estilo OpenAI
+        default:
+          "bg-white text-black border border-gray-200 hover:bg-gray-100 hover:shadow-sm",
+
+        destructive:
+          "bg-destructive text-white border border-destructive/20 hover:bg-destructive/90 hover:shadow-md",
+
+        outline:
+          "border border-border bg-background/60 hover:bg-accent hover:text-accent-foreground hover:shadow-sm",
+
+        secondary:
+          "bg-secondary text-secondary-foreground border border-secondary/20 hover:bg-secondary/80 hover:shadow-sm",
+
+        ghost:
+          "hover:bg-accent hover:text-accent-foreground",
+
+        link:
+          "text-primary underline-offset-4 hover:underline tracking-normal",
       },
       size: {
         default: "h-11 px-8 py-2.5",
@@ -52,3 +63,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
+

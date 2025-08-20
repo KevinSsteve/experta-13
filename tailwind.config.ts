@@ -154,8 +154,7 @@ export default {
         'glow': 'glow 2s ease-in-out infinite'
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        inter: ['Inter', 'system-ui', 'sans-serif'],
+  'inter': ['Inter', 'sans-serif'],
       },
     }
   },

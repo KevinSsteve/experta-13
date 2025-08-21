@@ -59,7 +59,8 @@ const AuthRedirect = () => {
     );
   }
 
-  return user ? <Navigate to="/experta-go" replace /> : <Landing />;
+  // 👉 Logado → experta-go | Não logado → como-funciona
+  return user ? <Navigate to="/experta-go" replace /> : <ComoFunciona />;
 };
 
 const App = () => {
@@ -83,6 +84,7 @@ const App = () => {
                   <Route path="/" element={<AuthRedirect />} />
 
                   {/* Outras páginas públicas */}
+                  <Route path="/landing" element={<Landing />} />
                   <Route path="/como-funciona" element={<ComoFunciona />} />
                   <Route path="/beneficios" element={<Beneficios />} />
                   <Route path="/tecnologia" element={<Tecnologia />} />
